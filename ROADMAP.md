@@ -14,9 +14,9 @@
 | Phase | Target dates | Progress | Status |
 |---|---|---|---|
 | D. Design & docs | Nov 4 | 100% | ✅ done |
-| 0. Setup & verification | Nov 4–5 | 40% | in progress |
+| 0. Setup & verification | Nov 4–5 | 56% | in progress |
 | 1. Core logic (`lib/core`) | Nov 5–6 | 86% | in progress (S1.1–S1.6 done, S1.7 blocked) |
-| 2. Integrations (1Click, NEAR, DB) | Nov 5–7 | 0% | in progress (schema drafted) |
+| 2. Integrations (1Click, NEAR, DB) | Nov 5–7 | 11% | in progress (schema + migration done) |
 | 3. API routes | Nov 6–7 | 0% | not started |
 | 4. UI | Nov 7–9 | 0% | not started |
 | 5. Worker | Nov 8 | 0% | not started |
@@ -26,7 +26,7 @@
 | 9. README & public repo | Nov 11–12 | 14% | in progress |
 | 10. Launch: video, post, submission | Nov 12–13 | 0% | not started |
 | 11. After submission | Nov 14–25 | 0% | not started |
-| **Overall (MVP)** | | **~20%** | |
+| **Overall (MVP)** | | **~22%** | |
 
 Phase % = done tasks ÷ non-dropped tasks in that phase. Overall = average of phases 0–10 weighted equally, with D counted.
 
@@ -68,9 +68,9 @@ Format: `- [task id] what blocks it · who can unblock · since date`
 - [x] **S0.2** [#5](https://github.com/MFrancis-dev/settle/issues/5) `git init`, `.gitignore`, MIT `LICENSE`, README stub that names Stack · _done when_: first commit exists (👤 approves commit) · 2026-11-04: first commit approved and made; README links Stack; PR + issue templates added
 - [x] **S0.3** [#6](https://github.com/MFrancis-dev/settle/issues/6) 👤 Create the GitHub repo and add the remote · 2026-11-04: created **public** at https://github.com/MFrancis-dev/settle on the human's instruction; `origin` set; `main` pushed
 - [x] **S0.4** [#7](https://github.com/MFrancis-dev/settle/issues/7) (2026-11-04: installed with pnpm 11.17, exact versions pinned (Next 15.5.28, zod 3.25.76, Drizzle 0.36.4, PGlite 0.2.17, 1Click SDK 0.1.26); typecheck, lint, test (11 todo) and `next build` (15 pages, 14 API routes) all pass) Scaffold Next.js 15 + TS strict + Tailwind + shadcn/ui + ESLint/Prettier + vitest + Playwright; scripts named as in AGENTS.md §5 · _done when_: `pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm typecheck` run
-- [~] **S0.5** [#8](https://github.com/MFrancis-dev/settle/issues/8) (2026-11-04: `drizzle.config.ts` switch written; `lib/db/client.ts` stub) Drizzle with PGlite (no `DATABASE_URL`) / Postgres (with it) · _done when_: a test query runs on both
-- [~] **S0.6** [#9](https://github.com/MFrancis-dev/settle/issues/9) `lib/server/env.ts` (zod), `.env.example`, `scripts/check-env.ts` · 2026-11-04: env.ts + .env.example done; check-env stub
-- [ ] **S0.7** [#10](https://github.com/MFrancis-dev/settle/issues/10) CI: GitHub Actions running typecheck, lint, test; secret scanning (gitleaks)
+- [x] **S0.5** [#8](https://github.com/MFrancis-dev/settle/issues/8) Drizzle with PGlite (no `DATABASE_URL`) / Postgres (with it) · _done when_: a test query runs on both · 2026-11-04: `lib/db/client.ts` opens + migrates the right engine; `lib/db/client.test.ts` inserts and reads a row on PGlite (always) and on Postgres (skipped unless `DATABASE_URL` is set). Both verified locally — Postgres against a throwaway instance on port 55432. CI exercises the PGlite half only.
+- [x] **S0.6** [#9](https://github.com/MFrancis-dev/settle/issues/9) `lib/server/env.ts` (zod), `.env.example`, `scripts/check-env.ts` · 2026-11-04: empty `.env` values are treated as unset (demo mode parses clean); `check-env` lists missing names and exits 1 for real mode, never printing values. Split `env-schema.ts` out of `env.ts` because `server-only` throws under `tsx`, which would have broken `pnpm demo`'s seed script.
+- [x] **S0.7** [#10](https://github.com/MFrancis-dev/settle/issues/10) CI: GitHub Actions running typecheck, lint, test; secret scanning (gitleaks) · 2026-11-04: `.github/workflows/ci.yml` — checks job (install, typecheck, lint, test, build) + gitleaks v8.30.1 over full history. Also fixed two broken repo commands: ESLint was linting the generated `next-env.d.ts`, and `pnpm format` errored on generated `drizzle/*.sql` (added `.prettierignore`).
 - [ ] **S0.8** [#11](https://github.com/MFrancis-dev/settle/issues/11) 👤 Register a 1Click partner JWT (partners.near-intents.org) and put it in `.env`
 - [ ] **S0.9** [#12](https://github.com/MFrancis-dev/settle/issues/12) 🔍 Does 1Click storage-register NEAR recipients on USDC? → record in ARCHITECTURE §11 (affects S2.8, S0.10)
 - [ ] **S0.10** [#13](https://github.com/MFrancis-dev/settle/issues/13) 👤 If S0.9 = no: create and fund a small storage-payer NEAR account
@@ -79,6 +79,7 @@ Format: `- [task id] what blocks it · who can unblock · since date`
 - [ ] **S0.13** [#16](https://github.com/MFrancis-dev/settle/issues/16) 🔍 Same-asset quotes (client already holds the payout asset) and minimum amounts
 - [ ] **S0.14** [#17](https://github.com/MFrancis-dev/settle/issues/17) 🔍 Current wallet selector package + NEP-413 sign-message support (then add wallet + NEAR JS deps to package.json)
 - [x] **S0.15** [#18](https://github.com/MFrancis-dev/settle/issues/18) Scaffold full folder structure: every file from `project_structure.md` as a stub with its roadmap id, data models drafted · 2026-11-04
+- [ ] **S0.16** [#97](https://github.com/MFrancis-dev/settle/issues/97) 13 pre-existing files are not prettier-formatted (the command was never run on them). Format them in one no-behavior-change commit and decide whether CI should gate `pnpm exec prettier --check .`.
 
 ## Phase 1 — Core logic `lib/core` (Nov 5–6)
 
@@ -98,7 +99,7 @@ Format: `- [task id] what blocks it · who can unblock · since date`
 - [ ] **S2.4** [#28](https://github.com/MFrancis-dev/settle/issues/28) Recorded fixtures for every status + valid/tampered signatures
 - [ ] **S2.5** [#29](https://github.com/MFrancis-dev/settle/issues/29) `lib/near/nep413.ts`: verify signed messages (nonce, recipient, freshness)
 - [ ] **S2.6** [#30](https://github.com/MFrancis-dev/settle/issues/30) `lib/near/rpc.ts`: `storage_balance_of`
-- [~] **S2.7** [#31](https://github.com/MFrancis-dev/settle/issues/31) (2026-11-04: all 5 tables written; migration not generated) `lib/db/schema.ts` (users, payout_destinations, invoices, invoice_items, payment_attempts) + first migration
+- [x] **S2.7** [#31](https://github.com/MFrancis-dev/settle/issues/31) `lib/db/schema.ts` (users, payout_destinations, invoices, invoice_items, payment_attempts) + first migration · 2026-11-04: all 5 tables drafted in the scaffold; migration generated with `pnpm db:generate` → `drizzle/0000_hard_kabuki.sql`, applied and queried on both engines under S0.5
 - [ ] **S2.8** [#32](https://github.com/MFrancis-dev/settle/issues/32) `lib/near/storage.ts`: register USDC storage for payout accounts (skip if S0.9 = yes)
 - [ ] **S2.9** [#33](https://github.com/MFrancis-dev/settle/issues/33) `lib/db/queries/*` per table
 
@@ -200,6 +201,7 @@ Format: `- [task id] what blocks it · who can unblock · since date`
 One line per contribution, newest first: `YYYY-MM-DD · who/agent · what changed · tasks`
 
 - 2026-11-04 · agent · Phase 1 core logic built: `money.ts` bigint base units + half-up, `invoice.ts` line math/totals/numbering (SD-6), `status.ts` monotonic attempt transitions + invoice derivation, `address.ts` NEAR/EIP-55/Solana validators, `schemas.ts` for every API body; 74 unit tests, each rule mutation-checked; `@noble/hashes` + `bs58` added (SD-7, listed in README) · S1.1–S1.6, S1.7 filed
+- 2026-11-04 · agent · Finished the Phase 0 build-out: `lib/db/client.ts` opens + migrates PGlite or Postgres (query proven on both, Postgres via a throwaway local instance), env parsing moved to `lib/server/env-schema.ts` because `server-only` throws under `tsx` (it would have broken `pnpm demo`), `check-env` reports missing names and exits 1 for real mode, CI workflow added (typecheck/lint/test/build + gitleaks v8.30.1). Fixed `pnpm lint` (was linting generated `next-env.d.ts`) and `pnpm format` (errored on generated `drizzle/*.sql` — added `.prettierignore`). Generated `drizzle/0000_hard_kabuki.sql`. 11 tests now pass, up from 0. · S0.5, S0.6, S0.7, S2.7, new S0.16
 - 2026-11-04 · agent · Rewrote `main` history (approved force-push) to drop tool attribution lines from commit messages; every commit's files unchanged · —
 - 2026-11-04 · agent · Decisions accepted by the human: SD-4 payout assets, SD-5 name Settle; payout asset ids recorded; update-log actor made neutral · S0.1, S0.11
 - 2026-11-04 · agent · Created public repo MFrancis-dev/settle and pushed; GitHub labels, phase milestones and one issue per ROADMAP task, decision, stretch item + a hackathon-rules compliance issue · S0.3, S9.6

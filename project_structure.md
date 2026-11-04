@@ -16,9 +16,10 @@ settle/
 ├─ project_structure.md          # this file
 ├─ README.md                     # judges + AI screeners; names sister project Stack
 ├─ LICENSE                       # MIT
-├─ .github/                       # pull_request_template.md (ROADMAP + hackathon-rule checklist), ISSUE_TEMPLATE/roadmap-task.md
+├─ .github/                       # pull_request_template.md (ROADMAP + hackathon-rule checklist), ISSUE_TEMPLATE/roadmap-task.md,
+│                                 # workflows/ci.yml (typecheck, lint, test, build + gitleaks over full history)
 ├─ .env.example                  # names only
-├─ .gitignore
+├─ .gitignore · .prettierignore   # generated output (drizzle/, next-env.d.ts, .next/) is never hand-formatted
 ├─ package.json                  # scripts: dev, worker, demo, test, e2e, lint, typecheck, db:* (exact versions, ESM)
 ├─ pnpm-workspace.yaml · pnpm-lock.yaml   # pnpm 11 settings (allowBuilds) + lockfile — commit both
 ├─ tsconfig.json · next.config.ts · postcss.config.mjs (Tailwind v4) · eslint.config.mjs · .prettierrc · vitest.config.ts
@@ -85,8 +86,10 @@ lib/
 │                   # invoice.ts (line math), address.ts (per-chain validators), adapters.ts, schemas.ts
 ├─ oneclick/        # client.ts, tokens.ts (cache), quote.ts (build + verify), status.ts, demo.ts, __fixtures__/
 ├─ near/            # nep413.ts (verify), storage.ts (check + register USDC storage), rpc.ts
-├─ db/              # schema.ts, client.ts (PGlite or Postgres by DATABASE_URL), queries/, seed-demo.ts
-└─ server/          # SERVER ONLY: env.ts (zod), session.ts, adapters.ts (real vs demo), rateLimit.ts
+├─ db/              # schema.ts, client.ts (driver only: picks PGlite or Postgres from a config it is given), queries/
+└─ server/          # env-schema.ts (zod names; no `server-only` marker so tsx scripts can import it),
+                    # env.ts (parsed singleton, server-only), db.ts (env → one shared connection),
+                    # session.ts, adapters.ts (real vs demo), rateLimit.ts
 ```
 Tests sit next to source as `*.test.ts`.
 
