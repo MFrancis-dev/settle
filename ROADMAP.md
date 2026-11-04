@@ -14,7 +14,7 @@
 | Phase | Target dates | Progress | Status |
 |---|---|---|---|
 | D. Design & docs | Nov 4 | 100% | ✅ done |
-| 0. Setup & verification | Nov 4–5 | 27% | in progress |
+| 0. Setup & verification | Nov 4–5 | 40% | in progress |
 | 1. Core logic (`lib/core`) | Nov 5–6 | 0% | in progress (drafted) |
 | 2. Integrations (1Click, NEAR, DB) | Nov 5–7 | 0% | in progress (schema drafted) |
 | 3. API routes | Nov 6–7 | 0% | not started |
@@ -53,14 +53,14 @@ _None yet._ Format: `- [task id] what blocks it · who can unblock · since date
 | SD-1 | No contract in MVP; receipt registry = stretch | ✅ decided |
 | SD-2 | No custody, no relayer | ✅ decided |
 | SD-3 | Single Next.js app + worker; PGlite local/demo, Postgres hosted | ✅ decided |
-| SD-4 [#2](https://github.com/MFrancis-dev/settle/issues/2) | Payout assets offered in MVP (which stablecoins/chains) | ⛔ open → decide in S0.11 |
-| SD-5 [#3](https://github.com/MFrancis-dev/settle/issues/3) | Working name "Settle" final? | ⛔ open → S0.1 |
+| SD-4 [#2](https://github.com/MFrancis-dev/settle/issues/2) | Payout assets → **USDC on NEAR (default), Base, Arbitrum, Solana, Ethereum; USDT on Ethereum, Solana** (ids in ARCHITECTURE §3.2) | ✅ decided 2026-11-04 |
+| SD-5 [#3](https://github.com/MFrancis-dev/settle/issues/3) | Working name → **"Settle" is final** | ✅ decided 2026-11-04 |
 
 ---
 
 ## Phase 0 — Setup & verification (Nov 4–5)
 
-- [ ] **S0.1** [#4](https://github.com/MFrancis-dev/settle/issues/4) 👤 Confirm product name (or pick a new one) · _done when_: name used in README/package.json
+- [x] **S0.1** [#4](https://github.com/MFrancis-dev/settle/issues/4) 👤 Confirm product name (or pick a new one) · _done when_: name used in README/package.json · 2026-11-04: "Settle" confirmed (SD-5)
 - [x] **S0.2** [#5](https://github.com/MFrancis-dev/settle/issues/5) `git init`, `.gitignore`, MIT `LICENSE`, README stub that names Stack · _done when_: first commit exists (👤 approves commit) · 2026-11-04: first commit approved and made; README links Stack; PR + issue templates added
 - [x] **S0.3** [#6](https://github.com/MFrancis-dev/settle/issues/6) 👤 Create the GitHub repo and add the remote · 2026-11-04: created **public** at https://github.com/MFrancis-dev/settle on the human's instruction; `origin` set; `main` pushed
 - [x] **S0.4** [#7](https://github.com/MFrancis-dev/settle/issues/7) (2026-11-04: installed with pnpm 11.17, exact versions pinned (Next 15.5.28, zod 3.25.76, Drizzle 0.36.4, PGlite 0.2.17, 1Click SDK 0.1.26); typecheck, lint, test (11 todo) and `next build` (15 pages, 14 API routes) all pass) Scaffold Next.js 15 + TS strict + Tailwind + shadcn/ui + ESLint/Prettier + vitest + Playwright; scripts named as in AGENTS.md §5 · _done when_: `pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm typecheck` run
@@ -70,7 +70,7 @@ _None yet._ Format: `- [task id] what blocks it · who can unblock · since date
 - [ ] **S0.8** [#11](https://github.com/MFrancis-dev/settle/issues/11) 👤 Register a 1Click partner JWT (partners.near-intents.org) and put it in `.env`
 - [ ] **S0.9** [#12](https://github.com/MFrancis-dev/settle/issues/12) 🔍 Does 1Click storage-register NEAR recipients on USDC? → record in ARCHITECTURE §11 (affects S2.8, S0.10)
 - [ ] **S0.10** [#13](https://github.com/MFrancis-dev/settle/issues/13) 👤 If S0.9 = no: create and fund a small storage-payer NEAR account
-- [ ] **S0.11** [#14](https://github.com/MFrancis-dev/settle/issues/14) 🔍 + ⛔ Pick MVP payout assets from `/v0/tokens` (e.g. USDC on NEAR + USDT/USDC on 2–3 chains) → SD-4
+- [x] **S0.11** [#14](https://github.com/MFrancis-dev/settle/issues/14) 🔍 + ⛔ Pick MVP payout assets from `/v0/tokens` (e.g. USDC on NEAR + USDT/USDC on 2–3 chains) → SD-4 · 2026-11-04: SD-4 decided; ids verified from live `/v0/tokens` (ARCHITECTURE §3.2)
 - [ ] **S0.12** [#15](https://github.com/MFrancis-dev/settle/issues/15) 🔍 `/v0/status` enum; top-up after `INCOMPLETE_DEPOSIT`; overpayment behaviour; deposits after deadline → update status mapping
 - [ ] **S0.13** [#16](https://github.com/MFrancis-dev/settle/issues/16) 🔍 Same-asset quotes (client already holds the payout asset) and minimum amounts
 - [ ] **S0.14** [#17](https://github.com/MFrancis-dev/settle/issues/17) 🔍 Current wallet selector package + NEP-413 sign-message support (then add wallet + NEAR JS deps to package.json)
@@ -194,8 +194,9 @@ _None yet._ Format: `- [task id] what blocks it · who can unblock · since date
 ## Update log
 One line per contribution, newest first: `YYYY-MM-DD · who/agent · what changed · tasks`
 
-- 2026-11-04 · Claude · Created public repo MFrancis-dev/settle and pushed; GitHub labels, phase milestones and one issue per ROADMAP task, decision, stretch item + a hackathon-rules compliance issue · S0.3, S9.6
-- 2026-11-04 · Claude · First commit (approved): README cross-links Stack, PR template with ROADMAP + hackathon-rule checklist, issue template · S0.2, S9.4
-- 2026-11-04 · Claude · Installed deps (pnpm 11, esbuild build approved in pnpm-workspace.yaml), pinned exact versions, ESM package, lint config allows `_` stub params; typecheck/lint/test/build all green · S0.4
-- 2026-11-04 · Claude · Scaffolded the repo (96 files): configs, every route/page/component/lib/worker stub with roadmap ids, Drizzle schema, core types + statuses, zod env/schemas, test todos, `git init` (no commit, deps not installed) · S0.2, S0.4–S0.6, S0.15, S1.3, S1.5, S1.6, S2.7
-- 2026-11-04 · Claude · Split from the combined design into its own project; wrote PRD, ARCHITECTURE, ESSENTIALS, AGENTS, CLAUDE, project_structure, ROADMAP · D
+- 2026-11-04 · agent · Decisions accepted by the human: SD-4 payout assets, SD-5 name Settle; payout asset ids recorded; update-log actor made neutral · S0.1, S0.11
+- 2026-11-04 · agent · Created public repo MFrancis-dev/settle and pushed; GitHub labels, phase milestones and one issue per ROADMAP task, decision, stretch item + a hackathon-rules compliance issue · S0.3, S9.6
+- 2026-11-04 · agent · First commit (approved): README cross-links Stack, PR template with ROADMAP + hackathon-rule checklist, issue template · S0.2, S9.4
+- 2026-11-04 · agent · Installed deps (pnpm 11, esbuild build approved in pnpm-workspace.yaml), pinned exact versions, ESM package, lint config allows `_` stub params; typecheck/lint/test/build all green · S0.4
+- 2026-11-04 · agent · Scaffolded the repo (96 files): configs, every route/page/component/lib/worker stub with roadmap ids, Drizzle schema, core types + statuses, zod env/schemas, test todos, `git init` (no commit, deps not installed) · S0.2, S0.4–S0.6, S0.15, S1.3, S1.5, S1.6, S2.7
+- 2026-11-04 · agent · Split from the combined design into its own project; wrote PRD, ARCHITECTURE, ESSENTIALS, AGENTS, CLAUDE, project_structure, ROADMAP · D
