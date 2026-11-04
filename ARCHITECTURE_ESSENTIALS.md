@@ -14,6 +14,8 @@ Separate repo from **Stack** (track 01). Never import Stack code; README names S
 - No custody, no relayer
 - Single Next.js app + `worker/` script (no monorepo)
 - PGlite for local/demo, Postgres when `DATABASE_URL` is set
+- **SD-4** Payout assets: USDC on NEAR (default), Base, Arbitrum, Solana, Ethereum; USDT on Ethereum, Solana (ids: ARCHITECTURE §3.2)
+- **SD-5** Name: Settle
 
 ## 🔍 Verify before coding against
 1. Does 1Click storage-register NEAR recipients on USDC?

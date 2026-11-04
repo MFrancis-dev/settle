@@ -87,6 +87,18 @@ Invoice quote:
 }
 ```
 
+**MVP payout assets (SD-4, ids from live `/v0/tokens` on 2026-11-04 — still resolve at runtime and match on assetId):**
+
+| Payout | assetId | Decimals |
+|---|---|---|
+| USDC on NEAR (default) | `nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1` | 6 |
+| USDC on Base | `nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near` | 6 |
+| USDC on Arbitrum | `nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near` | 6 |
+| USDC on Solana | `nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near` | 6 |
+| USDC on Ethereum | `nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near` | 6 |
+| USDT on Ethereum | `nep141:eth-0xdac17f958d2ee523a2206206994597c13d831ec7.omft.near` | 6 |
+| USDT on Solana | `nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near` | 6 |
+
 Rules: `verifyQuoteSignature()` before showing `depositAddress`; asset ids + decimals from `/v0/tokens` (in-memory cache, 10 min); store the raw quote + signature; after a deposit tx hash is known, `/v0/deposit/submit`.
 
 ### 3.3 Status mapping **[verify enum]**

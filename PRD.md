@@ -181,7 +181,7 @@ Details and fixes: `ARCHITECTURE.md` §11.
 ## 12. Open questions
 - Q1. Does 1Click storage-register NEAR recipients automatically? (affects FR-5)
 - Q2. Exact `/v0/status` enum, top-up after `INCOMPLETE_DEPOSIT`, overpayment behaviour, late deposits.
-- Q3. Which payout stablecoins/chains to offer in the MVP list.
+- ~~Q3. Which payout stablecoins/chains to offer in the MVP list.~~ Decided (SD-4): USDC on NEAR, Base, Arbitrum, Solana, Ethereum; USDT on Ethereum, Solana.
 
 ---
 
