@@ -8,10 +8,24 @@ const config = [
   {
     rules: {
       // Stubs keep their final signatures; `_`-prefixed params are intentionally unused until built.
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
-  { ignores: [".next/", "drizzle/", "contracts/", "coverage/", "playwright-report/", "test-results/"] },
+  // Generated output: next-env.d.ts is rewritten by `next build`/`next dev` and is gitignored.
+  {
+    ignores: [
+      ".next/",
+      "drizzle/",
+      "contracts/",
+      "coverage/",
+      "playwright-report/",
+      "test-results/",
+      "next-env.d.ts",
+    ],
+  },
 ];
 
 export default config;
