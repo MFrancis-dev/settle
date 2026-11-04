@@ -16,6 +16,7 @@ settle/
 ├─ project_structure.md          # this file
 ├─ README.md                     # judges + AI screeners; names sister project Stack
 ├─ LICENSE                       # MIT
+├─ .github/                       # pull_request_template.md (ROADMAP + hackathon-rule checklist), ISSUE_TEMPLATE/roadmap-task.md
 ├─ .env.example                  # names only
 ├─ .gitignore
 ├─ package.json                  # scripts: dev, worker, demo, test, e2e, lint, typecheck, db:* (exact versions, ESM)
