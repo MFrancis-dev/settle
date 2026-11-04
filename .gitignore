@@ -1,0 +1,24 @@
+# deps / build
+node_modules/
+.next/
+out/
+target/
+next-env.d.ts
+*.tsbuildinfo
+
+# local data
+.pglite/
+*.db
+
+# env — never commit secrets
+.env
+.env.*
+!.env.example
+
+# test output
+coverage/
+playwright-report/
+test-results/
+
+# os
+.DS_Store
