@@ -194,6 +194,7 @@ _None yet._ Format: `- [task id] what blocks it · who can unblock · since date
 ## Update log
 One line per contribution, newest first: `YYYY-MM-DD · who/agent · what changed · tasks`
 
+- 2026-11-04 · agent · Rewrote `main` history (approved force-push) to drop tool attribution lines from commit messages; every commit's files unchanged · —
 - 2026-11-04 · agent · Decisions accepted by the human: SD-4 payout assets, SD-5 name Settle; payout asset ids recorded; update-log actor made neutral · S0.1, S0.11
 - 2026-11-04 · agent · Created public repo MFrancis-dev/settle and pushed; GitHub labels, phase milestones and one issue per ROADMAP task, decision, stretch item + a hackathon-rules compliance issue · S0.3, S9.6
 - 2026-11-04 · agent · First commit (approved): README cross-links Stack, PR template with ROADMAP + hackathon-rule checklist, issue template · S0.2, S9.4
