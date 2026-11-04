@@ -116,6 +116,15 @@ Rules: `verifyQuoteSignature()` before showing `depositAddress`; asset ids + dec
 
 A second `success` on an already-paid invoice → `overpaid` with both attempts listed.
 
+`deriveInvoiceStatus(current, cancelled, attempts)` in `lib/core/status.ts` evaluates, in order:
+
+1. 2+ `success` → `overpaid`; exactly 1 → `paid`, or `paid_after_cancel` when the invoice was cancelled first.
+2. No `success` in this read and the invoice is already settled → keep the recorded status (an invoice never un-pays).
+3. Otherwise the strongest live attempt: `underpaid` > `processing` > `payment_detected`; `refunded`/`failed`/`expired` add no signal.
+4. `cancelled` → `cancelled`; a `draft` with no attempts stays `draft`; else `open`.
+
+Callers pass **every** attempt for the invoice — a partial list derives a weaker status. `canTransition` is a forward-only table with `success`, `refunded`, `failed`, `expired` absorbing; `expired` is only reachable from `awaiting_deposit`, because its rule is "deadline passed and no deposit".
+
 ### 3.4 Worker (`worker/`)
 
 | Loop | Every | Does |

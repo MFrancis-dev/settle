@@ -1,7 +1,6 @@
 /**
  * Domain types shared by server, worker and UI. Pure — no I/O.
  * Roadmap: S1.x · Spec: ARCHITECTURE.md §3–4
- * Status: scaffold — not implemented yet.
  */
 
 /** Amount in an asset's smallest unit, as a decimal string. Never a float. */
@@ -28,7 +27,8 @@ export interface InvoiceLineInput {
   description: string;
   /** Decimal string, up to 4 places. */
   quantity: string;
-  unitPrice: BaseUnits;
+  /** Base units as a decimal string; branded by `lineAmount` on the way out. */
+  unitPrice: string;
 }
 
 /** What we keep from a verified 1Click quote. */
