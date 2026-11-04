@@ -15,6 +15,7 @@ For each contribution:
 3. Add new tasks you discovered (bugs, follow-ups, verified 🔍 items) to the right phase.
 4. Add one line to the **Update log** at the bottom: `YYYY-MM-DD · who/agent · what changed · tasks touched`.
 5. If you are blocked, mark the task `[!]` with the reason and add it to **Blockers**.
+6. **GitHub issue:** every roadmap id has an issue on https://github.com/MFrancis-dev/settle/issues (linked next to the id in `ROADMAP.md`). Reference it in commits/PRs (`Closes #N`), comment progress on it, and close it when the task is `[x]`. New tasks get a new issue and a link in `ROADMAP.md`. The issue and the roadmap must never disagree.
 
 A contribution without a `ROADMAP.md` update is not done.
 
@@ -137,4 +138,5 @@ Code counts from 2026-10-19 · libraries listed in README · public repo + MIT L
 - [ ] No secrets or client PII added
 - [ ] Docs synced per §9
 - [ ] **`ROADMAP.md` updated: task status, progress %, update log**
+- [ ] Matching GitHub issue updated or closed (`Closes #N`)
 - [ ] Summary lists anything skipped or unverified
