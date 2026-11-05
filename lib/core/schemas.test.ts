@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 import {
   createInvoiceInput,
   demoActionInput,
+  invoiceListQueryInput,
   payQuoteInput,
   payoutInput,
+  receiptQueryInput,
   signInInput,
   submitTxInput,
 } from "./schemas";
@@ -13,6 +15,13 @@ import {
 const LINE = { description: "Landing page", quantity: "3", unitPrice: "800000000" };
 const INVOICE = { clientName: "Acme", items: [LINE] };
 const CHECKSUMMED = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+
+/** Schemas only check the *shape* here; `lib/near/nep413.ts` is what parses and verifies it. */
+const PAYOUT_PAYLOAD = JSON.stringify({
+  message: "Settle payout change to alice.testnet on near",
+  recipient: "localhost:3000",
+  nonce: "c3RhdHVtLW5vbmNlLWF0LWxlYXN0LXRoaXJ0eS1ieXRl",
+});
 
 describe("schemas: createInvoiceInput", () => {
   it("accepts a minimal and a full invoice", () => {
@@ -69,9 +78,9 @@ describe("schemas: payoutInput", () => {
     chain: "near",
     address: "alice.testnet",
     addressConfirm: "alice.testnet",
+    payload: PAYOUT_PAYLOAD,
     signature: "NQxLct",
     publicKey: "ed25519:7sB2Tn",
-    nonce: "abc123",
   };
 
   it("accepts a matching pair on a supported chain", () => {
@@ -108,6 +117,12 @@ describe("schemas: payoutInput", () => {
     }
   });
 
+  it("requires the signed payload bytes, not just a signature", () => {
+    const { payload: _omitted, ...withoutPayload } = base;
+    expect(payoutInput.safeParse(withoutPayload).success).toBe(false);
+    expect(payoutInput.safeParse({ ...base, payload: "" }).success).toBe(false);
+  });
+
   it("refuses a chain it cannot check", () => {
     const result = payoutInput.safeParse({
       ...base,
@@ -142,20 +157,23 @@ describe("schemas: the remaining bodies", () => {
     expect(submitTxInput.safeParse({ txHash: "" }).success).toBe(false);
   });
 
-  it("takes the four NEP-413 fields", () => {
+  it("takes the signed message and the account that signed it", () => {
     expect(
       signInInput.safeParse({
+        payload: PAYOUT_PAYLOAD,
         signature: "NQxLct",
         publicKey: "ed25519:7sB2Tn",
-        nonce: "abc",
         accountId: "alice.testnet",
       }).success,
     ).toBe(true);
-    expect(signInInput.safeParse({ signature: "NQxLct", publicKey: "k", nonce: "n" }).success).toBe(
-      false,
-    );
+    expect(signInInput.safeParse({ signature: "NQxLct", publicKey: "k" }).success).toBe(false);
     expect(
-      signInInput.safeParse({ signature: "s", publicKey: "k", nonce: "n", accountId: "a" }).success,
+      signInInput.safeParse({
+        payload: PAYOUT_PAYLOAD,
+        signature: "s",
+        publicKey: "k",
+        accountId: "a",
+      }).success,
     ).toBe(false);
   });
 
@@ -163,5 +181,19 @@ describe("schemas: the remaining bodies", () => {
     expect(demoActionInput.safeParse("simulate-payment").success).toBe(true);
     expect(demoActionInput.safeParse("reset").success).toBe(true);
     expect(demoActionInput.safeParse("pay-real-usdc").success).toBe(false);
+  });
+
+  it("requires a receipt token of unguessable length", () => {
+    expect(receiptQueryInput.safeParse({ token: "c2VjcmV0dG9rZW4xMjM0NTY3ODkw" }).success).toBe(true);
+    expect(receiptQueryInput.safeParse({ token: "short" }).success).toBe(false);
+    expect(receiptQueryInput.safeParse({}).success).toBe(false);
+  });
+
+  it("coerces the invoice list query to the status union", () => {
+    expect(invoiceListQueryInput.safeParse({ status: "paid", limit: "7" }).success).toBe(true);
+    expect(invoiceListQueryInput.safeParse({}).success).toBe(true);
+    expect(invoiceListQueryInput.safeParse({ status: "settled" }).success).toBe(false);
+    expect(invoiceListQueryInput.safeParse({ limit: "0" }).success).toBe(false);
+    expect(invoiceListQueryInput.safeParse({ limit: "9999" }).success).toBe(false);
   });
 });

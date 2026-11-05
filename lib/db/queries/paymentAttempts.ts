@@ -11,6 +11,7 @@
  */
 
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { customAlphabet } from "nanoid";
 
 import type { BaseUnits, QuoteSummary } from "../../core/types";
 import {
@@ -29,6 +30,13 @@ import { paymentAttempts, type PaymentAttempt } from "../schema";
 const LIVE_ATTEMPT_STATUSES: AttemptStatus[] = ATTEMPT_STATUSES.filter(
   (status) => !TERMINAL_ATTEMPT_STATUSES.has(status),
 );
+
+/**
+ * The receipt link's only credential (§6): 24 url-safe characters is ~144 bits, so a token cannot be
+ * guessed and the route needs no session. Minted with the attempt so the pay page can offer the
+ * receipt URL as soon as the status reaches `success`.
+ */
+const newReceiptToken = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-", 24);
 
 export interface PaymentAttemptRecord extends PaymentAttempt {
   amountIn: BaseUnits;
@@ -79,6 +87,7 @@ export async function createPaymentAttempt(
       quoteDeadline: new Date(quote.deadline),
       quoteSignature: quote.signature,
       quoteRaw: quote.raw,
+      receiptToken: newReceiptToken(),
     })
     .returning();
 

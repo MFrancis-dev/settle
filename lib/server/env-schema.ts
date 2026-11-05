@@ -14,6 +14,11 @@ const url = (fallback: string) => z.string().url().default(fallback);
 export const envSchema = z.object({
   ONECLICK_BASE_URL: url("https://1click.chaindefuser.com"),
   ONECLICK_JWT: z.string().min(1).optional(),
+  /**
+   * The vendor key that signs quotes. Absent means the key built into the SDK (the production
+   * manager); it is settable only so a documented rotation does not need a code change.
+   */
+  ONECLICK_MANAGER_PUBLIC_KEY: z.string().startsWith("ed25519:").optional(),
   NEAR_RPC_URL: z.string().url().optional(),
   USDC_CONTRACT_ID: z.string().min(1).optional(),
   STORAGE_PAYER_ACCOUNT_ID: z.string().min(1).optional(),
@@ -33,6 +38,7 @@ export const REAL_MODE_REQUIRED = ["SESSION_SECRET", "ONECLICK_JWT", "NEAR_RPC_U
 export const REAL_MODE_OPTIONAL = [
   "DATABASE_URL",
   "USDC_CONTRACT_ID",
+  "ONECLICK_MANAGER_PUBLIC_KEY",
   "STORAGE_PAYER_ACCOUNT_ID",
   "STORAGE_PAYER_PRIVATE_KEY",
 ] as const;
