@@ -9,8 +9,11 @@
 
 import type { BaseUnits } from "./types";
 
-/** 18 decimals covers every chain we validate; well under Postgres' 78 digits. */
-const MAX_DECIMALS = 18;
+/**
+ * 24 decimals is yoctoNEAR, the smallest unit any amount here has to carry: NEAR-native assets
+ * (wrap.near, USDC-on-NEAR) report 24 from 1Click, and Postgres' `numeric(78,0)` has room.
+ */
+const MAX_DECIMALS = 24;
 
 const DECIMAL_RE = /^\d+(?:\.\d+)?$/;
 

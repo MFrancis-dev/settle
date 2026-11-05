@@ -1,0 +1,30 @@
+{
+  "correlationId": "00000000-0000-4000-8000-settledry001",
+  "timestamp": "2026-11-05T09:00:00Z",
+  "signature": "ed25519 UNSIGNED FIXTURE",
+  "quoteRequest": {
+    "dry": true,
+    "swapType": "EXACT_OUTPUT",
+    "slippageTolerance": 100,
+    "originAsset": "nep141:wrap.near",
+    "depositType": "ORIGIN_CHAIN",
+    "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+    "amount": "10000000",
+    "refundTo": "client.near",
+    "refundType": "ORIGIN_CHAIN",
+    "recipient": "freelancer.near",
+    "recipientType": "DESTINATION_CHAIN",
+    "deadline": "2026-11-05T11:00:00Z"
+  },
+  "quote": {
+    "amountIn": "2700000000000000000000000",
+    "amountInFormatted": "2.7",
+    "amountInUsd": "10.40",
+    "minAmountIn": "2650000000000000000000000",
+    "amountOut": "10000000",
+    "amountOutFormatted": "10",
+    "amountOutUsd": "10.00",
+    "minAmountOut": "9900000",
+    "timeEstimate": 45
+  }
+}
