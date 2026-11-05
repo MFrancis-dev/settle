@@ -1,2 +1,11 @@
+# pnpm 11 asks every dependency with a build script to be approved explicitly.
+# esbuild is the one the toolchain needs (tsx, vitest transforms).
+# The other three are native accelerators that arrive through the wallet selector's transitive
+# dependencies (`ws` optional peers and `secp256k1`). Settle never opens a WebSocket and never uses
+# secp256k1 — NEAR keys are ed25519 — so the pure-JS fallbacks are what we ship, and refusing the
+# native build keeps a fresh clone installing with no compiler step.
 allowBuilds:
+  bufferutil: false
   esbuild: true
+  secp256k1: false
+  utf-8-validate: false

@@ -25,7 +25,9 @@ Answered from the docs while building Phase 2 (2026-11-05), still **unconfirmed 
 2. Status enum: exactly the seven values we map, pinned against the installed SDK by a test. Overpayment: the excess above `amountIn` refunds to `refundTo`. A deposit below `minAmountIn` refunds at the deadline. **Still open:** can a client top up after `INCOMPLETE_DEPOSIT`?
 4. Minimums: no table — a 400 saying `try at least <baseUnits>`, surfaced as `OneClickError.minimumBaseUnits`
 
-Still open: 3. same-asset quotes · the wallet selector package and the exact NEP-413 shape it signs (the published standard Borsh-serialises and prepends a 4-byte tag; Near Intents logins use the JSON-payload shape `lib/near/nep413.ts` verifies).
+Still open: 3. same-asset quotes · one live end-to-end wallet login (the shape below is the library's code, the wallet's own confirmation dialog is not testable offline).
+
+**Answered 2026-11-05 (S0.14) — wallet sign-in:** `@near-wallet-selector/*@10.1.4`; `wallet.signMessage({message, recipient, nonce: Buffer, callbackUrl?, state?})` → `{accountId, publicKey, signature (base64), state?}`. The signed bytes are **Borsh** `{tag u32 = 2**31+413, message, nonce[u8;32], recipient, callbackUrl?}` and the digest is `sha256` of them — *not* `"near:" + JSON`, so `lib/near/nep413.ts` now verifies both shapes (`verifyNep413SignedMessage` = wallets, `verifyNep413` = the JSON/RAAT bodies our fixtures sign). MetaMask (`ethereum-wallets`) **throws** on sign-message → not a sign-in option. v10 removed `signIn({messagePayload})` and tells you to drop `near-api-js` (v7 dropped `keyStores`, wants node ≥ 22.22.2) → wallet packages stay client-side, our own RPC + noble/bs58 do the server work.
 
 ## Stack
 Next.js 15 + TS strict · Tailwind + shadcn/ui · TanStack Query · zod · Drizzle (PGlite/Postgres) · 1Click SDK ≥ 0.1.24 · wallet selector (NEP-413 sign-in) · vitest + Playwright · pnpm

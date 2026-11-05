@@ -87,7 +87,7 @@ lib/
 │                   # for URL params), payout-message.ts (the string signed to authorise a payout
 │                   # change), adapters.ts, schemas.ts
 ├─ oneclick/        # client.ts, tokens.ts (cache), quote.ts (build + verify), status.ts, demo.ts, __fixtures__/
-├─ near/            # nep413.ts (verify), storage.ts (check + register USDC storage), rpc.ts
+├─ near/            # nep413.ts (verifyNep413 = the JSON-payload shape our routes accept, verifyNep413SignedMessage = the Borsh/SHA-256 shape wallet-selector signs), implicit.ts (64-hex implicit account ids), storage.ts (check + register USDC storage), rpc.ts
 ├─ db/              # schema.ts, client.ts (driver only: picks PGlite or Postgres from a config it is given), queries/
 └─ server/          # env-schema.ts (zod names; no `server-only` marker so tsx scripts can import it),
                     # env.ts (parsed singleton, server-only), db.ts (env → one shared connection),
@@ -112,7 +112,9 @@ Each loop is `(deps) => Promise<void>` so tests can run one tick with fake deps.
 ## 6. `e2e/`, `scripts/`
 ```
 e2e/playwright.config.ts · e2e/demo-journey.spec.ts   # PRD §8
-scripts/seed-demo.ts · scripts/check-env.ts            # check-env prints missing names, never values
+scripts/seed-demo.ts · scripts/check-env.ts · scripts/setup-storage-payer.ts
+# check-env prints missing names, never values. setup-storage-payer writes a payer key into `.env` (0600)
+# and prints only the public half — it never signs and never sends (S0.10 is 👤 for exactly that reason).
 ```
 
 ## 7. Where does X go?
