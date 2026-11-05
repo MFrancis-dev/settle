@@ -21,7 +21,10 @@
     "e2e": "playwright test -c e2e/playwright.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "check-env": "tsx scripts/check-env.ts"
+    "check-env": "tsx scripts/check-env.ts",
+    "payer": "tsx scripts/setup-storage-payer.ts",
+    "payer:generate": "tsx scripts/setup-storage-payer.ts generate",
+    "payer:check": "tsx scripts/setup-storage-payer.ts check"
   },
   "//": "Exact versions pinned 2026-11-04 (S0.4 / K0.4). Wallet + NEAR JS packages are added after S0.14 / K0.13 verification.",
   "dependencies": {

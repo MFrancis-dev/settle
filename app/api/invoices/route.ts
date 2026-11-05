@@ -1,15 +1,30 @@
-import { NextResponse } from "next/server";
-
 /**
- * GET/POST /api/invoices — list / create.
- * Roadmap: S3.3 · Spec: ARCHITECTURE.md §3.1
- * Status: scaffold — not implemented yet.
+ * GET /api/invoices — list.
+ * POST /api/invoices — create.
+ * Roadmap: S3.3 · Spec: ARCHITECTURE.md §3.1, §5
+ *
+ * Creation is one step: a new invoice is `open` and its pay link is shareable immediately, so the
+ * MVP has no separate "send" call (§5). Numbers come back as the base-unit strings the client sent.
  */
 
-export async function GET() {
-  return NextResponse.json({ error: "Not implemented (S3.3)" }, { status: 501 });
+import { getServerDeps } from "@/lib/server/deps";
+import { json, route } from "@/lib/server/http";
+import { requireSession } from "@/lib/server/auth";
+import { createFromBody, list } from "@/lib/server/invoices";
+
+export async function GET(request: Request): Promise<Response> {
+  return route(async () => {
+    const deps = await getServerDeps();
+    const principal = await requireSession(deps, request);
+    const url = new URL(request.url);
+    return json(await list(deps, principal, url.searchParams));
+  });
 }
 
-export async function POST() {
-  return NextResponse.json({ error: "Not implemented (S3.3)" }, { status: 501 });
+export async function POST(request: Request): Promise<Response> {
+  return route(async () => {
+    const deps = await getServerDeps();
+    const principal = await requireSession(deps, request);
+    return json(await createFromBody(deps, principal, request), { status: 201 });
+  });
 }

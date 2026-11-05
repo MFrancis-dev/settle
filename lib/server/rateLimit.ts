@@ -1,9 +1,83 @@
-import "server-only";
-
 /**
- * Per-IP and per-invoice rate limits for quote/status routes.
- * Roadmap: S7.7
- * Status: scaffold — not implemented yet.
+ * Token-bucket rate limits for the public routes.
+ * Roadmap: S3.5 (quote spam control) · hardened per chain in S7.7 · Spec: ARCHITECTURE.md §6
+ *
+ * "Quote spam" is the threat this exists for (§6): every real quote costs the freelancer nothing
+ * but our partner quota, and every dry quote is an unauthenticated call to 1Click. Buckets are
+ * keyed by caller + invoice, so one abusive pay page cannot exhaust the limit for everyone else.
+ *
+ * In-process state, for the reason recorded in `lib/server/nonces.ts`.
+ * No `server-only` marker: route tests and the worker import this under plain Node.
  */
 
-export {};
+export interface RateLimitDecision {
+  allowed: boolean;
+  /** Seconds until a token is available again; only meaningful when `allowed` is false. */
+  retryAfterS: number;
+}
+
+export interface RateLimiter {
+  check(key: string): RateLimitDecision;
+  /** Forget a key — the demo reset button and tests use it to start clean. */
+  reset(key?: string): void;
+}
+
+export interface RateLimiterOptions {
+  /** Bursts allowed before the steady rate applies. */
+  capacity: number;
+  /** Milliseconds to refill `capacity` tokens. */
+  windowMs: number;
+  now?: () => number;
+}
+
+/** Buckets older than this are pruned, so an attacker cannot pin memory with unique keys. */
+const IDLE_MULTIPLIER = 4;
+
+export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
+  const capacity = options.capacity;
+  const refillPerMs = capacity / options.windowMs;
+  const idleMs = options.windowMs * IDLE_MULTIPLIER;
+  const now = options.now ?? Date.now;
+
+  const buckets = new Map<string, { tokens: number; at: number }>();
+
+  return {
+    check(key) {
+      const at = now();
+      const bucket = buckets.get(key);
+
+      if (!bucket) {
+        buckets.set(key, { tokens: capacity - 1, at });
+        prune(at);
+        return { allowed: true, retryAfterS: 0 };
+      }
+
+      bucket.tokens = Math.min(capacity, bucket.tokens + (at - bucket.at) * refillPerMs);
+      bucket.at = at;
+
+      if (bucket.tokens < 1) {
+        return { allowed: false, retryAfterS: Math.ceil((1 - bucket.tokens) / refillPerMs / 1000) };
+      }
+      bucket.tokens -= 1;
+      return { allowed: true, retryAfterS: 0 };
+    },
+
+    reset(key) {
+      if (key === undefined) buckets.clear();
+      else buckets.delete(key);
+    },
+  };
+
+  function prune(at: number): void {
+    if (buckets.size < 1000) return;
+    for (const [k, bucket] of buckets) {
+      if (at - bucket.at > idleMs) buckets.delete(k);
+    }
+  }
+}
+
+/** A pay page can be re-opened, retried after a refund, and preview before paying: 6 real-or-dry quotes a minute. */
+export const QUOTE_LIMIT = { capacity: 6, windowMs: 60_000 };
+
+/** The open pay page polls about every 3 s; 60/min leaves headroom without being unlimited. */
+export const STATUS_LIMIT = { capacity: 60, windowMs: 60_000 };

@@ -25,7 +25,7 @@ import {
 } from "./rpc";
 
 /** yoctoNEAR is NEAR's own fixed unit — 10^-24 NEAR — and not a 1Click asset, so it is a chain constant. */
-const NEAR_DECIMALS = 24;
+export const NEAR_DECIMALS = 24;
 
 export interface StorageRequirement {
   accountId: string;
