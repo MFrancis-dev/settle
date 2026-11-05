@@ -1,3 +1,128 @@
 @import "tailwindcss";
 
-/* Roadmap: S4.1 / K6.1 — design tokens go here. */
+/*
+ * Design tokens (S4.1).
+ *
+ * Hand-rolled Tailwind v4 tokens rather than shadcn/ui (ARCHITECTURE.md §2 names shadcn/ui): the
+ * generator needs a network install and Radix dependencies, and Settle's surface is six screens.
+ * Every colour below is a *role*, not a raw value, so a state can be re-tinted without touching a
+ * component. Amounts use `tabular-nums` through `--font-feature-settings` on `.money`.
+ */
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --color-canvas: #f5f4ef;
+  --color-surface: #ffffff;
+  --color-surface-sunk: #eeebe3;
+  --color-line: #ddd8cc;
+  --color-line-strong: #b9b2a1;
+
+  --color-ink: #15181e;
+  --color-ink-muted: #5a616e;
+  --color-ink-faint: #878e9b;
+  --color-ink-invert: #ffffff;
+
+  /* Settled money. */
+  --color-brand: #0b6e4f;
+  --color-brand-strong: #07543b;
+  --color-brand-soft: #e2eee8;
+
+  --color-info: #1d4e79;
+  --color-info-soft: #e6eef6;
+
+  /* Needs someone to act. */
+  --color-warn: #8a5200;
+  --color-warn-soft: #fbf0dd;
+
+  /* Money that did not arrive as expected. */
+  --color-danger: #98201d;
+  --color-danger-soft: #fbe9e7;
+
+  --radius-card: 0.875rem;
+  --radius-control: 0.5rem;
+
+  --shadow-card: 0 1px 2px rgb(21 24 30 / 0.06), 0 8px 24px -12px rgb(21 24 30 / 0.12);
+  --shadow-raised: 0 2px 4px rgb(21 24 30 / 0.08), 0 16px 40px -16px rgb(21 24 30 / 0.2);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  /* One visible focus ring for every interactive element; keyboard users are the demo audience. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Amounts must line up in a column, and never reflow mid-digit. */
+  .money {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /*
+   * The receipt is the one screen meant to leave the browser. Controls, shadows and the off-white
+   * canvas are all screen-only, so they go; the role tints stay, because a badge that prints grey
+   * stops carrying its meaning.
+   */
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      background: #fff;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    main {
+      max-width: none;
+      padding: 0;
+    }
+
+    section,
+    article {
+      break-inside: avoid;
+      box-shadow: none !important;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+  }
+}

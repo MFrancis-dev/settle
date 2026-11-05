@@ -9,5 +9,6 @@ export * from "./money";
 export * from "./invoice";
 export * from "./status";
 export * from "./address";
+export * from "./payout-message";
 export * from "./adapters";
 export * from "./schemas";
