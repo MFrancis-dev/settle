@@ -153,9 +153,16 @@ const CSV_COLUMNS = [
 type CsvColumn = (typeof CSV_COLUMNS)[number];
 type CsvRow = Record<CsvColumn, string | null>;
 
-/** Quotes double, and a field containing a quote, comma or newline is wrapped. Excel agrees. */
+/**
+ * Quotes double, and a field containing a quote, comma or newline is wrapped. Excel agrees.
+ *
+ * A cell that starts with `=`, `+`, `-`, `@` or a tab is prefixed with `'` first: `client_name` and
+ * `deposit_memo` are text someone else typed, and a spreadsheet will *run* a cell that starts that way.
+ */
+const FORMULA_LEAD = /^[=+\-@\t]/;
+
 function csvCell(value: string | null): string {
-  const text = value ?? "";
+  const text = FORMULA_LEAD.test(value ?? "") ? `'${value}` : (value ?? "");
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

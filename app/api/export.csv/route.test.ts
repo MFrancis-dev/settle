@@ -87,6 +87,24 @@ describe("GET /api/export.csv", () => {
     expect(line).toContain('"Acme, ""Big"" Corp"');
   });
 
+  it("does not hand a formula to the spreadsheet", async () => {
+    const { cookie } = await harness.seededInvoice();
+    await CREATE_INVOICE(
+      apiRequest("/api/invoices", {
+        method: "POST",
+        cookie,
+        body: { clientName: "=1+1", items: [{ description: "Work", quantity: "1", unitPrice: "100" }] },
+      }),
+    );
+
+    const { header, body } = await rows(cookie);
+    const line = body.find((l) => l.includes("1+1"));
+    const clientName = line?.split(",")[column(header, "client_name")];
+
+    // The apostrophe is the escape; the cell stays inert whatever opens it.
+    expect(clientName).toBe("'=1+1");
+  });
+
   it("exports only this seller's invoices", async () => {
     const mine = await harness.seededInvoice();
     const theirs = await harness.seededInvoice();
