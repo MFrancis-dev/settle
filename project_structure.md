@@ -83,15 +83,22 @@ components/
 ```
 lib/
 ├─ core/            # pure: money.ts, status.ts (unions + 1Click mapping + transitions),
-│                   # invoice.ts (line math), address.ts (per-chain validators), adapters.ts, schemas.ts
+│                   # invoice.ts (line math), address.ts (per-chain validators), ids.ts (uuid shape
+│                   # for URL params), payout-message.ts (the string signed to authorise a payout
+│                   # change), adapters.ts, schemas.ts
 ├─ oneclick/        # client.ts, tokens.ts (cache), quote.ts (build + verify), status.ts, demo.ts, __fixtures__/
 ├─ near/            # nep413.ts (verify), storage.ts (check + register USDC storage), rpc.ts
 ├─ db/              # schema.ts, client.ts (driver only: picks PGlite or Postgres from a config it is given), queries/
 └─ server/          # env-schema.ts (zod names; no `server-only` marker so tsx scripts can import it),
                     # env.ts (parsed singleton, server-only), db.ts (env → one shared connection),
-                    # session.ts, adapters.ts (real vs demo), rateLimit.ts
+                    # deps.ts (composition root + `installServerDeps`), adapters.ts (real vs demo),
+                    # http.ts (errors → responses), session.ts, auth.ts (session → principal),
+                    # signature.ts (NEP-413 + quote signature), nonces.ts (replay guard),
+                    # rateLimit.ts, pay.ts, invoices.ts, payout.ts, receipts.ts, views.ts
+                    # __fixtures__/routes.ts — PGlite + scripted 1Click + fake RPC for the route tests
 ```
-Tests sit next to source as `*.test.ts`.
+Tests sit next to source as `*.test.ts`. API route tests live beside their `route.ts` and call the
+exported handlers directly, so they exercise the deployed code path rather than a mock of it.
 
 ## 5. `worker/`
 ```
@@ -114,6 +121,10 @@ scripts/seed-demo.ts · scripts/check-env.ts            # check-env prints missi
 | Money math | `lib/core/money.ts` + test |
 | Status / mapping | `lib/core/status.ts` |
 | Address rule for a chain | `lib/core/address.ts` |
+| Id shape check for a URL param | `lib/core/ids.ts` |
+| A decision a route makes (not its parsing) | `lib/server/<area>.ts` — e.g. `pay.ts` |
+| How an error renders as a response | `lib/server/http.ts` |
+| What the API returns to the client | `lib/server/views.ts` |
 | 1Click call | `lib/oneclick/` |
 | NEAR RPC / NEP-413 / storage | `lib/near/` |
 | Table or column | `lib/db/schema.ts` → `pnpm db:generate` |

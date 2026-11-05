@@ -74,6 +74,18 @@ export type Nep413RejectReason =
   | "nonce_too_short"
   | "stale";
 
+/**
+ * Everything a handler can be told back about a signature.
+ * The last two are not cryptography failures: `message_mismatch` means the signed text does not quote
+ * what the request asks for, and `replayed` comes from `lib/server/nonces.ts`, which refuses a nonce it
+ * has already spent. With the recipient check, those are what make "a fresh NEP-413 signature" (§6)
+ * mean something rather than "a signature that happens to be valid".
+ */
+export type SignatureRejection =
+  | Nep413RejectReason
+  | "message_mismatch"
+  | "replayed";
+
 export interface Nep413Checks {
   /** Who the message must name as recipient — pins it to this app (replay across apps). */
   expectedRecipient: string;

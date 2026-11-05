@@ -64,6 +64,14 @@ Rules as implemented in `lib/core/status.ts`:
 - Validators (`lib/core/address.ts`): NEAR account-id rules · EVM `0x`+40 hex with EIP-55 when mixed case (all-lower/all-upper pass unchecked) · Solana base58 decoding to exactly 32 bytes
 - Origin-chain refunds (BTC, TON, …) have no validator yet → S1.7 / #100
 
+## Routes (built in Phase 3)
+- `route.ts` stays thin: zod-validate → `lib/server/<area>.ts` → respond. Codes and payloads come from `lib/server/http.ts` + `views.ts`.
+- Every handler is given `ServerDeps` (`lib/server/deps.ts`); tests install PGlite + a scripted 1Click `fetch` and call the same exports the app calls.
+- A malformed uuid id answers the same 404 as an unknown or foreign one (`lib/core/ids.ts`) — never a 500.
+- Payout changes sign `Settle payout change to <address> on <chain>` (`lib/core/payout-message.ts`); the settings page and `PUT /api/payout` must derive it identically.
+- Quotes: 6/min per `publicId`+IP; status polls: 60/min. Rejection carries `Retry-After`.
+- `POST /api/demo/:action` is Phase 6, not built yet.
+
 ## Data model (amounts numeric(78,0) base units)
 `users` · `payout_destinations` (history) · `invoices` + `invoice_items` · `payment_attempts` (deposit_address uniq, payout_destination_id, quote_raw, signature, status, receipt_token)
 
