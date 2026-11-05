@@ -68,6 +68,7 @@ Installed and verified 2026-11-04 with **pnpm 11** (`packageManager` is pinned; 
 | Typecheck / lint / format | `pnpm typecheck` / `pnpm lint` / `pnpm format` |
 | Tests / E2E | `pnpm test` / `pnpm e2e` |
 | DB | `pnpm db:generate && pnpm db:migrate` |
+| Storage payer (S0.10, 👤 funds it) | `pnpm payer` status · `pnpm payer:generate` local key → `.env` · `pnpm payer:check` read-only balance |
 
 Before saying done: `pnpm typecheck && pnpm lint && pnpm test`. `pnpm demo` must work on a fresh clone with **no `.env`, no keys, no external DB**.
 
