@@ -220,12 +220,6 @@ export function verifyNep413(input: unknown, checks: Nep413Checks): Nep413Result
   return { valid: true, claims };
 }
 
-/** A nonce to hand to the wallet: 32 random bytes, base64, stored server-side for the check. */
-export function createNonce(
-  random: (bytes: Uint8Array) => Uint8Array = (b) => globalThis.crypto.getRandomValues(b),
-): string {
-  return Buffer.from(random(new Uint8Array(NONCE_BYTES))).toString("base64");
-}
 /**
  * The wallet-selector / NEP-413 message fields, as the client sends them.
  *
@@ -360,5 +354,12 @@ export function verifyNep413SignedMessage(
   }
 
   return { valid: true, claims };
+}
+
+/** A nonce to hand to the wallet: 32 random bytes, base64, stored server-side for the check. */
+export function createNonce(
+  random: (bytes: Uint8Array) => Uint8Array = (b) => globalThis.crypto.getRandomValues(b),
+): string {
+  return Buffer.from(random(new Uint8Array(NONCE_BYTES))).toString("base64");
 }
 
