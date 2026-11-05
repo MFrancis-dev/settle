@@ -1,0 +1,166 @@
+{
+  "PENDING_DEPOSIT": {
+    "correlationId": "st-pending-0001",
+    "status": "PENDING_DEPOSIT",
+    "updatedAt": "2026-11-05T09:05:00Z",
+    "swapDetails": {
+      "intentHashes": [],
+      "nearTxHashes": [],
+      "originChainTxHashes": [],
+      "destinationChainTxHashes": []
+    }
+  },
+  "KNOWN_DEPOSIT_TX": {
+    "correlationId": "st-known-000002",
+    "status": "KNOWN_DEPOSIT_TX",
+    "updatedAt": "2026-11-05T09:07:00Z",
+    "swapDetails": {
+      "intentHashes": [],
+      "nearTxHashes": [],
+      "originChainTxHashes": [
+        {
+          "hash": "7SiwnYUbZDMsJT83zUgxFDDHABCDEF123456GHJKLMNO",
+          "explorerUrl": "https://explorer.near.org/transactions/7SiwnYUbZDMsJT83zUgxFDDHABCDEF123456GHJKLMNO"
+        }
+      ],
+      "destinationChainTxHashes": [],
+      "depositedAmount": "2700000000000000000000000",
+      "depositedAmountFormatted": "2.7",
+      "depositedAmountUsd": "10.40"
+    }
+  },
+  "INCOMPLETE_DEPOSIT": {
+    "correlationId": "st-incomp-0003",
+    "status": "INCOMPLETE_DEPOSIT",
+    "updatedAt": "2026-11-05T09:20:00Z",
+    "swapDetails": {
+      "intentHashes": [],
+      "nearTxHashes": [],
+      "originChainTxHashes": [
+        {
+          "hash": "4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX",
+          "explorerUrl": "https://explorer.near.org/transactions/4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX"
+        }
+      ],
+      "destinationChainTxHashes": [],
+      "depositedAmount": "1000000000000000000000000",
+      "depositedAmountFormatted": "1",
+      "depositedAmountUsd": "3.85"
+    }
+  },
+  "PROCESSING": {
+    "correlationId": "st-proces-00004",
+    "status": "PROCESSING",
+    "updatedAt": "2026-11-05T09:22:00Z",
+    "swapDetails": {
+      "intentHashes": ["DU2y6oXjHqRbdvHABCDEF123456GHJKLMNOPQR8StUV"],
+      "nearTxHashes": ["5UhwkZudZFMsRU83zGyxDGwIJKLMNOPQRSTUVWX12345678"],
+      "originChainTxHashes": [
+        {
+          "hash": "4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX",
+          "explorerUrl": "https://explorer.near.org/transactions/4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX"
+        }
+      ],
+      "destinationChainTxHashes": [],
+      "depositedAmount": "2700000000000000000000000"
+    }
+  },
+  "SUCCESS": {
+    "correlationId": "st-succes-0005",
+    "status": "SUCCESS",
+    "updatedAt": "2026-11-05T09:30:00Z",
+    "quoteResponse": {
+      "correlationId": "00000000-0000-4000-8000-settlequote01",
+      "timestamp": "2026-11-05T09:00:00Z",
+      "signature": "ed25519 UNSIGNED FIXTURE",
+      "quoteRequest": {
+        "dry": false,
+        "swapType": "EXACT_OUTPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:wrap.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "10000000",
+        "refundTo": "client.near",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "freelancer.near",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-05T11:00:00Z"
+      },
+      "quote": {
+        "depositAddress": "settle-deposit-0001",
+        "amountIn": "2700000000000000000000000",
+        "amountInFormatted": "2.7",
+        "amountInUsd": "10.40",
+        "minAmountIn": "2650000000000000000000000",
+        "amountOut": "10000000",
+        "amountOutFormatted": "10",
+        "amountOutUsd": "10.00",
+        "minAmountOut": "9900000",
+        "deadline": "2026-11-05T11:00:00Z",
+        "timeEstimate": 45
+      }
+    },
+    "swapDetails": {
+      "intentHashes": ["DU2y6oXjHqRbdvHABCDEF123456GHJKLMNOPQR8StUV"],
+      "nearTxHashes": ["5UhwkZudZFMsRU83zGyxDGwIJKLMNOPQRSTUVWX12345678"],
+      "originChainTxHashes": [
+        {
+          "hash": "4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX",
+          "explorerUrl": "https://explorer.near.org/transactions/4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX"
+        }
+      ],
+      "destinationChainTxHashes": [
+        {
+          "hash": "0x9ae1f3c7d0b5e2a1c4f8b6d3e0a7c5b2d9f1e4a7b0c3d6e9f2a5b8c1d4e7f0a3",
+          "explorerUrl": "https://nearblocks.io/txns/0x9ae1f3c7d0b5e2a1c4f8b6d3e0a7c5b2d9f1e4a7b0c3d6e9f2a5b8c1d4e7f0a3"
+        }
+      ],
+      "amountIn": "2610000000000000000000000",
+      "amountOut": "10000000",
+      "depositedAmount": "2700000000000000000000000",
+      "withdrawFee": "10000",
+      "slippage": 0.33
+    }
+  },
+  "REFUNDED": {
+    "correlationId": "st-refund-0006",
+    "status": "REFUNDED",
+    "updatedAt": "2026-11-05T11:01:00Z",
+    "swapDetails": {
+      "intentHashes": [],
+      "nearTxHashes": [],
+      "originChainTxHashes": [
+        {
+          "hash": "4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX",
+          "explorerUrl": "https://explorer.near.org/transactions/4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX"
+        }
+      ],
+      "destinationChainTxHashes": [],
+      "depositedAmount": "1000000000000000000000000",
+      "refundedAmount": "1000000000000000000000000",
+      "refundedAmountFormatted": "1",
+      "refundedAmountUsd": "3.85",
+      "refundReason": "DEPOSIT_TOO_SMALL"
+    }
+  },
+  "FAILED": {
+    "correlationId": "st-failed-00007",
+    "status": "FAILED",
+    "updatedAt": "2026-11-05T09:40:00Z",
+    "swapDetails": {
+      "intentHashes": ["DU2y6oXjHqRbdvHABCDEF123456GHJKLMNOPQR8StUV"],
+      "nearTxHashes": [],
+      "originChainTxHashes": [
+        {
+          "hash": "4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX",
+          "explorerUrl": "https://explorer.near.org/transactions/4TgvmXtcYELrQT72yVfwCEEIJKLMNOPQR123456STUVWX"
+        }
+      ],
+      "destinationChainTxHashes": [],
+      "depositedAmount": "2700000000000000000000000",
+      "refundedAmount": "2700000000000000000000000",
+      "refundReason": "RELAY_UNAVAILABLE"
+    }
+  }
+}

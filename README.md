@@ -18,6 +18,7 @@ Everything else came with the scaffold in `package.json`; these were chosen whil
 |---|---|---|
 | `@noble/hashes` | keccak256 for the EIP-55 checksum on EVM payout addresses | S1.4 |
 | `bs58` | base58 decode for Solana payout addresses (must be 32 bytes) | S1.4 |
+| `@noble/curves` | ed25519 verify for NEP-413 sign-in, and ed25519 sign for the quote fixtures | S2.4, S2.5 |
 
 ## Our other project
 The same team also built **[Stack](https://github.com/MFrancis-dev/stack)** (track 01, Unstoppable DeFi): an independent project with its own repository, codebase and submission (NEAR HACKATHON rule Q-015).

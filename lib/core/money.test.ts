@@ -65,7 +65,7 @@ describe("money: toBaseUnits", () => {
   });
 
   it("rejects an impossible decimal count", () => {
-    for (const bad of [-1, 1.5, 19, Number.NaN]) {
+    for (const bad of [-1, 1.5, 25, Number.NaN]) {
       expect(() => toBaseUnits("1", bad), String(bad)).toThrow(RangeError);
     }
   });
@@ -99,8 +99,14 @@ describe("money: fromBaseUnits", () => {
     }
   });
 
+  it("carries yoctoNEAR, the smallest unit in the system", () => {
+    // 1Click reports 24 decimals for NEAR-native assets, so the cap has to reach it.
+    expect(toBaseUnits("1", 24)).toBe("1000000000000000000000000");
+    expect(fromBaseUnits(u("20000000000000000000000000"), 24)).toBe("20");
+  });
+
   it("refuses an impossible decimal count", () => {
-    expect(() => fromBaseUnits(u("1"), 19)).toThrow(RangeError);
+    expect(() => fromBaseUnits(u("1"), 25)).toThrow(RangeError);
     expect(() => fromBaseUnits(u("1"), -1)).toThrow(RangeError);
   });
 });

@@ -14,9 +14,9 @@
 | Phase | Target dates | Progress | Status |
 |---|---|---|---|
 | D. Design & docs | Nov 4 | 100% | ✅ done |
-| 0. Setup & verification | Nov 4–5 | 56% | in progress |
+| 0. Setup & verification | Nov 4–5 | 63% | in progress (S0.9 answered from the docs; S0.8, S0.10, S0.12–S0.14 🔍/👤 and S0.16 remain) |
 | 1. Core logic (`lib/core`) | Nov 5–6 | 86% | in progress (S1.1–S1.6 done, S1.7 blocked) |
-| 2. Integrations (1Click, NEAR, DB) | Nov 5–7 | 11% | in progress (schema + migration done) |
+| 2. Integrations (1Click, NEAR, DB) | Nov 5–7 | 90% | in progress (S2.1–S2.9 done; S2.10 spends payer funds, blocked) |
 | 3. API routes | Nov 6–7 | 0% | not started |
 | 4. UI | Nov 7–9 | 0% | not started |
 | 5. Worker | Nov 8 | 0% | not started |
@@ -26,7 +26,7 @@
 | 9. README & public repo | Nov 11–12 | 14% | in progress |
 | 10. Launch: video, post, submission | Nov 12–13 | 0% | not started |
 | 11. After submission | Nov 14–25 | 0% | not started |
-| **Overall (MVP)** | | **~22%** | |
+| **Overall (MVP)** | | **~29%** | |
 
 Phase % = done tasks ÷ non-dropped tasks in that phase. Overall = average of phases 0–10 weighted equally, with D counted.
 
@@ -45,6 +45,7 @@ Phase % = done tasks ÷ non-dropped tasks in that phase. Overall = average of ph
 ## Blockers
 
 - [S1.7] needs the live origin-chain list and #15's answer on overpayment/top-up before choosing per-chain validators or an accept-with-warning · the human's partner JWT (#11) unblocks the docs check · since 2026-11-04
+- [S2.10] sending `storage_deposit` moves real funds from the app's payer account · blocked on S0.10 (👤 create + fund the payer, #13), S0.14 (NEAR signing dep, #17) and an explicit human "yes" (AGENTS.md §7) · tracked as [#103](https://github.com/MFrancis-dev/settle/issues/103) · since 2026-11-05
 
 Format: `- [task id] what blocks it · who can unblock · since date`
 
@@ -72,7 +73,7 @@ Format: `- [task id] what blocks it · who can unblock · since date`
 - [x] **S0.6** [#9](https://github.com/MFrancis-dev/settle/issues/9) `lib/server/env.ts` (zod), `.env.example`, `scripts/check-env.ts` · 2026-11-04: empty `.env` values are treated as unset (demo mode parses clean); `check-env` lists missing names and exits 1 for real mode, never printing values. Split `env-schema.ts` out of `env.ts` because `server-only` throws under `tsx`, which would have broken `pnpm demo`'s seed script.
 - [x] **S0.7** [#10](https://github.com/MFrancis-dev/settle/issues/10) CI: GitHub Actions running typecheck, lint, test; secret scanning (gitleaks) · 2026-11-04: `.github/workflows/ci.yml` — checks job (install, typecheck, lint, test, build) + gitleaks v8.30.1 over full history. Also fixed two broken repo commands: ESLint was linting the generated `next-env.d.ts`, and `pnpm format` errored on generated `drizzle/*.sql` (added `.prettierignore`).
 - [ ] **S0.8** [#11](https://github.com/MFrancis-dev/settle/issues/11) 👤 Register a 1Click partner JWT (partners.near-intents.org) and put it in `.env`
-- [ ] **S0.9** [#12](https://github.com/MFrancis-dev/settle/issues/12) 🔍 Does 1Click storage-register NEAR recipients on USDC? → record in ARCHITECTURE §11 (affects S2.8, S0.10)
+- [x] **S0.9** [#12](https://github.com/MFrancis-dev/settle/issues/12) 🔍 Does 1Click storage-register NEAR recipients on USDC? → record in ARCHITECTURE §11 (affects S2.8, S0.10) · 2026-11-05: **no evidence that it does**, and its low-level `ft_withdraw` intent documents the opposite hazard (a withdrawal to an account with no storage balance is not refunded). App-paid registration stays in scope; recorded in ARCHITECTURE §3.5 and §11. Docs-derived and still unconfirmed by the vendor — the partner JWT (S0.8) is what turns this into a measurement.
 - [ ] **S0.10** [#13](https://github.com/MFrancis-dev/settle/issues/13) 👤 If S0.9 = no: create and fund a small storage-payer NEAR account
 - [x] **S0.11** [#14](https://github.com/MFrancis-dev/settle/issues/14) 🔍 + ⛔ Pick MVP payout assets from `/v0/tokens` (e.g. USDC on NEAR + USDT/USDC on 2–3 chains) → SD-4 · 2026-11-04: SD-4 decided; ids verified from live `/v0/tokens` (ARCHITECTURE §3.2)
 - [ ] **S0.12** [#15](https://github.com/MFrancis-dev/settle/issues/15) 🔍 `/v0/status` enum; top-up after `INCOMPLETE_DEPOSIT`; overpayment behaviour; deposits after deadline → update status mapping
@@ -93,15 +94,16 @@ Format: `- [task id] what blocks it · who can unblock · since date`
 
 ## Phase 2 — Integrations (Nov 5–7)
 
-- [ ] **S2.1** [#25](https://github.com/MFrancis-dev/settle/issues/25) `lib/oneclick/client.ts` + `tokens.ts` (10-min cache)
-- [ ] **S2.2** [#26](https://github.com/MFrancis-dev/settle/issues/26) `quote.ts`: build `EXACT_OUTPUT` quote, dry + real, `verifyQuoteSignature()`
-- [ ] **S2.3** [#27](https://github.com/MFrancis-dev/settle/issues/27) `status.ts`: `/v0/status`, `/v0/deposit/submit`
-- [ ] **S2.4** [#28](https://github.com/MFrancis-dev/settle/issues/28) Recorded fixtures for every status + valid/tampered signatures
-- [ ] **S2.5** [#29](https://github.com/MFrancis-dev/settle/issues/29) `lib/near/nep413.ts`: verify signed messages (nonce, recipient, freshness)
-- [ ] **S2.6** [#30](https://github.com/MFrancis-dev/settle/issues/30) `lib/near/rpc.ts`: `storage_balance_of`
+- [x] **S2.1** [#25](https://github.com/MFrancis-dev/settle/issues/25) `lib/oneclick/client.ts` + `tokens.ts` (10-min cache) · 2026-11-05: our own `fetch` + zod boundary instead of the SDK's axios services (no injection point → tests could not run offline, AGENTS.md §8); paths/keys/bodies copied from SDK 0.1.26, its enums reused as `z.nativeEnum` so parsed values need no cast. Token cache is per-asset, TTL-checked on read, injectable clock. 22 tests (`client.test.ts`, `tokens.test.ts`).
+- [x] **S2.2** [#26](https://github.com/MFrancis-dev/settle/issues/26) `quote.ts`: build `EXACT_OUTPUT` quote, dry + real, `verifyQuoteSignature()` · 2026-11-05: `requestInvoiceQuote()` verifies through the vendor's own `verifyQuoteSignature()` and **throws before returning** when a real quote fails — a `depositAddress` cannot be handed to a caller it never reaches. `dry` keeps the address (preview only) and never enters the DB path. 400 with `try at least <baseUnits>` is lifted onto `OneClickError.minimumBaseUnits` (S0.13's minimums answer). 15 tests.
+- [x] **S2.3** [#27](https://github.com/MFrancis-dev/settle/issues/27) `status.ts`: `/v0/status`, `/v0/deposit/submit` · 2026-11-05: status read + `swapDetails` normalisation, `submitDepositTx` (omits `memo` when null — a memo-less chain must not send an empty string). Unknown status → `malformed_response`, never a silent map. 24 tests.
+- [x] **S2.4** [#28](https://github.com/MFrancis-dev/settle/issues/28) Recorded fixtures for every status + valid/tampered signatures · 2026-11-05: `__fixtures__/{quote-real,quote-dry,statuses,tokens}.json` cover all seven statuses with real per-status money figures. **Not live recordings** — shaped from SDK 0.1.26 and re-signed in-test by a throwaway ed25519 key (`__fixtures__/signing.ts`), which gives both halves of what S2.4 asks: a signature the vendor's verifier accepts, and one that stops verifying when a signed field is edited. Needs S0.8's JWT to replace.
+- [x] **S2.5** [#29](https://github.com/MFrancis-dev/settle/issues/29) `lib/near/nep413.ts`: verify signed messages (nonce, recipient, freshness) · 2026-11-05: verifies the ed25519 signature over `sha256("near:" + payload)` using the **exact bytes the wallet signed** (never a re-serialisation), then recipient, ≥32-byte nonce, `meta.timestamp` freshness, and binding to the account's own access keys. Returns a reason code, not a throw, so a login handler can 401 without leaking. 🔍 the published standard is Borsh + a 4-byte tag; this is the JSON shape Near Intents logins use — documented in the file header, fails closed. 20 tests.
+- [x] **S2.6** [#30](https://github.com/MFrancis-dev/settle/issues/30) `lib/near/rpc.ts`: `storage_balance_of` · 2026-11-05: read-only RPC with a required URL (nothing can point demo mode at a funded network), the base64 double-decode of `call_function`, `view_access_key_list` for S2.5's key binding, and a typed `NearRpcError` kind per failure. A non-JSON body is now an `unexpected_result` instead of a crash. 14 tests.
 - [x] **S2.7** [#31](https://github.com/MFrancis-dev/settle/issues/31) `lib/db/schema.ts` (users, payout_destinations, invoices, invoice_items, payment_attempts) + first migration · 2026-11-04: all 5 tables drafted in the scaffold; migration generated with `pnpm db:generate` → `drizzle/0000_hard_kabuki.sql`, applied and queried on both engines under S0.5
-- [ ] **S2.8** [#32](https://github.com/MFrancis-dev/settle/issues/32) `lib/near/storage.ts`: register USDC storage for payout accounts (skip if S0.9 = yes)
-- [ ] **S2.9** [#33](https://github.com/MFrancis-dev/settle/issues/33) `lib/db/queries/*` per table
+- [x] **S2.8** [#32](https://github.com/MFrancis-dev/settle/issues/32) `lib/near/storage.ts`: register USDC storage for payout accounts (skip if S0.9 = yes) · 2026-11-05: S0.9 came back "1Click does not do it", so this stays. `checkStorageRequirement` reads the contract's own `storage_balance_bounds.min` (never a hardcoded constant) + the account balance; an account that does not exist yet counts as unregistered because a payout address is valid before it is funded. Read-only by design — the spend is S2.10. 12 tests.
+- [x] **S2.9** [#33](https://github.com/MFrancis-dev/settle/issues/33) `lib/db/queries/*` per table · 2026-11-05: users, payout destinations (+change log), invoices (+items, numbering under the unique index with conflict retry), payment attempts. `createPaymentAttempt` refuses a dry quote or a missing address, so no row can point a client at nowhere; `recordAttemptStatus` is idempotent on a re-report and **throws** on a backward move. 45 tests against real PGlite with the real migration applied.
+- [!] **S2.10** [#103](https://github.com/MFrancis-dev/settle/issues/103) new · `storage_deposit` **send** path: sign and submit from `STORAGE_PAYER`, plus the UI's cost confirmation. `buildStorageDepositAction()` already produces the payload. Blocked on S0.10 (a funded payer account) and S0.14 (NEAR signing dep), and it moves real funds from a real account, so it needs an explicit human "yes" (AGENTS.md §7) — deliberately not shipped inside Phase 2.
 
 ## Phase 3 — API routes (Nov 6–7)
 
@@ -200,6 +202,7 @@ Format: `- [task id] what blocks it · who can unblock · since date`
 ## Update log
 One line per contribution, newest first: `YYYY-MM-DD · who/agent · what changed · tasks`
 
+- 2026-11-05 · agent · Built Phase 2 (1Click + NEAR + DB reads, all offline): `lib/oneclick/{client,tokens,quote,status}.ts` on our own `fetch` + zod boundary with the SDK's verifier still authoritative for quotes; `lib/near/{nep413,rpc,storage}.ts`; `lib/db/queries/*` for all five tables. Fixtures for all seven statuses + in-test re-signing. S0.9, S0.12 (partly) and S0.13's minimums answered from the docs and recorded in ARCHITECTURE. **152 new tests in 11 files; the suite is now 236 passing + 1 skipped (Postgres-only), typecheck and lint clean.** Four incidental defects found by tests and fixed at the root: `money.ts` capped decimals at 18 so every yoctoNEAR (24 dp) amount threw; `rpc.ts` called `response.json()` on a body that may not be JSON; `nep413.ts` double-hashed when a wallet sent `prehash` and parsed an untrusted payload unguarded; `storage.ts` asked for a full `minimum` top-up even for a partially registered account. Also `invoices.ts` now trims Postgres's padded `numeric(18,4)` quantity on read. Added `@noble/curves` (README, rule Q-005). Filed S2.10 for the `storage_deposit` send path instead of shipping a fund-moving transaction unreviewed · S0.9, S2.1–S2.6, S2.8, S2.9, new S2.10 ([#103](https://github.com/MFrancis-dev/settle/issues/103))
 - 2026-11-04 · agent · Phase 1 core logic built: `money.ts` bigint base units + half-up, `invoice.ts` line math/totals/numbering (SD-6), `status.ts` monotonic attempt transitions + invoice derivation, `address.ts` NEAR/EIP-55/Solana validators, `schemas.ts` for every API body; 74 unit tests, each rule mutation-checked; `@noble/hashes` + `bs58` added (SD-7, listed in README) · S1.1–S1.6, S1.7 filed
 - 2026-11-04 · agent · Finished the Phase 0 build-out: `lib/db/client.ts` opens + migrates PGlite or Postgres (query proven on both, Postgres via a throwaway local instance), env parsing moved to `lib/server/env-schema.ts` because `server-only` throws under `tsx` (it would have broken `pnpm demo`), `check-env` reports missing names and exits 1 for real mode, CI workflow added (typecheck/lint/test/build + gitleaks v8.30.1). Fixed `pnpm lint` (was linting generated `next-env.d.ts`) and `pnpm format` (errored on generated `drizzle/*.sql` — added `.prettierignore`). Generated `drizzle/0000_hard_kabuki.sql`. 11 tests now pass, up from 0. · S0.5, S0.6, S0.7, S2.7, new S0.16
 - 2026-11-04 · agent · Rewrote `main` history (approved force-push) to drop tool attribution lines from commit messages; every commit's files unchanged · —

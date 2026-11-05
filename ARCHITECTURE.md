@@ -101,7 +101,13 @@ Invoice quote:
 
 Rules: `verifyQuoteSignature()` before showing `depositAddress`; asset ids + decimals from `/v0/tokens` (in-memory cache, 10 min); store the raw quote + signature; after a deposit tx hash is known, `/v0/deposit/submit`.
 
-### 3.3 Status mapping **[verify enum]**
+**Transport (S2.1).** Requests go out through our own `fetch` wrapper (`lib/oneclick/client.ts`) with zod schemas at the boundary, not through the SDK's generated service classes: those drive axios with no injection point, so tests could not run offline (AGENTS.md §8), and they hand back unvalidated JSON (§6). The SDK is still the source of the API types (`z.nativeEnum` over its enums, so a parsed value is assignable without a cast) and of `quoteHash()` / `verifyQuoteSignature()`, which are the parts only the vendor can define. Paths, query keys and bodies were copied from SDK 0.1.26.
+
+**Amount minimums (S2.2).** There is no published minimums table: 1Click rejects at quote time with HTTP 400 and `try at least <baseUnits>`, which `parseTooLowMinimum()` lifts out of the message onto `OneClickError.minimumBaseUnits`, so the UI can offer the smallest valid amount instead of a guess.
+
+**What happens to the difference (read from SDK 0.1.26's own docs, 2026-11-05).** For `EXACT_OUTPUT`: a deposit above `amountIn` is refunded to `refundTo` after the swap; a deposit below `minAmountIn` is refunded by the deadline. `feeUsd` is derived as `amountInUsd − amountOutUsd` and stays display-only (§6).
+
+### 3.3 Status mapping
 
 | 1Click | PaymentAttempt | Invoice |
 |---|---|---|
@@ -115,6 +121,8 @@ Rules: `verifyQuoteSignature()` before showing `depositAddress`; asset ids + dec
 | deadline passed, no deposit | `expired` | `open` |
 
 A second `success` on an already-paid invoice → `overpaid` with both attempts listed.
+
+The seven-value enum is no longer a guess: `SDK_ONECLICK_STATUSES` (read out of the installed SDK, itself generated from the live OpenAPI schema) is asserted equal to `ONECLICK_STATUSES` by a test in `lib/oneclick/status.test.ts`, and all seven are exercised from `__fixtures__/statuses.json`. A status string outside the union is rejected as `malformed_response`, never mapped. `/v0/history` omits `KNOWN_DEPOSIT_TX`, so polling `/v0/status` stays the only reliable read.
 
 `deriveInvoiceStatus(current, cancelled, attempts)` in `lib/core/status.ts` evaluates, in order:
 
@@ -135,7 +143,9 @@ Callers pass **every** attempt for the invoice — a partial list derives a weak
 Idempotency: unique `deposit_address`; status updates are monotonic (never move backwards).
 
 ### 3.5 Payout storage registration
-On setting a USDC-on-NEAR payout: RPC `storage_balance_of(account)` on the USDC contract; if missing, the app's `STORAGE_PAYER` account calls `storage_deposit(account)` **[verify whether 1Click handles this; if so, drop it]**.
+On setting a USDC-on-NEAR payout: RPC `storage_balance_of(account)` on the USDC contract; if missing, the app's `STORAGE_PAYER` account calls `storage_deposit(account)`.
+
+**S0.9 answered from the docs (2026-11-05, still unconfirmed by the vendor):** there is no evidence that 1Click registers NEAR recipients — and its low-level `ft_withdraw` intent documents the opposite hazard: a withdrawal to an account with no storage balance is *not* refunded. So app-paid registration stays in scope (S-B1), and `lib/near/storage.ts` reads the contract's own `storage_balance_bounds.min` plus the account's balance instead of assuming a constant; an account that does not exist yet counts as unregistered, because a payout address is valid before it is funded. `checkStorageRequirement` is read-only — the transaction that spends payer funds is **S2.10**, which needs the funded `STORAGE_PAYER` (S0.10), the NEAR signing dependency (S0.14) and an explicit human "yes" (AGENTS.md §7).
 
 ---
 
@@ -230,6 +240,8 @@ PUBLIC_APP_URL=
 
 ## 9. Testing
 - Unit: money/rounding, status mapping (every value), monotonic transitions, overpaid/paid-after-cancel logic, address validators, quote verification (valid + tampered fixtures), NEP-413 verify.
+- Integration, still offline: every 1Click read and write runs against recorded fixtures in `lib/oneclick/__fixtures__/` through the same `fetch` the live client uses. `quote-real.json`, `quote-dry.json`, `statuses.json` and `tokens.json` are shaped from SDK 0.1.26 and re-signed in-test by a throwaway ed25519 key (`__fixtures__/signing.ts`), which gives both halves S2.4 asks for: a signature the vendor's own `verifyQuoteSignature()` accepts, and one that stops verifying when a signed field is edited. They are **not** live recordings — that needs the partner JWT (S0.8).
+- DB: `lib/db/queries/*` is tested against a real Postgres — PGlite in memory (`memory://`) with the real migration applied per test file. No mocks, no hosted database.
 - API: happy path + validation + auth per route.
 - E2E: PRD §8 journey in demo mode.
 - Manual: one small real payment, recorded for the video (human approval required).
@@ -246,7 +258,7 @@ A tiny NEAR contract where the app records `{invoice_hash, attempt_id, amount, d
 ### What would break?
 | # | Break | Fix |
 |---|---|---|
-| S-B1 | Payout to a NEAR account not registered on USDC → delivery fails/refunds | Storage check + app-paid registration (3.5) 🔍 |
+| S-B1 | Payout to a NEAR account not registered on USDC → delivery fails/refunds | Storage check + app-paid registration (3.5; read-only in S2.8, the spend is S2.10) 🔍 docs say nothing registers recipients — unconfirmed by the vendor |
 | S-B2 | Typo in payout address → permanent loss | Validation, typed twice, chain named, change log |
 | S-B3 | Exchange withdrawal fee → `INCOMPLETE_DEPOSIT` | Warning before sending; clear underpaid screen; top-up if 1Click allows 🔍 |
 | S-B4 | Client switches token, pays both | One active attempt; warning about live old address; `overpaid` |
@@ -255,7 +267,7 @@ A tiny NEAR contract where the app records `{invoice_hash, attempt_id, amount, d
 | S-B7 | 1Click down / no route | Clear message, retry later, never fake a status |
 
 ### Edge cases
-Payment after cancel · overpayment behaviour 🔍 · client already holds the payout asset on the payout chain (same-asset quote may not exist 🔍 → show direct-transfer instructions) · refund address on a memo chain · per-line rounding · payout changed while a quote is live (snapshot) · region not served by 1Click (show error) · invoice total below 1Click minimum 🔍.
+Payment after cancel · overpayment: the excess above `amountIn` is refunded to `refundTo` after the swap (§3.2), so `overpaid` needs no manual step · client already holds the payout asset on the payout chain (same-asset quote may not exist 🔍 → show direct-transfer instructions) · refund address on a memo chain · per-line rounding · payout changed while a quote is live (snapshot) · region not served by 1Click (show error) · invoice total below 1Click minimum (answered: a 400 carrying `try at least N`, surfaced as `minimumBaseUnits` — the minimum-invoice decision #64 is still open).
 
 ### Overengineering avoided
 No contract in MVP · no custody · no relayer (receiving needs no gas) · single app, no monorepo · no queue, two simple loops · no reconcile job.

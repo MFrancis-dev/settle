@@ -20,17 +20,20 @@ Separate repo from **Stack** (track 01). Never import Stack code; README names S
 - **SD-7** Address checks use `@noble/hashes` (keccak256 → EIP-55) and `bs58` (Solana). A chain with no validator is **rejected**, never accepted unchecked
 
 ## 🔍 Verify before coding against
-1. Does 1Click storage-register NEAR recipients on USDC?
-2. `/v0/status` enum; top-up after `INCOMPLETE_DEPOSIT`; overpayment; deposits after deadline
-3. Same-asset quotes (client already holds the payout asset)
-4. Minimum amounts · wallet selector package
+Answered from the docs while building Phase 2 (2026-11-05), still **unconfirmed by the vendor**:
+1. **No evidence** 1Click storage-registers NEAR recipients — its `ft_withdraw` warns a withdrawal to an unregistered account is not refunded → the app keeps paying storage (S2.8 reads, S2.10 spends)
+2. Status enum: exactly the seven values we map, pinned against the installed SDK by a test. Overpayment: the excess above `amountIn` refunds to `refundTo`. A deposit below `minAmountIn` refunds at the deadline. **Still open:** can a client top up after `INCOMPLETE_DEPOSIT`?
+4. Minimums: no table — a 400 saying `try at least <baseUnits>`, surfaced as `OneClickError.minimumBaseUnits`
+
+Still open: 3. same-asset quotes · the wallet selector package and the exact NEP-413 shape it signs (the published standard Borsh-serialises and prepends a 4-byte tag; Near Intents logins use the JSON-payload shape `lib/near/nep413.ts` verifies).
 
 ## Stack
 Next.js 15 + TS strict · Tailwind + shadcn/ui · TanStack Query · zod · Drizzle (PGlite/Postgres) · 1Click SDK ≥ 0.1.24 · wallet selector (NEP-413 sign-in) · vitest + Playwright · pnpm
 
 ## 1Click rules
 - `EXACT_OUTPUT` · destination = payout asset · recipient = payout address · refundTo = client address · deadline per origin chain
-- `verifyQuoteSignature()` before showing `depositAddress`
+- `verifyQuoteSignature()` before showing `depositAddress` — a real quote's address is never returned or stored unverified
+- Calls go through our own `fetch` + zod client (the SDK's services are axios with no injection point, so tests could not run offline); the SDK still supplies the types, `quoteHash()` and the verifier
 - Asset ids + decimals from `/v0/tokens` (cached), never hardcoded
 - No quote on page load; "Get payment address" button only; rate limited
 - One active real attempt per invoice
@@ -55,7 +58,7 @@ Rules as implemented in `lib/core/status.ts`:
 - A read that shows no success never un-pays a settled invoice. Callers pass **every** attempt for the invoice.
 
 ## Payout destination rules
-- Default USDC on NEAR to the signed-in account; storage-registered by the app if needed
+- Default USDC on NEAR to the signed-in account; storage-registered by the app if needed (cost read from `storage_balance_bounds`, never hardcoded; an account that does not exist yet counts as unregistered)
 - Change = fresh NEP-413 signature + typed twice + chain named + change log
 - Each attempt stores the destination snapshot it used
 - Validators (`lib/core/address.ts`): NEAR account-id rules · EVM `0x`+40 hex with EIP-55 when mixed case (all-lower/all-upper pass unchecked) · Solana base58 decoding to exactly 32 bytes
