@@ -16,6 +16,8 @@ Separate repo from **Stack** (track 01). Never import Stack code; README names S
 - PGlite for local/demo, Postgres when `DATABASE_URL` is set
 - **SD-4** Payout assets: USDC on NEAR (default), Base, Arbitrum, Solana, Ethereum; USDT on Ethereum, Solana (ids: ARCHITECTURE §3.2)
 - **SD-5** Name: Settle
+- **SD-6** Invoice numbering: `INV-0001`, sequential **per user** (`invoices_user_number_uq`), at least 4 digits, grows past 9999 without truncating
+- **SD-7** Address checks use `@noble/hashes` (keccak256 → EIP-55) and `bs58` (Solana). A chain with no validator is **rejected**, never accepted unchecked
 
 ## 🔍 Verify before coding against
 1. Does 1Click storage-register NEAR recipients on USDC?
@@ -47,10 +49,17 @@ Next.js 15 + TS strict · Tailwind + shadcn/ui · TanStack Query · zod · Drizz
 | deadline, no deposit | expired | open |
 Transitions are monotonic per attempt.
 
+Rules as implemented in `lib/core/status.ts`:
+- An attempt moves forward only; `success`, `refunded`, `failed`, `expired` absorb. `expired` is reachable only from `awaiting_deposit` (the rule is "deadline passed **and no deposit**").
+- Invoice: 2+ successes → `overpaid` · 1 success → `paid`, or `paid_after_cancel` if cancelled · else the strongest live attempt (`underpaid` > `processing` > `payment_detected`) · `refunded`/`failed`/`expired` → `open` · no attempts + `draft` stays `draft`.
+- A read that shows no success never un-pays a settled invoice. Callers pass **every** attempt for the invoice.
+
 ## Payout destination rules
 - Default USDC on NEAR to the signed-in account; storage-registered by the app if needed
 - Change = fresh NEP-413 signature + typed twice + chain named + change log
 - Each attempt stores the destination snapshot it used
+- Validators (`lib/core/address.ts`): NEAR account-id rules · EVM `0x`+40 hex with EIP-55 when mixed case (all-lower/all-upper pass unchecked) · Solana base58 decoding to exactly 32 bytes
+- Origin-chain refunds (BTC, TON, …) have no validator yet → S1.7 / #100
 
 ## Data model (amounts numeric(78,0) base units)
 `users` · `payout_destinations` (history) · `invoices` + `invoice_items` · `payment_attempts` (deposit_address uniq, payout_destination_id, quote_raw, signature, status, receipt_token)

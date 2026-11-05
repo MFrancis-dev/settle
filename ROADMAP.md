@@ -15,7 +15,7 @@
 |---|---|---|---|
 | D. Design & docs | Nov 4 | 100% | ✅ done |
 | 0. Setup & verification | Nov 4–5 | 56% | in progress |
-| 1. Core logic (`lib/core`) | Nov 5–6 | 0% | in progress (drafted) |
+| 1. Core logic (`lib/core`) | Nov 5–6 | 86% | in progress (S1.1–S1.6 done, S1.7 blocked) |
 | 2. Integrations (1Click, NEAR, DB) | Nov 5–7 | 11% | in progress (schema + migration done) |
 | 3. API routes | Nov 6–7 | 0% | not started |
 | 4. UI | Nov 7–9 | 0% | not started |
@@ -26,7 +26,7 @@
 | 9. README & public repo | Nov 11–12 | 14% | in progress |
 | 10. Launch: video, post, submission | Nov 12–13 | 0% | not started |
 | 11. After submission | Nov 14–25 | 0% | not started |
-| **Overall (MVP)** | | **~16%** | |
+| **Overall (MVP)** | | **~22%** | |
 
 Phase % = done tasks ÷ non-dropped tasks in that phase. Overall = average of phases 0–10 weighted equally, with D counted.
 
@@ -44,7 +44,9 @@ Phase % = done tasks ÷ non-dropped tasks in that phase. Overall = average of ph
 
 ## Blockers
 
-_None yet._ Format: `- [task id] what blocks it · who can unblock · since date`
+- [S1.7] needs the live origin-chain list and #15's answer on overpayment/top-up before choosing per-chain validators or an accept-with-warning · the human's partner JWT (#11) unblocks the docs check · since 2026-11-04
+
+Format: `- [task id] what blocks it · who can unblock · since date`
 
 ## Decisions
 
@@ -55,6 +57,8 @@ _None yet._ Format: `- [task id] what blocks it · who can unblock · since date
 | SD-3 | Single Next.js app + worker; PGlite local/demo, Postgres hosted | ✅ decided |
 | SD-4 [#2](https://github.com/MFrancis-dev/settle/issues/2) | Payout assets → **USDC on NEAR (default), Base, Arbitrum, Solana, Ethereum; USDT on Ethereum, Solana** (ids in ARCHITECTURE §3.2) | ✅ decided 2026-11-04 |
 | SD-5 [#3](https://github.com/MFrancis-dev/settle/issues/3) | Working name → **"Settle" is final** | ✅ decided 2026-11-04 |
+| SD-6 [#99](https://github.com/MFrancis-dev/settle/issues/99) | Invoice numbering → **`INV-0001`, sequential per user** (`invoices_user_number_uq`), ≥ 4 digits, grows without truncating | ✅ decided 2026-11-04 |
+| SD-7 | Address validation → **`@noble/hashes` (keccak256, EIP-55) + `bs58` (Solana)**, both exact-pinned and listed in README (rule Q-005); chains without a validator are rejected rather than accepted unchecked | ✅ decided 2026-11-04 |
 
 ---
 
@@ -79,12 +83,13 @@ _None yet._ Format: `- [task id] what blocks it · who can unblock · since date
 
 ## Phase 1 — Core logic `lib/core` (Nov 5–6)
 
-- [ ] **S1.1** [#19](https://github.com/MFrancis-dev/settle/issues/19) `money.ts`: base-unit conversion, formatting, round half-up · tests incl. 0, 1 unit, large
-- [ ] **S1.2** [#20](https://github.com/MFrancis-dev/settle/issues/20) `invoice.ts`: line math, totals, invoice numbering · tests
-- [~] **S1.3** [#21](https://github.com/MFrancis-dev/settle/issues/21) (2026-11-04: unions + 1Click→attempt mapping written; `canTransition`/`deriveInvoiceStatus` stubbed) `status.ts`: unions, 1Click → attempt/invoice mapping, monotonic transitions, overpaid & paid-after-cancel rules · tests for every status
-- [ ] **S1.4** [#22](https://github.com/MFrancis-dev/settle/issues/22) `address.ts`: validators for every MVP payout + refund chain · valid/invalid tests
-- [~] **S1.5** [#23](https://github.com/MFrancis-dev/settle/issues/23) (2026-11-04: interfaces drafted) `adapters.ts`: `QuoteProvider`, `StatusProvider` interfaces
-- [~] **S1.6** [#24](https://github.com/MFrancis-dev/settle/issues/24) (2026-11-04: payout, invoice, pay-quote schemas drafted) `schemas.ts`: zod schemas for all API bodies
+- [x] **S1.1** [#19](https://github.com/MFrancis-dev/settle/issues/19) `money.ts`: base-unit conversion, formatting, round half-up · tests incl. 0, 1 unit, large · 2026-11-04: bigint throughout, `roundHalfUp` by integer remainder, 0/6/18-decimal and 39-digit cases covered (16 tests)
+- [x] **S1.2** [#20](https://github.com/MFrancis-dev/settle/issues/20) `invoice.ts`: line math, totals, invoice numbering · tests · 2026-11-04: line = `quantity` (4 dp ticks) × `unitPrice` rounded half-up; total = sum of rounded lines; numbering per SD-6 (15 tests)
+- [x] **S1.3** [#21](https://github.com/MFrancis-dev/settle/issues/21) (2026-11-04: unions + 1Click→attempt mapping written; `canTransition`/`deriveInvoiceStatus` stubbed) `status.ts`: unions, 1Click → attempt/invoice mapping, monotonic transitions, overpaid & paid-after-cancel rules · tests for every status · 2026-11-04: transition table asserted over all 64 pairs, terminal states absorbing, `expired` only from `awaiting_deposit`, derivation covers overpaid / paid-after-cancel / keep-paid (19 tests)
+- [x] **S1.4** [#22](https://github.com/MFrancis-dev/settle/issues/22) `address.ts`: validators for every MVP payout + refund chain · valid/invalid tests · 2026-11-04: NEAR id, EVM (EIP-55 via `@noble/hashes`), Solana (base58 → 32 bytes via `bs58`) for near/ethereum/base/arbitrum/solana; an unsupported chain is rejected, not waved through (12 tests) · **BTC/TON and other origin-only chains still have no validator** → [#100](https://github.com/MFrancis-dev/settle/issues/100)
+- [x] **S1.5** [#23](https://github.com/MFrancis-dev/settle/issues/23) (2026-11-04: interfaces drafted) `adapters.ts`: `QuoteProvider`, `StatusProvider` interfaces · 2026-11-04: contract documented, `dry` recorded as a request flag rather than a mode
+- [x] **S1.6** [#24](https://github.com/MFrancis-dev/settle/issues/24) (2026-11-04: payout, invoice, pay-quote schemas drafted) `schemas.ts`: zod schemas for all API bodies · 2026-11-04: added submit-tx, sign-in and demo bodies; payout schema runs the address validator and the typed-twice match (12 tests)
+- [ ] **S1.7** [#100](https://github.com/MFrancis-dev/settle/issues/100) `address.ts`: validators (or an accept-with-warning decision) for origin chains outside SD-4 — BTC, TON, Tron — needed for `refundTo` · blocked on #15
 
 ## Phase 2 — Integrations (Nov 5–7)
 
@@ -195,6 +200,7 @@ _None yet._ Format: `- [task id] what blocks it · who can unblock · since date
 ## Update log
 One line per contribution, newest first: `YYYY-MM-DD · who/agent · what changed · tasks`
 
+- 2026-11-04 · agent · Phase 1 core logic built: `money.ts` bigint base units + half-up, `invoice.ts` line math/totals/numbering (SD-6), `status.ts` monotonic attempt transitions + invoice derivation, `address.ts` NEAR/EIP-55/Solana validators, `schemas.ts` for every API body; 74 unit tests, each rule mutation-checked; `@noble/hashes` + `bs58` added (SD-7, listed in README) · S1.1–S1.6, S1.7 filed
 - 2026-11-04 · agent · Finished the Phase 0 build-out: `lib/db/client.ts` opens + migrates PGlite or Postgres (query proven on both, Postgres via a throwaway local instance), env parsing moved to `lib/server/env-schema.ts` because `server-only` throws under `tsx` (it would have broken `pnpm demo`), `check-env` reports missing names and exits 1 for real mode, CI workflow added (typecheck/lint/test/build + gitleaks v8.30.1). Fixed `pnpm lint` (was linting generated `next-env.d.ts`) and `pnpm format` (errored on generated `drizzle/*.sql` — added `.prettierignore`). Generated `drizzle/0000_hard_kabuki.sql`. 11 tests now pass, up from 0. · S0.5, S0.6, S0.7, S2.7, new S0.16
 - 2026-11-04 · agent · Rewrote `main` history (approved force-push) to drop tool attribution lines from commit messages; every commit's files unchanged · —
 - 2026-11-04 · agent · Decisions accepted by the human: SD-4 payout assets, SD-5 name Settle; payout asset ids recorded; update-log actor made neutral · S0.1, S0.11
