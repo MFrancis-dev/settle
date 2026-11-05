@@ -34,7 +34,7 @@
 | App | **Next.js 15** (App Router) + **TypeScript** (strict), Tailwind CSS, shadcn/ui, TanStack Query |
 | Validation | `zod` at every boundary (bodies, env, 1Click responses) |
 | 1Click | `@defuse-protocol/one-click-sdk-typescript` ≥ 0.1.24 (`verifyQuoteSignature`) |
-| NEAR | wallet selector for sign-in **[verify package]**; NEP-413 verification; RPC views (`storage_balance_of`); one app-funded account to pay USDC storage for payout accounts |
+| NEAR | **wallet selector v10** for sign-in (`@near-wallet-selector/{core,react-hook,modal-ui,my-near-wallet,hot-wallet}@10.1.4` — S0.14, see §11); NEP-413 verification; RPC views (`storage_balance_of`); one app-funded account to pay USDC storage for payout accounts |
 | DB | **Drizzle ORM**: **PGlite** for local + demo (zero config), **Postgres** when `DATABASE_URL` is set (hosted) |
 | Worker | `worker/index.ts` run with `tsx`; interval loops; long-running host (not serverless) |
 | Address validation | per-chain validators (EVM checksum, NEAR account rules, others via a small, listed library) |
@@ -271,3 +271,34 @@ Payment after cancel · overpayment: the excess above `amountIn` is refunded to 
 
 ### Overengineering avoided
 No contract in MVP · no custody · no relayer (receiving needs no gas) · single app, no monorepo · no queue, two simple loops · no reconcile job.
+
+### Answered: wallet sign-in packages and NEP-413 (S0.14, 2026-11-05)
+Read off the installed packages (`@near-wallet-selector/*@10.1.4`, `near-api-js@7.4.0`) plus NEP-413,
+and confirmed in code by `lib/near/nep413.test.ts`, which compares our serialiser with the library's
+`serializeNep413` byte for byte and checks a signature from each against the other's verifier.
+
+- **Sign-message support exists**: `wallet.signMessage({message, recipient, nonce: Buffer, callbackUrl?, state?})`
+  → `{accountId, publicKey: "ed25519:…", signature: <base64>, state?}`. Implemented by MyNearWallet,
+  HOT, Meteor, Ledger, WalletConnect, Nightly and Intear. **`ethereum-wallets` (MetaMask) throws** for it,
+  so MetaMask is not a sign-in option for Settle.
+- **The digest is not `"near:" + JSON`.** NEP-413 Borsh-serialises `{tag u32 = 2**31+413, message,
+  nonce[u8;32], recipient, callbackUrl?}`, and the wallet signs `sha256` of those bytes — so the JSON shape
+  `verifyNep413` was built on cannot come from a wallet-selector wallet. `lib/near/nep413.ts` now verifies
+  both shapes and nothing else does: `verifyNep413SignedMessage` for the standard one (which is what real
+  sign-in posts), `verifyNep413` for the JSON/RAAT convention our own signed fixtures produce.
+  Nothing sends the standard shape yet, because the client that would is Phase 4.
+- **A caller passes only the fields the signature covers.** `accountId` and the wallet's echoed `state` are
+  not in the payload, so a handler strips them before verifying — otherwise an unsigned field could sit
+  next to a signed one and read like part of the claim.
+- **`signIn({messagePayload})` is gone in v10**; the signing call above is the only way to prove account control.
+- **Deviation, deliberate:** NEP-413's reference check (`verifyFullKeyBelongsToUser`) insists the signing key
+  is `FullAccess`. Settle checks the stronger thing instead — that the key is in the account's own access-key
+  list (`getAccessKeys`, S2.6) — and does not require FullAccess, because owning a key that *could* sign a
+  message is the authorisation fact; whether the key is full-access only says what else it could do.
+- **Excluded deps:** `@near-wallet-selector/near-api-js` and `…/metamask` no longer exist in v10 (its
+  migration note says to remove `near-api-js`), and `near-api-js@7` dropped `keyStores` while its
+  `engines` ask for node ≥ 22.22.2 against our ≥ 20. We keep our own RPC client (`lib/near/rpc.ts`) and
+  the noble/bs58 primitives, so the wallet packages stay browser-side only.
+- 🔍 still unverified: one real end-to-end login against a live wallet (the byte layout is the library's,
+  the *dialog* — what a wallet shows the human — is not testable offline).
+
