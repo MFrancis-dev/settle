@@ -76,8 +76,12 @@ Conventions every route follows:
 - **A bad id is absent, not invalid.** `:id` and `:attemptId` are checked as uuids before the read
   (`lib/core/ids.ts`); a malformed id, someone else's invoice and a non-existent one all answer the
   same 404 with the same text. Postgres errors on a non-uuid, and an error would leave as a 500.
-- **Rate limits reply with `Retry-After`.** Quotes and status polls each have their own bucket keyed
-  by `publicId` + client IP.
+- **Rate limits reply with `Retry-After`.** Quotes (6/min) and status polls (60/min) each have their
+  own bucket keyed by `publicId` + client IP; the signed-in writes (invoice create, cancel, payout
+  change, sign-in, export) share a third bucket (`AUTH_LIMIT`, 10/min) keyed by action + IP + user id.
+  `limitWrite()` is the first statement in those handlers, so a refused write does no signature or
+  database work at all. All three are in-process token buckets (`lib/server/rateLimit.ts`); a second
+  instance would each keep their own, which is stated rather than hidden.
 
 ### 3.2 1Click integration (`lib/oneclick`)
 
@@ -235,7 +239,10 @@ Dry-run previews are not stored.
 | Fake "paid" | Status only from 1Click, never from the client |
 | Invoice enumeration | Unguessable `public_id`; minimal public data; a malformed id answers as an unknown one |
 | Quote spam | No quote on page load; rate limit per IP + invoice |
+| Write spam / credential stuffing | `AUTH_LIMIT` bucket on every signed-in route, consumed before any work |
+| Payout address leaked through a refusal | The `same_asset` answer names the asset, never the destination address |
 | Secrets | `.env` only; `.env.example` names only |
+| Upstream wording reaching the log | `OneClickError.message` is log-safe; `.detail` is answered to the client and never logged |
 | PII | Off-chain only |
 
 ---
@@ -312,7 +319,7 @@ A tiny NEAR contract where the app records `{invoice_hash, attempt_id, amount, d
 | S-B7 | 1Click down / no route | Clear message, retry later, never fake a status |
 
 ### Edge cases
-Payment after cancel · overpayment: the excess above `amountIn` is refunded to `refundTo` after the swap (§3.2), so `overpaid` needs no manual step · client already holds the payout asset on the payout chain (same-asset quote may not exist 🔍 → show direct-transfer instructions) · refund address on a memo chain · per-line rounding · payout changed while a quote is live (snapshot) · region not served by 1Click (show error) · invoice total below 1Click minimum (answered: a 400 carrying `try at least N`, surfaced as `minimumBaseUnits` — the minimum-invoice decision #64 is still open).
+Payment after cancel (`paid_after_cancel`, `lib/core/status.ts` + route tests) · overpayment: the excess above `amountIn` is refunded to `refundTo` after the swap (§3.2), so `overpaid` needs no manual step, and **both** attempts are reported — the newest in full, the earlier one as `otherPayments` with status and refunded amount only, never an address or an id belonging to the other payer (S7.2) · short payment: the pay page renders `deposited` and `shortfall` as numbers, because "send the difference" is not actionable without the difference (S7.1) · client already holds the payout asset on the payout chain: refused with `same_asset` **before** a quote is asked for, and — deliberate deviation from the "show direct-transfer instructions" sketch — the answer names the asset and chain, not the seller's destination address, because a pay link is public and handing the destination to anyone holding one is the loss FR-6 exists to prevent (S7.4) · refund address on a memo chain: `unsupportedRefundReason()` says why a refund there is not recoverable, and the token picker lists every excluded network with its reason (S7.5, list is 🔍 ours — 1Click does not publish which origins carry a memo requirement) · per-line rounding (`lib/core/money.ts`) · payout changed while a quote is live: the snapshot holds, and `PUT /api/payout` now answers `openQuotes` — the count of live attempts still pointed at the address just replaced — so the settings page can say so (S7.8) · region not served by 1Click: the upstream refusal is passed through as `invalid_request` with its own wording rather than matched against guessed strings 🔍 (S7.9) · invoice total below 1Click minimum (answered: a 400 carrying `try at least N`, surfaced as `minimumBaseUnits` and rendered by `describeQuoteFailure()` in the token the client picked, S7.6 — no test drives the vendor's real minimum, which needs the partner JWT of S0.8/#11).
 
 ### Overengineering avoided
 No contract in MVP · no custody · no relayer (receiving needs no gas) · single app, no monorepo · no queue, two simple loops · no reconcile job.

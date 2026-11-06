@@ -37,6 +37,7 @@ import { ApiError } from "@/lib/api/client";
 import { usePaymentStatus, usePublicInvoice, useQuote, useSubmitTx, useTokens } from "@/lib/api/queries";
 import type { AttemptView, QuoteView, StatusView } from "@/lib/api/types";
 import type { InvoiceStatus } from "@/lib/core/status";
+import { describeQuoteFailure } from "@/lib/ui/quote-failure";
 import { dateText } from "@/lib/ui/date-text";
 import { usdText } from "@/lib/ui/money-text";
 
@@ -75,7 +76,7 @@ export default function Page() {
       setPreview(await quote.mutateAsync({ originAsset, refundTo: refundTo.trim(), dry: true }));
     } catch (error) {
       setPreview(null);
-      setFailure(quoteFailure(error, invoice));
+      refused(error);
     }
   }
 
@@ -87,8 +88,15 @@ export default function Page() {
       setPreview(null);
       if (result.reused) void invoice.refetch();
     } catch (error) {
-      setFailure(quoteFailure(error, invoice));
+      refused(error);
     }
+  }
+
+  /** One place turns a refusal into words, so both buttons answer the same way. */
+  function refused(error: unknown) {
+    const failure = describeQuoteFailure(error, chosen);
+    if (failure.reopen) void invoice.refetch();
+    setFailure(failure.message);
   }
 
   if (invoice.isPending) {
@@ -340,28 +348,6 @@ function ReportPayment({ onSubmit }: { onSubmit: (txHash: string) => Promise<str
 }
 
 /**
- * A rejected quote never created anything, so the message says what the client can do. A 409 carrying an
- * `attemptId` means an address is already open — re-read the invoice so that address renders instead.
- */
-function quoteFailure(error: unknown, invoice: { refetch(): unknown }): string {
-  if (error instanceof ApiError) {
-    if (error.code === "rate_limited") {
-      return `Too many price requests from here. Try again in ${error.retryAfterS ?? 60} seconds.`;
-    }
-    if (error.code === "conflict" && isRecord(error.details) && "attemptId" in error.details) {
-      void invoice.refetch();
-      return "A payment address for this invoice is already open. Use that one — paying twice would only send the extra back to you.";
-    }
-    return error.message;
-  }
-  return error instanceof Error ? error.message : "The price could not be prepared.";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-/**
  * Before the first poll lands there is nothing fresh to say, so this reports the invoice status with
  * `polled: false` and no reason — "we have not checked yet", never "it is not paid".
  */
@@ -369,6 +355,9 @@ function emptyStatus(invoiceStatus: InvoiceStatus, attempt: AttemptView | null):
   return {
     invoiceStatus,
     attempt,
+    // Nothing has been polled yet, so there is no second payment to report either; the first poll
+    // replaces this whole object, `otherPayments` included.
+    otherPayments: [],
     polled: false,
     pollReason: attempt === null ? "no_attempt" : null,
     paid: false,

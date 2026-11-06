@@ -107,8 +107,10 @@ lib/
                     # (`{ demo: true }` instead cuts the network and lets adapters.ts compose the demo one)
 ├─ api/             # CLIENT side: client.ts (fetch + ApiError), queries.ts (React Query keys, polling,
 │                   # invalidation), types.ts (hand-written mirror of the server's views), receipt-link.ts
-├─ ui/              # CLIENT side, no I/O: status.ts (every status → a sentence + a tone), money-text.ts,
-│                   # date-text.ts, chain.ts, clipboard.ts, config.ts, return-path.ts (`?next=` guard)
+├─ ui/              # CLIENT side, no I/O: status.ts (every status → a sentence + a tone),
+│                   # quote-failure.ts (every quote refusal → the words the pay page shows),
+│                   # money-text.ts, date-text.ts, chain.ts, clipboard.ts, config.ts,
+│                   # return-path.ts (`?next=` guard)
 └─ wallet/          # CLIENT side: selector.ts (one wallet-selector instance), sign-in.ts (NEP-413 body),
                     # payout-signature.ts (the signed payout change), buffer-global.ts
 ```

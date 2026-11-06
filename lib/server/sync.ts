@@ -63,6 +63,9 @@ async function storeUpstream(
     oneclickStatus: upstream.status,
     depositTxHash: upstream.depositTxHashes[0] ?? null,
     deliveryTxHash: upstream.deliveryTxHashes[0] ?? null,
+    depositedAmount: upstream.depositedAmount,
+    refundedAmount: upstream.refundedAmount,
+    refundReason: upstream.refundReason,
     statusRaw: upstream.raw,
     at: new Date(deps.now()),
   });

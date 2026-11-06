@@ -171,6 +171,27 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
             <Money money={attempt.payoutAsset} />
           </dd>
         </div>
+        {/* A short payment is the freelancer's decision to chase, so the exact figure belongs here
+            and not only on the client's screen (S7.1). */}
+        {attempt.shortfall ? (
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-warn">Still owed by the client</dt>
+            <dd className="mt-0.5 text-warn">
+              <Money money={attempt.shortfall} />
+            </dd>
+          </div>
+        ) : null}
+        {attempt.refunded ? (
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-ink-faint">Sent back to the client</dt>
+            <dd className="mt-0.5">
+              <Money money={attempt.refunded} />
+              {attempt.refundReason ? (
+                <span className="ml-2 text-xs text-ink-muted">{attempt.refundReason}</span>
+              ) : null}
+            </dd>
+          </div>
+        ) : null}
         <div className="sm:col-span-2">
           <dt className="text-xs uppercase tracking-wide text-ink-faint">Deposit address</dt>
           <dd className="mt-0.5 flex flex-wrap items-center gap-2">

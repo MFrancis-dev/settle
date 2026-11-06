@@ -6,12 +6,15 @@
  *
  * Radio inputs styled as rows, not a dropdown: the choice is between a handful of things the person
  * already owns, and seeing the network next to each token is what stops them sending from the wrong
- * one. Tokens Settle cannot refund to are left out, because the server would refuse them anyway.
+ * one. Tokens Settle cannot refund to are left out, because the server would refuse them anyway — and
+ * the networks that costs the client are named at the bottom, so a missing token reads as a stated
+ * limit rather than as an oversight (S7.5).
  */
 
 import { useMemo, useState } from "react";
 
 import type { TokenOption } from "@/lib/api/types";
+import { isMemoChain } from "@/lib/core/address";
 import { chainLabel } from "@/lib/ui/chain";
 
 export function TokenPicker({
@@ -33,6 +36,17 @@ export function TokenPicker({
       .filter((token) => search === "" || token.symbol.toLowerCase().includes(search) || chainLabel(token.settleChain ?? token.blockchain).toLowerCase().includes(search))
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
   }, [tokens, query]);
+
+  /** Why the networks that are not offered are not offered — two different reasons, both real. */
+  const excluded = useMemo(() => {
+    const memo = new Set<string>();
+    const unvalidated = new Set<string>();
+    for (const token of tokens) {
+      if (token.refundSupported) continue;
+      (isMemoChain(token.blockchain) ? memo : unvalidated).add(chainLabel(token.blockchain));
+    }
+    return { memo: [...memo].sort(), unvalidated: [...unvalidated].sort() };
+  }, [tokens]);
 
   return (
     <fieldset className="min-w-0">
@@ -85,6 +99,18 @@ export function TokenPicker({
           <li className="text-sm text-ink-muted">No listed token matches that search.</li>
         ) : null}
       </ul>
+
+      {excluded.memo.length + excluded.unvalidated.length > 0 ? (
+        <p className="mt-3 text-xs text-ink-faint">
+          Not offered: {[...excluded.memo, ...excluded.unvalidated].join(", ")}.
+          {excluded.memo.length > 0
+            ? ` A refund on ${excluded.memo.join(" or ")} needs a memo or destination tag Settle has no way to attach, and one sent without it does not come back.`
+            : ""}
+          {excluded.unvalidated.length > 0
+            ? ` Settle cannot yet check a refund address on ${excluded.unvalidated.join(" or ")}, and it will not send money to an address it cannot check.`
+            : ""}
+        </p>
+      ) : null}
     </fieldset>
   );
 }

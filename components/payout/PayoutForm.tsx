@@ -36,7 +36,11 @@ export function PayoutForm({ current }: { current: PayoutView | null }) {
   const [confirm, setConfirm] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ address?: string; addressConfirm?: string }>({});
   const [failure, setFailure] = useState<string | null>(null);
-  const [result, setResult] = useState<{ payout: PayoutView; storage: StorageView | null } | null>(null);
+  const [result, setResult] = useState<{
+    payout: PayoutView;
+    storage: StorageView | null;
+    openQuotes: number;
+  } | null>(null);
 
   const payoutAssets = useMemo(() => tokens.data?.payoutAssets ?? [], [tokens.data]);
   const chosen = useMemo(() => payoutAssets.find((asset) => asset.assetId === assetId) ?? null, [payoutAssets, assetId]);
@@ -74,7 +78,7 @@ export function PayoutForm({ current }: { current: PayoutView | null }) {
       // Signed here, at submit, over this exact address.
       const body = await signPayoutChange(destination);
       const change = await setPayout.mutateAsync(body);
-      setResult({ payout: change.payout, storage: change.storage });
+      setResult({ payout: change.payout, storage: change.storage, openQuotes: change.openQuotes });
       setAddress("");
       setConfirm("");
     } catch (error) {
@@ -188,10 +192,10 @@ function Saved({
   change,
   previous,
 }: {
-  change: { payout: PayoutView; storage: StorageView | null };
+  change: { payout: PayoutView; storage: StorageView | null; openQuotes: number };
   previous: PayoutView | null;
 }) {
-  const { payout, storage } = change;
+  const { payout, storage, openQuotes } = change;
   const same = previous !== null && previous.address === payout.address && previous.assetId === payout.assetId;
   return (
     <Alert tone={storage && storage.checked && storage.registered === false ? "warn" : "success"} title={same ? "Nothing changed" : "Payout address saved"}>
@@ -200,6 +204,14 @@ function Saved({
           ? "That is the address already on your account, so no new entry was added to the change log."
           : `Invoices now settle to ${payout.assetSymbol ?? payout.assetId} on ${chainLabel(payout.chain)} — ${mask(payout.address)}.`}
       </p>
+      {!same && openQuotes > 0 ? (
+        <p>
+          {openQuotes === 1 ? "One payment address is" : `${openQuotes} payment addresses are`} still open
+          and still pay the {previous ? mask(previous.address) : "previous"} address. A change never moves a
+          quote that was already given — if you want that money to come here instead, cancel the invoice
+          and send a new link.
+        </p>
+      ) : null}
       {storage === null ? null : <p>{storageNote(storage)}</p>}
     </Alert>
   );

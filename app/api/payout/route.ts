@@ -9,7 +9,7 @@
 
 import { getServerDeps } from "@/lib/server/deps";
 import { json, route } from "@/lib/server/http";
-import { payoutHistory, requireSession } from "@/lib/server/auth";
+import { limitWrite, payoutHistory, requireSession } from "@/lib/server/auth";
 import { setPayoutFromBody } from "@/lib/server/payout";
 
 export async function GET(request: Request): Promise<Response> {
@@ -24,6 +24,8 @@ export async function PUT(request: Request): Promise<Response> {
   return route(async () => {
     const deps = await getServerDeps();
     const principal = await requireSession(deps, request);
+    // S7.7: before the NEP-413 check and the RPC read that backs it, not after.
+    limitWrite(deps, "payout", request, principal.user.id);
     return json(await setPayoutFromBody(deps, principal, request));
   });
 }

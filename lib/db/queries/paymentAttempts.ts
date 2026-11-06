@@ -10,7 +10,7 @@
  * walk an already-successful attempt back to `awaiting_deposit`.
  */
 
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 
 import type { BaseUnits, QuoteSummary } from "../../core/types";
@@ -24,7 +24,7 @@ import {
 } from "../../core/status";
 import { parseBaseUnits } from "../../core/money";
 import type { Database } from "../client";
-import { paymentAttempts, type PaymentAttempt } from "../schema";
+import { paymentAttempts, invoices, type PaymentAttempt } from "../schema";
 
 /** Everything that can still move: derived from the table, so a new status cannot be forgotten. */
 const LIVE_ATTEMPT_STATUSES: AttemptStatus[] = ATTEMPT_STATUSES.filter(
@@ -41,6 +41,10 @@ const newReceiptToken = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyzABCD
 export interface PaymentAttemptRecord extends PaymentAttempt {
   amountIn: BaseUnits;
   amountOut: BaseUnits;
+  /** What landed on the deposit address, in origin-asset base units; `null` until 1Click reports it. */
+  depositedAmount: BaseUnits | null;
+  /** What went back to `refundTo`, in origin-asset base units; `null` unless it was refunded. */
+  refundedAmount: BaseUnits | null;
 }
 
 export interface CreateAttemptInput {
@@ -58,6 +62,8 @@ function toRecord(row: PaymentAttempt): PaymentAttemptRecord {
     ...row,
     amountIn: parseBaseUnits(row.amountIn),
     amountOut: parseBaseUnits(row.amountOut),
+    depositedAmount: row.depositedAmount === null ? null : parseBaseUnits(row.depositedAmount),
+    refundedAmount: row.refundedAmount === null ? null : parseBaseUnits(row.refundedAmount),
   };
 }
 
@@ -172,6 +178,32 @@ export async function listLiveAttempts(
 }
 
 /**
+ * Live attempts of one seller that were quoted against a *different* payout destination (S7.8).
+ *
+ * An attempt stores the destination it was quoted with, and FR-6 says a payout change applies only
+ * to new quotes — so these are the payments still on their way to the address the seller has just
+ * replaced. The number exists so the settings screen can say it out loud instead of letting a change
+ * look like it moved money that was already in flight.
+ */
+export async function countLiveAttemptsOnOtherDestination(
+  db: Database,
+  input: { userId: string; destinationId: string },
+): Promise<number> {
+  const rows = await db
+    .select({ id: paymentAttempts.id })
+    .from(paymentAttempts)
+    .innerJoin(invoices, eq(paymentAttempts.invoiceId, invoices.id))
+    .where(
+      and(
+        eq(invoices.userId, input.userId),
+        inArray(paymentAttempts.status, LIVE_ATTEMPT_STATUSES),
+        ne(paymentAttempts.payoutDestinationId, input.destinationId),
+      ),
+    );
+  return rows.length;
+}
+
+/**
  * Attempts whose quote deadline has passed with no deposit seen (S5.3).
  *
  * `awaiting_deposit` *is* the "no deposit" half of the rule: the first status 1Click reports after
@@ -229,6 +261,11 @@ export interface RecordStatusInput {
   oneclickStatus?: OneClickStatus;
   depositTxHash?: string | null;
   deliveryTxHash?: string | null;
+  /** Origin-asset base units that landed. Kept when this read does not report them. */
+  depositedAmount?: BaseUnits | null;
+  /** Origin-asset base units sent back to `refundTo`, and why. */
+  refundedAmount?: BaseUnits | null;
+  refundReason?: string | null;
   statusRaw?: unknown;
   receiptToken?: string | null;
   at?: Date;
@@ -266,6 +303,11 @@ export async function recordAttemptStatus(
       oneclickStatus: input.oneclickStatus ?? current.oneclickStatus,
       depositTxHash: input.depositTxHash ?? current.depositTxHash,
       deliveryTxHash: input.deliveryTxHash ?? current.deliveryTxHash,
+      // `?? current.*` rather than a straight overwrite: a poll that reports the status without the
+      // amounts must not erase amounts an earlier poll recorded.
+      depositedAmount: input.depositedAmount ?? current.depositedAmount,
+      refundedAmount: input.refundedAmount ?? current.refundedAmount,
+      refundReason: input.refundReason ?? current.refundReason,
       statusRaw: input.statusRaw ?? current.statusRaw,
       receiptToken: input.receiptToken ?? current.receiptToken,
       updatedAt: at,

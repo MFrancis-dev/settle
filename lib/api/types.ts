@@ -66,6 +66,13 @@ export interface AttemptView {
   quoteDeadline: string;
   depositTxHash: string | null;
   deliveryTxHash: string | null;
+  /** What actually landed on the deposit address, in the origin asset; `null` until it is reported. */
+  deposited: MoneyView | null;
+  /** What went back to the refund address, in the origin asset, and why. */
+  refunded: MoneyView | null;
+  refundReason: string | null;
+  /** What is still owed after a short payment — the number the underpaid screen asks for. */
+  shortfall: MoneyView | null;
   createdAt: string;
   updatedAt: string;
   receiptUrl: string | null;
@@ -102,6 +109,8 @@ export interface StorageView {
 export interface PayoutChange {
   payout: PayoutView;
   changed: boolean;
+  /** Payments already quoted against the destination this change replaced (S7.8). */
+  openQuotes: number;
   storage: StorageView | null;
 }
 
@@ -193,10 +202,21 @@ export interface QuoteView {
 export interface StatusView {
   invoiceStatus: InvoiceStatus;
   attempt: AttemptView | null;
+  /**
+   * Payments on this invoice besides the one above, newest first. Statuses and amounts only — the
+   * pay page is a public read, so another payer's address is never in here.
+   */
+  otherPayments: OtherPayment[];
   polled: boolean;
   pollReason: "no_attempt" | "upstream_not_found" | "upstream_unreachable" | null;
   paid: boolean;
   receiptUrl: string | null;
+}
+
+export interface OtherPayment {
+  status: AttemptStatus;
+  deposited: MoneyView | null;
+  refunded: MoneyView | null;
 }
 
 export interface SubmitResult {
@@ -240,6 +260,7 @@ export type ApiErrorCode =
   | "forbidden"
   | "not_found"
   | "conflict"
+  | "same_asset"
   | "rate_limited"
   | "amount_too_low"
   | "upstream_rejected"

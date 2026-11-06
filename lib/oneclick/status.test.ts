@@ -55,9 +55,8 @@ describe("status union", () => {
     const unknown = { ...structuredClone(statusesFixture.PENDING_DEPOSIT), status: "REVERSED" };
     const { client } = responding(unknown);
     await expect(getExecutionStatus(client, DEPOSIT_ADDRESS)).rejects.toBeInstanceOf(OneClickError);
-    await expect(getExecutionStatus(client, DEPOSIT_ADDRESS)).rejects.toThrow(
-      /unexpected GET \/v0\/status body/,
-    );
+    const error = await getExecutionStatus(client, DEPOSIT_ADDRESS).catch((cause: unknown) => cause);
+    expect((error as OneClickError).detail).toMatch(/unexpected GET \/v0\/status body/);
   });
 });
 

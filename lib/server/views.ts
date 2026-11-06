@@ -9,7 +9,7 @@
  * token list and are `null` when it cannot be read (AGENTS.md §6: never show an estimated unit).
  */
 
-import { fromBaseUnits } from "../core/money";
+import { fromBaseUnits, shortfallBaseUnits } from "../core/money";
 import type { BaseUnits } from "../core/types";
 import type { InvoiceStatus, AttemptStatus } from "../core/status";
 import type { InvoiceRecord } from "../db/queries/invoices";
@@ -128,6 +128,16 @@ export interface AttemptView {
   quoteDeadline: string;
   depositTxHash: string | null;
   deliveryTxHash: string | null;
+  /** What actually landed on the deposit address, in the origin asset; `null` until 1Click reports it. */
+  deposited: MoneyView | null;
+  /** What went back to the client's refund address, in the origin asset, and why. */
+  refunded: MoneyView | null;
+  refundReason: string | null;
+  /**
+   * What is still owed, in the origin asset (S7.1). Non-null only once a deposit has been reported
+   * *and* it came in under the ask — this is the number the underpaid screen tells the client to send.
+   */
+  shortfall: MoneyView | null;
   createdAt: string;
   updatedAt: string;
   receiptUrl: string | null;
@@ -142,6 +152,7 @@ export interface AttemptView {
  */
 export async function attemptView(deps: ServerDeps, row: PaymentAttemptRecord): Promise<AttemptView> {
   const destination = await findDestinationById(deps.db, row.payoutDestinationId);
+  const missing = shortfallBaseUnits(row.amountIn, row.depositedAmount);
 
   return {
     id: row.id,
@@ -156,6 +167,18 @@ export async function attemptView(deps: ServerDeps, row: PaymentAttemptRecord): 
     quoteDeadline: row.quoteDeadline.toISOString(),
     depositTxHash: row.depositTxHash,
     deliveryTxHash: row.deliveryTxHash,
+    deposited: row.depositedAmount
+      ? await moneyView(deps, row.originAsset, row.depositedAmount)
+      : null,
+    refunded: row.refundedAmount
+      ? await moneyView(deps, row.originAsset, row.refundedAmount)
+      : null,
+    refundReason: row.refundReason,
+    // A shortfall of zero is "paid in full", not a shortfall: only show the number when there is one.
+    shortfall:
+      missing !== null && BigInt(missing) > 0n
+        ? await moneyView(deps, row.originAsset, missing)
+        : null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     receiptUrl: row.receiptToken ? receiptUrlFor(deps, row.receiptToken, row.id) : null,

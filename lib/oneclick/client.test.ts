@@ -126,7 +126,9 @@ describe("oneclick/client", () => {
       .catch((cause: unknown) => cause);
     expect(error).toBeInstanceOf(OneClickError);
     expect((error as OneClickError).kind).toBe("malformed_response");
-    expect((error as OneClickError).message).toContain("ok: Required");
+    // The validation report is on `detail`; `message` stays log-safe (S7.10).
+    expect((error as OneClickError).detail).toContain("ok: Required");
+    expect((error as OneClickError).message).toBe("1Click malformed_response (200)");
   });
 
   it("reports a transport failure as unreachable, never as a raw TypeError", async () => {
