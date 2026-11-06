@@ -22,6 +22,7 @@ import { createInvoice } from "../../db/queries/invoices";
 import { setActiveDestination } from "../../db/queries/payoutDestinations";
 import { findUserByNearAccount } from "../../db/queries/users";
 import type { FetchLike } from "../../oneclick/client";
+import { serializeNep413Payload } from "../../near/nep413";
 import type { SignedMessageFields } from "../../core/schemas";
 import { payoutMessage } from "../../core/payout-message";
 import { parseEnv } from "../env-schema";
@@ -139,20 +140,27 @@ function optionals(options: SignOptions): { recipient?: string; nonce?: string }
   };
 }
 
-/** Produce the trio a wallet hands back, signed over the exact `payload` string. */
+/**
+ * Sign a message the way a wallet does: Borsh payload, `sha256` over those exact bytes, base64
+ * signature. The output is what `verifyNep413SignedMessage` rebuilds and checks.
+ */
 export function signClaims(
   signer: Signer,
   options: SignOptions & { message: string },
 ): SignedMessageFields {
-  const payload = JSON.stringify({
+  const recipient = options.recipient ?? APP_RECIPIENT;
+  const nonce = options.nonce ?? freshNonce();
+  const payload = serializeNep413Payload({
     message: options.message,
-    recipient: options.recipient ?? APP_RECIPIENT,
-    nonce: options.nonce ?? freshNonce(),
+    nonce: new Uint8Array(Buffer.from(nonce, "base64")),
+    recipient,
   });
-  const prefixed = new TextEncoder().encode(`near:${payload}`);
+
   return {
-    payload,
-    signature: `ed25519:${bs58.encode(ed25519.sign(sha256(prefixed), signer.secret))}`,
+    message: options.message,
+    recipient,
+    nonce,
+    signature: Buffer.from(ed25519.sign(sha256(payload), signer.secret)).toString("base64"),
     publicKey: signer.publicKey,
   };
 }
