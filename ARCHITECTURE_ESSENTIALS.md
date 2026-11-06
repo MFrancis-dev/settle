@@ -23,9 +23,11 @@ Separate repo from **Stack** (track 01). Never import Stack code; README names S
 Answered from the docs while building Phase 2 (2026-11-05), still **unconfirmed by the vendor**:
 1. **No evidence** 1Click storage-registers NEAR recipients — its `ft_withdraw` warns a withdrawal to an unregistered account is not refunded → the app keeps paying storage (S2.8 reads, S2.10 spends)
 2. Status enum: exactly the seven values we map, pinned against the installed SDK by a test. Overpayment: the excess above `amountIn` refunds to `refundTo`. A deposit below `minAmountIn` refunds at the deadline. **Still open:** can a client top up after `INCOMPLETE_DEPOSIT`?
-4. Minimums: no table — a 400 saying `try at least <baseUnits>`, surfaced as `OneClickError.minimumBaseUnits`
+4. Minimums: no table — a 400 saying `try at least <baseUnits>`, surfaced as `OneClickError.minimumBaseUnits` and **rendered in the client's chosen token** by `lib/ui/quote-failure.ts` (S7.6)
 
-Still open: 3. same-asset quotes · one live end-to-end wallet login (the shape below is the library's code, the wallet's own confirmation dialog is not testable offline).
+Still open: one live end-to-end wallet login (the shape below is the library's code, the wallet's own confirmation dialog is not testable offline).
+
+**Answered 2026-11-06 (S7.4) — same-asset quotes:** refused, not attempted. `lib/server/pay.ts` compares `origin.assetId === destination.assetId` and answers `409 same_asset` naming the asset and chain — it does **not** publish the seller's destination address (PRD §11 sketched "direct-transfer instructions"; a pay link is public, so the address stays private and the client is told to ask).
 
 **Answered 2026-11-05 (S0.14) — wallet sign-in:** `@near-wallet-selector/*@10.1.4`; `wallet.signMessage({message, recipient, nonce: Buffer, callbackUrl?, state?})` → `{accountId, publicKey, signature (base64), state?}`. The signed bytes are **Borsh** `{tag u32 = 2**31+413, message, nonce[u8;32], recipient, callbackUrl?}` and the digest is `sha256` of them — *not* `"near:" + JSON`. Since 2026-11-06 the **request path verifies that shape only** (`verifyNep413SignedMessage`); `verifyNep413` (the JSON convention) stays exported and tested with no caller. MetaMask (`ethereum-wallets`) **throws** on sign-message → not a sign-in option. v10 removed `signIn({messagePayload})` and tells you to drop `near-api-js` (v7 dropped `keyStores`, wants node ≥ 22.22.2) → wallet packages stay client-side, our own RPC + noble/bs58 do the server work.
 
@@ -37,7 +39,7 @@ Next.js 15 + TS strict · Tailwind v4 role tokens, hand-rolled `components/ui/*`
 - `verifyQuoteSignature()` before showing `depositAddress` — a real quote's address is never returned or stored unverified
 - Calls go through our own `fetch` + zod client (the SDK's services are axios with no injection point, so tests could not run offline); the SDK still supplies the types, `quoteHash()` and the verifier
 - Asset ids + decimals from `/v0/tokens` (cached), never hardcoded
-- No quote on page load; "Get payment address" button only; rate limited
+- No quote on page load; "Get payment address" button only; rate limited (quotes 6/min, status 60/min, signed-in writes 10/min via `limitWrite()` — the first statement in the handler, so a refused write does no signature or DB work)
 - One active real attempt per invoice
 - After tx hash: `/v0/deposit/submit`; poll `/v0/status`
 

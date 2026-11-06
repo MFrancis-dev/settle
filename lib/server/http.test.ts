@@ -141,17 +141,17 @@ describe("error envelope", () => {
       status: 502,
       code: "upstream_rejected",
     },
-    { name: "OneClick unreachable", thrown: new OneClickError("unreachable", null, "", "down"), status: 502, code: "upstream_unreachable" },
-    { name: "OneClick 404", thrown: new OneClickError("not_found", 404, "", "gone"), status: 404, code: "not_found" },
+    { name: "OneClick unreachable", thrown: new OneClickError("unreachable", null, "down"), status: 502, code: "upstream_unreachable" },
+    { name: "OneClick 404", thrown: new OneClickError("not_found", 404, "gone"), status: 404, code: "not_found" },
     {
       name: "OneClick amount too low",
-      thrown: new OneClickError("amount_too_low", 400, "", "min", "300001"),
+      thrown: new OneClickError("amount_too_low", 400, "min", "300001"),
       status: 400,
       code: "amount_too_low",
     },
     {
       name: "OneClick refused our JWT",
-      thrown: new OneClickError("unauthorized", 401, "", "bad jwt"),
+      thrown: new OneClickError("unauthorized", 401, "bad jwt"),
       status: 500,
       code: "server_misconfigured",
     },
@@ -186,6 +186,24 @@ describe("error envelope", () => {
     const body = await bodyOf(errorResponse(new Error("connection string leaked")));
 
     expect(JSON.stringify(body)).not.toContain("connection string");
+  });
+
+  it("answers a client with the upstream's wording while keeping it out of the log half (S7.10)", async () => {
+    const thrown = new OneClickError(
+      "invalid_request",
+      400,
+      "no route from nep141:wrap.near to client.near on 0xabc123",
+    );
+
+    // The response may carry it: it is the caller's own request being described.
+    const body = await bodyOf(errorResponse(thrown));
+    expect((body.error as { details: { detail: string } }).details.detail).toContain("no route from");
+
+    // The log may not. Every log site in this repo prints `error.message` — the worker's
+    // `describeFailure`, `lib/server/auth.ts`, the scripts — so `message` is the leak surface.
+    expect(thrown.message).toBe("1Click invalid_request (400)");
+    expect(thrown.message).not.toContain("0xabc123");
+    expect(String(thrown)).not.toContain("0xabc123");
   });
 
   it("keeps details a handler attached", async () => {

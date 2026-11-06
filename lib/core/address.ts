@@ -119,3 +119,45 @@ export function validateAddress(chain: string, address: string): AddressValidati
 export function isSupportedChain(chain: string): chain is SupportedChain {
   return (SUPPORTED_CHAINS as readonly string[]).includes(chain.toLowerCase());
 }
+
+/**
+ * Networks where an address alone is not a destination: the refund also needs a memo, destination
+ * tag or payment id, and one sent without it lands on an exchange's shared account and is gone
+ * (S7.5). Settle has no memo field for a refund, so these are named rather than silently refused.
+ *
+ * 🔍 UNVERIFIED: 1Click does not publish which origins carry a memo requirement, and none of these
+ * chains is in `SUPPORTED_CHAINS` today, so this list only decides *how* a refusal is worded. S0.13
+ * (#16) replaces it with the vendor's own answer.
+ */
+export const MEMO_CHAIN_CODES = [
+  "btc",
+  "bitcoin",
+  "xrp",
+  "xrpl",
+  "xlm",
+  "stellar",
+  "ton",
+  "atom",
+  "cosmos",
+  "eos",
+  "bnb",
+  "bnc",
+] as const;
+
+/** Whether 1Click's own short chain code (`xrpl`, `btc`, …) names a network that needs a memo. */
+export function isMemoChain(blockchain: string): boolean {
+  return (MEMO_CHAIN_CODES as readonly string[]).includes(blockchain.toLowerCase());
+}
+
+/**
+ * Why a chain cannot hold a refund address, in the words a client can act on. Null when the chain
+ * is one Settle validates, so callers never have to invent their own sentence.
+ */
+export function unsupportedRefundReason(blockchain: string): string | null {
+  if (isSupportedChain(blockchain)) return null;
+  const supported = SUPPORTED_CHAINS.join(", ");
+  if (isMemoChain(blockchain)) {
+    return `A refund on ${blockchain} needs a memo or destination tag that Settle cannot attach, and a refund sent without it is not recoverable. Pay from a token on ${supported} instead.`;
+  }
+  return `Settle cannot check a refund address on ${blockchain} yet, and an address it cannot check is not one it will send money back to. Pay from a token on ${supported} instead.`;
+}

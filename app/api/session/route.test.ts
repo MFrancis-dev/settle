@@ -57,6 +57,23 @@ describe("POST /api/session", () => {
     expect((await errorOf(response)).code).toBe("bad_request");
   });
 
+  it("refuses the eleventh sign-in from one caller in a minute, before doing any signature work (S7.7)", async () => {
+    const ip = "198.51.100.7";
+    const statuses: number[] = [];
+
+    // The body would fail validation anyway. What comes back on the eleventh call is the limiter's
+    // 429 rather than the 400, which is the point: a caller guessing signatures is refused without
+    // Settle parsing the body, checking the nonce or reading the NEAR RPC.
+    for (let attempt = 0; attempt < 11; attempt += 1) {
+      const response = await POST(apiRequest("/api/session", { body: { message: "not a sign-in" }, ip }));
+      statuses.push(response.status);
+    }
+
+    expect(statuses.slice(0, 10)).toEqual(Array.from({ length: 10 }, () => 400));
+    expect(statuses[10]).toBe(429);
+    expect((await errorOf(await POST(apiRequest("/api/session", { body: {}, ip })))).code).toBe("rate_limited");
+  });
+
   it("refuses a signed message from a key the account does not own", async () => {
     const stranger = harness.foreignSigner();
     const response = await POST(apiRequest("/api/session", { body: signInBody(stranger) }));

@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 // Roadmap: S1.4
 import {
   SUPPORTED_CHAINS,
+  isMemoChain,
   isSupportedChain,
+  unsupportedRefundReason,
   validateAddress,
   validateEvmAddress,
   validateNearAccount,
@@ -168,5 +170,33 @@ describe("address: validateAddress by chain", () => {
     expect(isSupportedChain("base")).toBe(true);
     expect(isSupportedChain("BASE")).toBe(true);
     expect(isSupportedChain("bitcoin")).toBe(false);
+  });
+});
+
+describe("address: the reason a chain cannot hold a refund (S7.5)", () => {
+  it("says nothing about a chain it can validate", () => {
+    for (const chain of SUPPORTED_CHAINS) expect(unsupportedRefundReason(chain)).toBeNull();
+  });
+
+  it("names the memo, because that is the part that loses the money", () => {
+    const reason = unsupportedRefundReason("xrpl");
+
+    expect(reason).toContain("memo or destination tag");
+    expect(reason).toContain("not recoverable");
+    expect(reason).toContain(SUPPORTED_CHAINS.join(", "));
+  });
+
+  it("says 'we cannot check it' for a chain that is merely unrecognised", () => {
+    const reason = unsupportedRefundReason("tron");
+
+    expect(reason).toContain("cannot check a refund address");
+    expect(reason).not.toContain("memo");
+  });
+
+  it("reads 1Click's chain codes case-insensitively", () => {
+    expect(isMemoChain("BTC")).toBe(true);
+    expect(isMemoChain("stellar")).toBe(true);
+    expect(isMemoChain("near")).toBe(false);
+    expect(isMemoChain("sol")).toBe(false);
   });
 });

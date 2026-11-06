@@ -126,7 +126,7 @@ export function clientMessage(input: {
   pollReason: "no_attempt" | "upstream_not_found" | "upstream_unreachable" | null;
 }): string {
   if (input.status === "underpaid") {
-    return "Less arrived than the invoice asked for. Send the difference on this same address, or wait and the shortfall comes back to your refund address.";
+    return "Less arrived than the invoice asked for. Send the difference — the exact amount is below — to this same address, or wait and the shortfall comes back to your refund address.";
   }
   if (input.status === "overpaid") {
     return "More than one payment reached this invoice, so the extra is on its way back to the refund address you gave.";

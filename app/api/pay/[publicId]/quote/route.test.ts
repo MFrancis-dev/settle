@@ -126,7 +126,8 @@ describe("POST /api/pay/:publicId/quote", () => {
   it("refuses a second live quote on the same invoice", async () => {
     const { publicId } = await harness.seededInvoice();
     const opened = await jsonOf(await quote(publicId, quoteBody({ dry: false })));
-    const response = await quote(publicId, quoteBody({ dry: false, originAsset: USDC_ON_NEAR }));
+    // A different refund address makes this a different quote, not a re-ask for the open one.
+    const response = await quote(publicId, quoteBody({ dry: false, refundTo: "second-payer.testnet" }));
     const error = await errorOf(response);
 
     expect(response.status).toBe(409);
@@ -135,6 +136,30 @@ describe("POST /api/pay/:publicId/quote", () => {
       depositAddress: attemptOf(opened).depositAddress,
       originAsset: WNEAR,
     });
+  });
+
+  it("refuses the token the invoice already pays out in, without asking for a quote (S7.4)", async () => {
+    const { publicId } = await harness.seededInvoice({ destinationAddress: "seller-payout.testnet" });
+    const response = await quote(publicId, quoteBody({ originAsset: USDC_ON_NEAR }));
+    const error = await errorOf(response);
+
+    expect(response.status).toBe(409);
+    expect(error.code).toBe("same_asset");
+    expect(error.details).toMatchObject({ assetId: USDC_ON_NEAR, symbol: "USDC", chain: "near" });
+    // Nothing was asked of 1Click: there is no conversion, so there is no route to price.
+    expect(harness.oneClick.calls.filter((call) => call.path === "/v0/quote")).toHaveLength(0);
+    // §6: the seller's address is not published through a public link, not even to explain a refusal.
+    expect(JSON.stringify(error.details)).not.toContain("seller-payout.testnet");
+  });
+
+  it("names the memo a refund on that chain would need, instead of a bare 'unsupported' (S7.5)", async () => {
+    const { publicId } = await harness.seededInvoice();
+    const error = await errorOf(await quote(publicId, quoteBody({ originAsset: "openocean:BTC" })));
+
+    expect(error.code).toBe("bad_request");
+    expect(error.message).toContain("memo or destination tag");
+    expect(error.details).toMatchObject({ blockchain: "btc" });
+    expect(harness.oneClick.calls.filter((call) => call.path === "/v0/quote")).toHaveLength(0);
   });
 
   it("refuses a cancelled or unsent invoice", async () => {

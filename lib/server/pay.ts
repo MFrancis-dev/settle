@@ -10,8 +10,8 @@
  * `lib/core/status.ts`.
  */
 
-import { SUPPORTED_CHAINS, validateAddress } from "../core/address";
-import type { InvoiceStatus } from "../core/status";
+import { unsupportedRefundReason, validateAddress } from "../core/address";
+import type { AttemptStatus, InvoiceStatus } from "../core/status";
 import type { PayQuoteInput, SubmitTxInput } from "../core/schemas";
 import type { QuoteSummary } from "../core/types";
 import { getInvoiceByPublicId, setInvoiceStatus, type InvoiceRecord } from "../db/queries/invoices";
@@ -229,10 +229,12 @@ async function viewOfQuote(
 /**
  * `POST /api/pay/:publicId/quote` — a preview (`dry`) or the address the client pays into.
  *
- * Four rules from §3.2 and §6 are enforced here:
+ * Five rules from §3.2 and §6 are enforced here:
  * - the payout side comes from the seller's **active destination**, never from the request;
  * - `refundTo` is validated against the *origin* chain, because that is where a short or excess
  *   deposit goes back to — a chain Settle cannot validate is refused rather than guessed at;
+ * - a token that *is* the payout asset is refused before 1Click is asked (S7.4): there is no
+ *   conversion to quote, and the client is told to settle it directly with the seller;
  * - one live attempt per invoice: re-asking for the same quote returns the same address (idempotent),
  *   and asking for a different one while an address is open is a 409, because two live quotes on one
  *   invoice is how a client pays twice and the seller gets an `overpaid` record;
@@ -257,13 +259,24 @@ export async function quote(deps: ServerDeps, call: QuoteCall): Promise<QuoteVie
   const originChain = chainFromCode(origin.blockchain);
   if (originChain === null) {
     // #100: without a validator for that chain we cannot check where the client's refund goes,
-    // and an uncheckable `refundTo` is how a short deposit becomes an unrecoverable one.
-    throw badRequest(
-      `Settle cannot take a refund address on ${origin.blockchain} yet. Choose a token on ${SUPPORTED_CHAINS.join(
-        ", ",
-      )}.`,
-      { blockchain: origin.blockchain },
-    );
+    // and an uncheckable `refundTo` is how a short deposit becomes an unrecoverable one. S7.5 words
+    // the memo chains differently, because there the missing piece is a tag and not a validator.
+    throw badRequest(unsupportedRefundReason(origin.blockchain) ?? `Settle cannot take ${origin.blockchain} yet.`, {
+      blockchain: origin.blockchain,
+    });
+  }
+
+  if (origin.assetId === destination.assetId) {
+    // §11 edge case (S7.4): the client already holds the asset this invoice pays out in, on the
+    // network it pays out on. There is nothing to convert, so 1Click has no quote to give —
+    // 🔍 unverified, and asking anyway would spend partner quota on a route that cannot exist.
+    // The seller's address is *not* in this answer: a pay link is public, and handing the payout
+    // address to anyone holding one is the loss FR-6 exists to prevent. The client is told to ask.
+    throw new HttpError(409, "same_asset", "This invoice is already in the token you picked.", {
+      assetId: origin.assetId,
+      symbol: origin.symbol,
+      chain: originChain,
+    });
   }
 
   const refund = validateAddress(originChain, call.input.refundTo);
@@ -383,10 +396,44 @@ export async function submitTx(
   }
 }
 
-export interface StatusView {
-  invoiceStatus: InvoiceStatus;
+/**
+ * One further payment on this invoice, reduced to what a public read may say about it.
+ * No id, no deposit address, no refund address: those belong to whoever made that payment.
+ */
+export interface OtherPayment {
+  status: AttemptStatus;
+  deposited: MoneyView | null;
+  refunded: MoneyView | null;
+}
+
+async function otherPayment(
+  deps: ServerDeps,
+  row: PaymentAttemptRecord,
+): Promise<OtherPayment> {
+  return {
+    status: row.status,
+    deposited: row.depositedAmount
+      ? await moneyView(deps, row.originAsset, row.depositedAmount)
+      : null,
+    refunded: row.refundedAmount
+      ? await moneyView(deps, row.originAsset, row.refundedAmount)
+      : null,
+  };
+}
+
+export interface StatusView {  invoiceStatus: InvoiceStatus;
   /** Newest attempt, live or terminal — a paid invoice keeps showing the attempt that paid it. */
   attempt: AttemptView | null;
+  /**
+   * Every payment on this invoice besides the one above, newest first (S7.2).
+   *
+   * A client who paid twice has to be told their second payment is on its way back, and the
+   * freelancer's invoice page already lists both attempts — but the pay page cannot, because
+   * `AttemptView` carries a `depositAddress` and this is a public read: another payer's address is
+   * not ours to show. So the extra payments come back as a status and two amounts, and nothing that
+   * identifies them (§6 minimal public data).
+   */
+  otherPayments: OtherPayment[];
   /** False when 1Click could not be reached, so "no update" is never read as "not paid". */
   polled: boolean;
   pollReason: "no_attempt" | "upstream_not_found" | "upstream_unreachable" | null;
@@ -420,6 +467,7 @@ export async function pollStatus(
     return {
       invoiceStatus: invoice.status,
       attempt: null,
+      otherPayments: [],
       polled: false,
       pollReason: "no_attempt",
       paid: false,
@@ -432,6 +480,7 @@ export async function pollStatus(
   return {
     invoiceStatus: sync.invoiceStatus,
     attempt: view,
+    otherPayments: await Promise.all(attempts.slice(1).map((row) => otherPayment(deps, row))),
     polled: sync.polled,
     pollReason: sync.reason,
     paid: ALREADY_PAID.includes(sync.invoiceStatus),

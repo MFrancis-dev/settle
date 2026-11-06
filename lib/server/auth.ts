@@ -24,7 +24,8 @@ import {
 import type { PayoutDestinationRow, User } from "../db/schema";
 import type { Asset } from "../core/types";
 import { signInInput, type SignInInput } from "../core/schemas";
-import { parseJsonBody, unauthorized } from "./http";
+import { clientIp, parseJsonBody, unauthorized } from "./http";
+import { limit } from "./rateLimit";
 import { requireSigned } from "./signature";
 import { readSession, serializeSessionCookie, type SessionPayload } from "./session";
 import type { ServerDeps } from "./deps";
@@ -121,6 +122,23 @@ export async function requireSession(
   const user = await findUserById(deps.db, session.userId);
   if (!user) throw unauthorized("This session no longer matches an account.");
   return { session, user };
+}
+
+/**
+ * The brake on a signed-in write (S7.7). Call it *first* in the handler, before the body is parsed
+ * and before any signature is checked: the point of the limit is that a caller trying a thousand
+ * signatures, or a thousand sign-ins, is refused without Settle doing the work each time.
+ *
+ * Keyed by caller, and by account as well once one is known, so one abusive browser cannot exhaust
+ * the bucket of everybody behind the same proxy.
+ */
+export function limitWrite(
+  deps: ServerDeps,
+  action: string,
+  request: { headers: Headers },
+  userId?: string,
+): void {
+  limit(deps.authLimits, `${action}:${clientIp(request)}${userId === undefined ? "" : `:${userId}`}`);
 }
 
 /** Token metadata is display sugar: an unreachable list must not blank a profile page. */

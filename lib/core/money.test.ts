@@ -7,6 +7,7 @@ import {
   isBaseUnitsString,
   parseBaseUnits,
   roundHalfUp,
+  shortfallBaseUnits,
   sumAmounts,
   toBaseUnits,
   toBaseUnitsRounded,
@@ -132,6 +133,31 @@ describe("money: sumAmounts", () => {
     );
     expect(sumAmounts([u("99999999999999999999999999"), u("1")])).toBe(
       "100000000000000000000000000",
+    );
+  });
+});
+
+describe("money: shortfallBaseUnits", () => {
+  it("says nothing has been reported, rather than reporting zero", () => {
+    // "No deposit recorded" is an absence of signal. Rendering it as a shortfall of the full amount
+    // would tell a client to pay twice for an invoice whose deposit simply has not been seen yet.
+    expect(shortfallBaseUnits(u("1000000"), null)).toBeNull();
+  });
+
+  it("states the exact difference on a short payment", () => {
+    expect(shortfallBaseUnits(u("1800000000"), u("1799999999"))).toBe("1");
+    expect(shortfallBaseUnits(u("1800000000"), u("1000000000"))).toBe("800000000");
+  });
+
+  it("is zero once the ask is met, and never negative on an overpayment", () => {
+    expect(shortfallBaseUnits(u("1800000000"), u("1800000000"))).toBe("0");
+    // An excess is 1Click's own refund, not a negative shortfall the UI could render as "-200".
+    expect(shortfallBaseUnits(u("1800000000"), u("2000000000"))).toBe("0");
+  });
+
+  it("stays exact past the range a double can hold", () => {
+    expect(shortfallBaseUnits(u("100000000000000000000000000"), u("99999999999999999999999999"))).toBe(
+      "1",
     );
   });
 });

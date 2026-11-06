@@ -173,18 +173,13 @@ describe("requestInvoiceQuote (real quote)", () => {
       quoteRequest: { ...quoteDryFixture.quoteRequest, dry: false },
     };
     const { client } = answering(signFixture(noAddress));
-    await expect(
-      requestInvoiceQuote(client, params, {
-        dry: false,
-        managerPublicKey: TEST_MANAGER_PUBLIC_KEY,
-      }),
-    ).rejects.toThrowError(OneClickError);
-    await expect(
-      requestInvoiceQuote(client, params, {
-        dry: false,
-        managerPublicKey: TEST_MANAGER_PUBLIC_KEY,
-      }),
-    ).rejects.toThrow(/must carry a depositAddress/);
+    const error = await requestInvoiceQuote(client, params, {
+      dry: false,
+      managerPublicKey: TEST_MANAGER_PUBLIC_KEY,
+    }).catch((cause: unknown) => cause);
+
+    expect(error).toBeInstanceOf(OneClickError);
+    expect((error as OneClickError).detail).toMatch(/must carry a depositAddress/);
   });
 
   it("reports no fee when the input is worth less than the payout", async () => {

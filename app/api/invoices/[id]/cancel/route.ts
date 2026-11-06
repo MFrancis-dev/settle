@@ -1,6 +1,6 @@
 import { getServerDeps } from "@/lib/server/deps";
 import { json, route } from "@/lib/server/http";
-import { requireSession } from "@/lib/server/auth";
+import { requireSession, limitWrite } from "@/lib/server/auth";
 import { cancel } from "@/lib/server/invoices";
 
 /**
@@ -19,6 +19,7 @@ export async function POST(
     const deps = await getServerDeps();
     const principal = await requireSession(deps, request);
     const { id } = await params;
+    limitWrite(deps, "cancel", request, principal.user.id);
     return json(await cancel(deps, principal, id));
   });
 }

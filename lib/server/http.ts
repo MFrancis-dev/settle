@@ -25,6 +25,7 @@ export type ApiErrorCode =
   | "forbidden"
   | "not_found"
   | "conflict"
+  | "same_asset"
   | "rate_limited"
   | "amount_too_low"
   | "upstream_rejected"
@@ -135,8 +136,10 @@ function mapOneClick(error: OneClickError): HttpError {
         minimumBaseUnits: error.minimumBaseUnits ?? null,
       });
     case "invalid_request":
+      // `detail` is the upstream's own wording about the request we sent. It is safe to *answer*
+      // with and unsafe to *log* — `OneClickError.message` is the log-safe half (S7.10).
       return new HttpError(400, "upstream_rejected", "1Click rejected the request.", {
-        detail: error.message,
+        detail: error.detail,
       });
     case "not_found":
       return new HttpError(404, "not_found", "1Click has no record of this deposit.");

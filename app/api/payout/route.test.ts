@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 // Roadmap: S3.2, S3.8 · the one route that can lose money: a session alone must never move the payout address.
 import { GET, PUT } from "./route";
+import { POST as QUOTE } from "../pay/[publicId]/quote/route";
 import {
   USDC_ON_NEAR,
   apiRequest,
@@ -27,6 +28,17 @@ afterAll(async () => {
 
 function put(cookie: string, body: unknown): Promise<Response> {
   return PUT(apiRequest("/api/payout", { method: "PUT", body, cookie }));
+}
+
+/** Open a real quote on an invoice, so a payout change has an in-flight payment to count. */
+async function openQuote(publicId: string): Promise<void> {
+  const response = await QUOTE(
+    apiRequest(`/api/pay/${publicId}/quote`, {
+      body: { originAsset: "nep141:wrap.near", refundTo: "payer.testnet", dry: false },
+    }),
+    { params: Promise.resolve({ publicId }) },
+  );
+  if (response.status !== 200) throw new Error(`the quote did not open: ${response.status}`);
 }
 
 /** A destination-change body, signed by `signer` over the message the route expects. */
@@ -80,6 +92,23 @@ describe("PUT /api/payout", () => {
 
     expect(again.status).toBe(200);
     expect(await jsonOf(again)).toMatchObject({ changed: false });
+  });
+
+  it("counts the quotes still pointed at the destination it just replaced (S7.8)", async () => {
+    const seeded = await harness.seededInvoice({ destinationAddress: "first.testnet" });
+    await openQuote(seeded.publicId);
+
+    const body = await jsonOf(await put(seeded.cookie, change(seeded.signer, "second.testnet")));
+
+    // FR-6: a change applies to *new* quotes only, so the seller is told how many payments are still
+    // on their way to the address they just replaced — that is a decision for them, not for Settle.
+    expect(body).toMatchObject({ changed: true, openQuotes: 1 });
+  });
+
+  it("reports nothing in flight when no quote is open (S7.8)", async () => {
+    const { signer, cookie } = await harness.seededInvoice();
+
+    expect(await jsonOf(await put(cookie, change(signer, "quiet.testnet")))).toMatchObject({ openQuotes: 0 });
   });
 
   it("refuses when the two address fields disagree", async () => {

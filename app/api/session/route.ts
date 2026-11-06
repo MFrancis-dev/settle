@@ -9,11 +9,14 @@
 import { clearSessionCookie } from "@/lib/server/session";
 import { getServerDeps } from "@/lib/server/deps";
 import { json, route } from "@/lib/server/http";
-import { signInFromBody } from "@/lib/server/auth";
+import { limitWrite, signInFromBody } from "@/lib/server/auth";
 
 export async function POST(request: Request): Promise<Response> {
   return route(async () => {
     const deps = await getServerDeps();
+    // S7.7: the limit runs before the signature does, so guessing nonces costs the caller a 429 and
+    // Settle nothing.
+    limitWrite(deps, "session", request);
     const signedIn = await signInFromBody(deps, request);
 
     return json(

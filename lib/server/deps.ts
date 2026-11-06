@@ -18,7 +18,7 @@ import { createPaymentAdapters, managerKeyFor } from "./adapters";
 import { getDatabase } from "./db";
 import { isDemoMode, parseEnv, type Env } from "./env-schema";
 import { createNonceStore, type NonceStore } from "./nonces";
-import { createRateLimiter, QUOTE_LIMIT, STATUS_LIMIT, type RateLimiter } from "./rateLimit";
+import { AUTH_LIMIT, createRateLimiter, QUOTE_LIMIT, STATUS_LIMIT, type RateLimiter } from "./rateLimit";
 import {
   createSessionCodec,
   expectedRecipient,
@@ -36,6 +36,8 @@ export interface ServerDeps {
   readonly nonces: NonceStore;
   readonly quoteLimits: RateLimiter;
   readonly statusLimits: RateLimiter;
+  /** The brake on signed-in writes (S7.7): sign-in, payout change, invoice create/cancel, export. */
+  readonly authLimits: RateLimiter;
   /** `url` is `NEAR_RPC_URL`; the reads below fail closed with `not_configured` when it is unset. */
   readonly nearRpc: NearRpcConfig;
   /** Override for the USDC-on-NEAR contract id; otherwise resolved from the token list. */
@@ -106,6 +108,7 @@ export function createServerDeps(config: ServerDepsConfig): ServerDeps {
     nonces: createNonceStore({ now }),
     quoteLimits: createRateLimiter({ ...QUOTE_LIMIT, now }),
     statusLimits: createRateLimiter({ ...STATUS_LIMIT, now }),
+    authLimits: createRateLimiter({ ...AUTH_LIMIT, now }),
     nearRpc,
     usdcContractId: env.USDC_CONTRACT_ID ?? null,
     managerPublicKey: managerKeyFor(env),

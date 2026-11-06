@@ -95,6 +95,20 @@ export function formatAmount(amount: BaseUnits, decimals: number): string {
   return fraction === "" ? grouped : `${grouped}.${fraction}`;
 }
 
+/**
+ * What is still owed on a short payment (S7.1), in the origin asset's base units.
+ *
+ * `null` when nothing has landed yet, because "no deposit recorded" is not the same claim as
+ * "0 arrived" — the first is an absence of signal and must not be shown as a shortfall the client
+ * can act on. Clamped at zero: a deposit above the ask is an overpayment, which 1Click refunds on
+ * its own terms, not a negative shortfall.
+ */
+export function shortfallBaseUnits(asked: BaseUnits, deposited: BaseUnits | null): BaseUnits | null {
+  if (deposited === null) return null;
+  const missing = BigInt(asked) - BigInt(deposited);
+  return baseUnits((missing > 0n ? missing : 0n).toString());
+}
+
 /** Sum of base-unit amounts. Empty is 0, not null — an invoice with no lines is invalid elsewhere. */
 export function sumAmounts(amounts: readonly BaseUnits[]): BaseUnits {
   return baseUnits(amounts.reduce((total, part) => total + BigInt(part), 0n).toString());

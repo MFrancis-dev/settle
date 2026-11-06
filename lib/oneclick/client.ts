@@ -50,24 +50,31 @@ export type OneClickErrorKind =
  * `minimumBaseUnits` is only set for `amount_too_low`: 1Click does not publish a minimums
  * table, it rejects at quote time with the smallest accepted amount in the message
  * (ARCHITECTURE.md §11), so we parse it rather than hardcode it.
+ *
+ * **`message` is deliberately log-safe and `detail` is not** (S7.10). Every log site in this repo
+ * prints `error.message` — the worker's `describeFailure`, `lib/server/auth.ts`, the scripts — so
+ * whatever is in `message` ends up in a log. `detail` holds up to 300 characters of the upstream
+ * response body, which can carry a deposit address, an account id or the partner's own wording
+ * about our credentials; it is for a client-facing error response (`lib/server/http.ts`), never for
+ * a log line. Keeping the two apart here means no log site has to remember to redact.
  */
 export class OneClickError extends Error {
   readonly kind: OneClickErrorKind;
   readonly status: number | null;
-  readonly body: unknown;
+  /** Upstream error text, sliced. Read this only to answer a client; never log it. */
+  readonly detail: string;
 
   constructor(
     kind: OneClickErrorKind,
     status: number | null,
-    body: unknown,
     detail: string,
     readonly minimumBaseUnits?: string,
   ) {
-    super(`1Click ${kind} (${status ?? "no response"}): ${detail}`);
+    super(`1Click ${kind} (${status ?? "no response"})`);
     this.name = "OneClickError";
     this.kind = kind;
     this.status = status;
-    this.body = body;
+    this.detail = detail;
   }
 }
 
@@ -162,7 +169,6 @@ export function createOneClickClient(config: OneClickClientConfig = {}): OneClic
       throw new OneClickError(
         "unreachable",
         null,
-        String(cause),
         `could not reach ${url.pathname} (${cause instanceof Error ? cause.name : "unknown"})`,
       );
     } finally {
@@ -181,12 +187,12 @@ export function createOneClickClient(config: OneClickClientConfig = {}): OneClic
 
     if (!response.ok) {
       const status = response.status;
+      const detail = errorText(parsedJson);
       throw new OneClickError(
         kindFor(status, parsedJson),
         status,
-        parsedJson,
-        errorText(parsedJson).slice(0, 300),
-        status === 400 ? parseTooLowMinimum(errorText(parsedJson)) : undefined,
+        detail.slice(0, 300),
+        status === 400 ? parseTooLowMinimum(detail) : undefined,
       );
     }
 
@@ -195,7 +201,6 @@ export function createOneClickClient(config: OneClickClientConfig = {}): OneClic
       throw new OneClickError(
         "malformed_response",
         response.status,
-        parsedJson,
         `unexpected ${options.method} ${options.path} body: ${validated.error.issues
           .map((issue) => `${issue.path.join(".") || "value"}: ${issue.message}`)
           .join(", ")

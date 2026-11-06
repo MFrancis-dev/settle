@@ -109,6 +109,16 @@ export const paymentAttempts = pgTable(
     status: text("status", { enum: ATTEMPT_STATUSES }).notNull().default("awaiting_deposit"),
     depositTxHash: text("deposit_tx_hash"),
     deliveryTxHash: text("delivery_tx_hash"),
+    /**
+     * What actually landed, and what went back, in origin-asset base units (S7.1).
+     * Both are nullable because 1Click reports them at different points: `deposited_amount` once a
+     * deposit is seen, `refunded_amount` once a refund is sent. A short payment is the only way the
+     * app can tell a client *how much* to top up, and the receipt is the only place the exact
+     * settled figures are recorded — so these are stored, never re-derived from `status_raw`.
+     */
+    depositedAmount: baseUnits("deposited_amount"),
+    refundedAmount: baseUnits("refunded_amount"),
+    refundReason: text("refund_reason"),
     statusRaw: jsonb("status_raw"),
     receiptToken: text("receipt_token").unique(),
     createdAt: ts("created_at").notNull().defaultNow(),

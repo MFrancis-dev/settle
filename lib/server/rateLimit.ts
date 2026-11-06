@@ -1,5 +1,5 @@
 /**
- * Token-bucket rate limits for the public routes.
+ * Token-bucket rate limits: the public pay routes and the signed-in writes.
  * Roadmap: S3.5 (quote spam control) · hardened per chain in S7.7 · Spec: ARCHITECTURE.md §6
  *
  * "Quote spam" is the threat this exists for (§6): every real quote costs the freelancer nothing
@@ -9,6 +9,8 @@
  * In-process state, for the reason recorded in `lib/server/nonces.ts`.
  * No `server-only` marker: route tests and the worker import this under plain Node.
  */
+
+import { rateLimited } from "./http";
 
 export interface RateLimitDecision {
   allowed: boolean;
@@ -81,3 +83,17 @@ export const QUOTE_LIMIT = { capacity: 6, windowMs: 60_000 };
 
 /** The open pay page polls about every 3 s; 60/min leaves headroom without being unlimited. */
 export const STATUS_LIMIT = { capacity: 60, windowMs: 60_000 };
+
+/**
+ * Signed-in writes (S7.7): sign-in, payout change, invoice create and cancel, CSV export. Each of
+ * these already needs a valid session — and a payout change needs a fresh wallet signature — so the
+ * bucket is a brake on credential stuffing and on a script hammering one account, not a quota a
+ * person can reach by using the app.
+ */
+export const AUTH_LIMIT = { capacity: 10, windowMs: 60_000 };
+
+/** Consume one token from `limiter`, or throw the 429 the caller must answer with. */
+export function limit(limiter: RateLimiter, key: string): void {
+  const decision = limiter.check(key);
+  if (!decision.allowed) throw rateLimited(decision.retryAfterS);
+}

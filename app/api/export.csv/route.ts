@@ -1,6 +1,6 @@
 import { getServerDeps } from "@/lib/server/deps";
 import { route } from "@/lib/server/http";
-import { requireSession } from "@/lib/server/auth";
+import { requireSession, limitWrite } from "@/lib/server/auth";
 import { assertNotDemo, exportCsv } from "@/lib/server/invoices";
 
 /**
@@ -17,6 +17,9 @@ export async function GET(request: Request): Promise<Response> {
     const deps = await getServerDeps();
     const principal = await requireSession(deps, request);
     assertNotDemo(principal);
+    // S7.7: an export reads every invoice and every attempt of an account, so it is the one read
+    // worth a bucket of its own.
+    limitWrite(deps, "export", request, principal.user.id);
 
     const stamp = new Date(deps.now()).toISOString().slice(0, 10);
     return new Response(await exportCsv(deps, principal), {

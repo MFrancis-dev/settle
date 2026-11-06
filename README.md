@@ -3,7 +3,7 @@
 > Send an invoice. Get paid in dollars, from any token on any chain.
 > NEAR HACKATHON · track 08 Real-World Money (`realworld`)
 
-**Status:** core logic, integrations, every API route, the whole UI, the background worker and demo mode are built and tested (`ROADMAP.md` has the per-phase numbers). What is not done yet: hosting, one real payment end-to-end, and the submission itself. The full README, written for a judge and for an AI screener, is task S9.1–S9.4.
+**Status:** core logic, integrations, every API route, the whole UI, the background worker, demo mode and the edge-case hardening are built and tested (`ROADMAP.md` has the per-phase numbers). What is not done yet: hosting, one real payment end-to-end, and the submission itself. The full README, written for a judge and for an AI screener, is task S9.1–S9.4.
 
 ## Try it
 ```bash
@@ -45,9 +45,18 @@ pnpm worker    # pollPayments every 5 s · expireQuotes every 60 s
 ```
 A payment completes with nobody watching: the worker asks 1Click about every attempt that can still move and writes the answer forward-only, and it expires a quote whose deadline passed **with no deposit** — after one last read, because a deposit that lands in the final seconds is recorded, never expired. This is the *same* write the pay page's status poll makes (`lib/server/sync.ts`), so the two cannot disagree about what a status means. `Ctrl-C` finishes the tick in flight before the process exits. `pnpm demo` does not start it (in demo mode the status answers are a mirror of the database, so polling would only re-read what the simulate button wrote); `pnpm worker` runs the real loops against the demo data whenever you want to watch them.
 
+### The edges
+The cases where a payment goes wrong are written down, not left to a generic error:
+- **short payment** — the pay page states what arrived, what is still owed and what the invoice settles as, in numbers, so "send the difference" is actionable.
+- **paid twice** — both attempts are reported; the newest is shown in full and the earlier one is still counted, and neither one's addresses are handed to the other payer.
+- **the token the invoice already pays out in** — refused with `same_asset` *before* a quote is asked for. The refusal deliberately does not print the seller's payout address: a pay link is public, and handing the destination to anyone holding one is the loss the app exists to prevent.
+- **a chain whose refund needs a memo** — refused with the reason stated (a refund sent without it is not recoverable), and the token picker lists every excluded network under it with the reason.
+- **below the exchange minimum** — the minimum is rendered in the token the client picked, not a bare "too low".
+- **rate limits** — quotes 6/min, status polls 60/min and the signed-in writes 10/min, all in-process token buckets, all answering `429` with `Retry-After`.
+
 ### The tests
 ```bash
-pnpm test     # 600 unit + route + component tests, offline, against PGlite in memory
+pnpm test     # 630 unit + route + component tests (plus 1 skipped), offline, against PGlite in memory
 pnpm e2e      # 4 Playwright tests that start `pnpm demo` themselves and drive a real browser
 ```
 Both run in CI. The E2E journey is the one that proves the demo works the way it is documented to: no `.env`, no network, a fresh database, and a browser that clicks the buttons.

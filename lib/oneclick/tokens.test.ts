@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createOneClickClient, type FetchLike } from "./client";
+import { createOneClickClient, OneClickError, type FetchLike } from "./client";
 import { chainFromCode, codeForChain, createTokenRegistry, TOKEN_CACHE_TTL_MS } from "./tokens";
 import tokensFixture from "./__fixtures__/tokens.json";
 
@@ -83,7 +83,8 @@ describe("oneclick/tokens", () => {
     const error = await registry(responding(200, []))
       .assets()
       .catch((cause: unknown) => cause);
-    expect((error as Error).message).toMatch(/1Click returned no tokens/);
+    expect((error as OneClickError).detail).toMatch(/1Click returned no tokens/);
+    expect((error as OneClickError).message).toBe("1Click malformed_response (200)");
   });
 
   it("translates 1Click chain codes both ways", () => {

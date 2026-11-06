@@ -20,6 +20,7 @@ import { NearRpcError } from "../near/rpc";
 import { checkStorageRequirement, type StorageRequirement } from "../near/storage";
 import { chainFromCode } from "../oneclick/tokens";
 import { getActiveDestination, setActiveDestination } from "../db/queries/payoutDestinations";
+import { countLiveAttemptsOnOtherDestination } from "../db/queries/paymentAttempts";
 import type { PayoutDestinationRow } from "../db/schema";
 import { payoutInput, type PayoutInput } from "../core/schemas";
 import { payoutMessage } from "../core/payout-message";
@@ -45,6 +46,13 @@ export interface PayoutChange {
   payout: PayoutView;
   /** False when the same address was re-submitted: nothing new went into the change log. */
   changed: boolean;
+  /**
+   * Payments already quoted against the destination this change replaced (S7.8). FR-6 says a change
+   * applies to *new* quotes only, so a non-zero count is not a problem to fix — it is the thing the
+   * seller must be told, because those clients are still looking at an address that pays the old
+   * destination and only the seller knows whether to chase them.
+   */
+  openQuotes: number;
   /** Null for a payout this check does not apply to (any non-USDC-on-NEAR destination). */
   storage: StorageView | null;
 }
@@ -133,6 +141,10 @@ export async function setPayout(
   return {
     payout: await toPayoutView(deps, row),
     changed: before?.id !== row.id,
+    openQuotes: await countLiveAttemptsOnOtherDestination(deps.db, {
+      userId: principal.user.id,
+      destinationId: row.id,
+    }),
     storage: await storageFor(deps, input),
   };
 }
