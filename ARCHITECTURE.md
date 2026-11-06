@@ -34,7 +34,7 @@
 | App | **Next.js 15** (App Router) + **TypeScript** (strict), Tailwind CSS, shadcn/ui, TanStack Query |
 | Validation | `zod` at every boundary (bodies, env, 1Click responses) |
 | 1Click | `@defuse-protocol/one-click-sdk-typescript` ≥ 0.1.24 (`verifyQuoteSignature`) |
-| NEAR | **wallet selector v10** for sign-in (`@near-wallet-selector/{core,react-hook,modal-ui,my-near-wallet,hot-wallet}@10.1.4` — S0.14, see §11); NEP-413 verification; RPC views (`storage_balance_of`); one app-funded account to pay USDC storage for payout accounts |
+| NEAR | **wallet selector v10** for sign-in (`@near-wallet-selector/{core,modal-ui,my-near-wallet,hot-wallet}@10.1.4` — S0.14, see §11); NEP-413 verification; RPC views (`storage_balance_of`); one app-funded account to pay USDC storage for payout accounts |
 | DB | **Drizzle ORM**: **PGlite** for local + demo (zero config), **Postgres** when `DATABASE_URL` is set (hosted) |
 | Worker | `worker/index.ts` run with `tsx`; interval loops; long-running host (not serverless) |
 | Address validation | per-chain validators (EVM checksum, NEAR account rules, others via a small, listed library) |
@@ -305,9 +305,9 @@ and confirmed in code by `lib/near/nep413.test.ts`, which compares our serialise
 - **The digest is not `"near:" + JSON`.** NEP-413 Borsh-serialises `{tag u32 = 2**31+413, message,
   nonce[u8;32], recipient, callbackUrl?}`, and the wallet signs `sha256` of those bytes — so the JSON shape
   `verifyNep413` was built on cannot come from a wallet-selector wallet. `lib/near/nep413.ts` now verifies
-  both shapes and nothing else does: `verifyNep413SignedMessage` for the standard one (which is what real
-  sign-in posts), `verifyNep413` for the JSON/RAAT convention our own signed fixtures produce.
-  Nothing sends the standard shape yet, because the client that would is Phase 4.
+  both shapes: `verifyNep413SignedMessage` for the standard one, which is what `POST /api/session` and
+  `PUT /api/payout` accept (the signed body is `{message, recipient, nonce, callbackUrl?, signature (base64),
+  publicKey}`), and `verifyNep413` for the JSON/RAAT convention that no wallet produces.
 - **A caller passes only the fields the signature covers.** `accountId` and the wallet's echoed `state` are
   not in the payload, so a handler strips them before verifying — otherwise an unsigned field could sit
   next to a signed one and read like part of the claim.

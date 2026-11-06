@@ -16,12 +16,14 @@ const LINE = { description: "Landing page", quantity: "3", unitPrice: "800000000
 const INVOICE = { clientName: "Acme", items: [LINE] };
 const CHECKSUMMED = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
 
-/** Schemas only check the *shape* here; `lib/near/nep413.ts` is what parses and verifies it. */
-const PAYOUT_PAYLOAD = JSON.stringify({
+/** Schemas only check the *shape* here; `lib/near/nep413.ts` is what rebuilds and verifies it. */
+const SIGNED = {
   message: "Settle payout change to alice.testnet on near",
   recipient: "localhost:3000",
   nonce: "c3RhdHVtLW5vbmNlLWF0LWxlYXN0LXRoaXJ0eS1ieXRl",
-});
+  signature: "NQxLct",
+  publicKey: "ed25519:7sB2Tn",
+};
 
 describe("schemas: createInvoiceInput", () => {
   it("accepts a minimal and a full invoice", () => {
@@ -78,9 +80,7 @@ describe("schemas: payoutInput", () => {
     chain: "near",
     address: "alice.testnet",
     addressConfirm: "alice.testnet",
-    payload: PAYOUT_PAYLOAD,
-    signature: "NQxLct",
-    publicKey: "ed25519:7sB2Tn",
+    ...SIGNED,
   };
 
   it("accepts a matching pair on a supported chain", () => {
@@ -117,10 +117,12 @@ describe("schemas: payoutInput", () => {
     }
   });
 
-  it("requires the signed payload bytes, not just a signature", () => {
-    const { payload: _omitted, ...withoutPayload } = base;
-    expect(payoutInput.safeParse(withoutPayload).success).toBe(false);
-    expect(payoutInput.safeParse({ ...base, payload: "" }).success).toBe(false);
+  it("requires every field that is inside the signed payload", () => {
+    for (const field of ["message", "recipient", "nonce", "signature", "publicKey"] as const) {
+      const { [field]: _omitted, ...withoutField } = base;
+      expect(payoutInput.safeParse(withoutField).success).toBe(false);
+      expect(payoutInput.safeParse({ ...base, [field]: "" }).success).toBe(false);
+    }
   });
 
   it("refuses a chain it cannot check", () => {
@@ -158,23 +160,9 @@ describe("schemas: the remaining bodies", () => {
   });
 
   it("takes the signed message and the account that signed it", () => {
-    expect(
-      signInInput.safeParse({
-        payload: PAYOUT_PAYLOAD,
-        signature: "NQxLct",
-        publicKey: "ed25519:7sB2Tn",
-        accountId: "alice.testnet",
-      }).success,
-    ).toBe(true);
+    expect(signInInput.safeParse({ ...SIGNED, accountId: "alice.testnet" }).success).toBe(true);
     expect(signInInput.safeParse({ signature: "NQxLct", publicKey: "k" }).success).toBe(false);
-    expect(
-      signInInput.safeParse({
-        payload: PAYOUT_PAYLOAD,
-        signature: "s",
-        publicKey: "k",
-        accountId: "a",
-      }).success,
-    ).toBe(false);
+    expect(signInInput.safeParse({ ...SIGNED, accountId: "a" }).success).toBe(false);
   });
 
   it("only accepts the two demo actions", () => {
