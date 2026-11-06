@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import bs58 from "bs58";
 
 // Roadmap: S3.8
 import type { SignedMessageFields } from "../core/schemas";
@@ -81,12 +80,18 @@ describe("signed message checks", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("rejects a payload that is not JSON", async () => {
-    const result = await checkSignedMessage(harness.deps, signed({ payload: "i am not json" }), {
-      accountId: signer.accountId,
-    });
+  it("rejects a nonce the payload cannot be rebuilt from", async () => {
+    // 33 bytes cannot be written into `[u8; 32]`, so there is no digest to check against at all.
+    const long = Buffer.from(new Uint8Array(33)).toString("base64");
+    expect(
+      await checkSignedMessage(harness.deps, signClaims(signer, { message: "Settle sign-in", nonce: long }), {
+        accountId: signer.accountId,
+      }),
+    ).toEqual({ valid: false, reason: "malformed_payload" });
 
-    expect(result).toEqual({ valid: false, reason: "malformed_payload" });
+    expect(
+      await checkSignedMessage(harness.deps, signed({ message: "" }), { accountId: signer.accountId }),
+    ).toEqual({ valid: false, reason: "malformed_payload" });
   });
 
   it("rejects a body that is missing the signed trio", async () => {
@@ -106,10 +111,10 @@ describe("signed message checks", () => {
     expect(result).toEqual({ valid: false, reason: "bad_public_key" });
   });
 
-  it("rejects a signature of the wrong length", async () => {
+  it("rejects a signature that is not 64 bytes", async () => {
     const result = await checkSignedMessage(
       harness.deps,
-      signed({ signature: `ed25519:${bs58.encode(new Uint8Array(8))}` }),
+      signed({ signature: Buffer.from(new Uint8Array(8)).toString("base64") }),
       { accountId: signer.accountId },
     );
 
@@ -120,7 +125,7 @@ describe("signed message checks", () => {
     const other = harness.newSigner();
     const result = await checkSignedMessage(
       harness.deps,
-      signed({ signature: `ed25519:${bs58.encode(new Uint8Array(64).fill(7))}` }),
+      signed({ signature: Buffer.from(new Uint8Array(64).fill(7)).toString("base64") }),
       { accountId: other.accountId },
     );
 

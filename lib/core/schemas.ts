@@ -37,30 +37,42 @@ export const createInvoiceInput = z.object({
 });
 
 /**
- * The three fields `verifyNep413` takes.
+ * The fields a wallet signs in the published NEP-413 shape — the one `wallet.signMessage()` returns.
  *
- * `payload` is the *exact* string the wallet signed: `verifyNep413` hashes those bytes, so it can
- * never be re-serialised server-side. The nonce is not a separate field — it travels inside the
- * signed payload, and a body copy would be an unsigned second source of truth.
+ * `verifyNep413SignedMessage` rebuilds the Borsh payload from these fields and checks the signature
+ * over it, so every field that is inside the payload has to travel: a body copy of `recipient` or
+ * `callbackUrl` would be an unsigned second source of truth. The nonce is base64 of the 32 random
+ * bytes, which the standard fixes at exactly 32.
  *
  * `signedMessage` is an *object schema* on purpose: `.extend()` below builds request bodies from it,
  * and a helper typed `z.ZodType<T>` would be a different, incompatible class.
  */
 export const signedMessage = z.object({
-  payload: z.string().min(2).max(8192),
-  /** "ed25519:<base58 signature>". */
-  signature: z.string().min(1).max(200),
+  /** The text shown in the wallet's dialog. */
+  message: z.string().min(1).max(4096),
+  /** This app's host; a signature made for another site is refused. */
+  recipient: z.string().min(1).max(64),
+  /** base64 of the 32 random bytes that were signed. */
+  nonce: z.string().min(1).max(64),
+  /** Absent means the wallet signed `None`; an empty string is a *different* payload. */
+  callbackUrl: z.string().min(1).max(2048).optional(),
+  /** base64 of the 64-byte signature. */
+  signature: z.string().min(1).max(128),
   /** "ed25519:<base58 public key>". */
-  publicKey: z.string().min(1).max(200),
+  publicKey: z.string().startsWith("ed25519:"),
 });
 
 /**
- * The same three fields as a `ZodType`, for pulling them out of an already-parsed request body.
+ * The same fields as a `ZodType`, for pulling them out of an already-parsed request body.
  * Not `strict()`: sign-in adds `accountId` and a payout adds the address, and those belong to the
- * route. `verifyNep413` gets exactly the trio, so the extra fields cannot reach the signature check.
+ * route. `verifyNep413SignedMessage` gets exactly the signed set, so the extra fields cannot reach
+ * the signature check.
  */
 export const signedMessageFields = z.object({
-  payload: signedMessage.shape.payload,
+  message: signedMessage.shape.message,
+  recipient: signedMessage.shape.recipient,
+  nonce: signedMessage.shape.nonce,
+  callbackUrl: signedMessage.shape.callbackUrl,
   signature: signedMessage.shape.signature,
   publicKey: signedMessage.shape.publicKey,
 });
