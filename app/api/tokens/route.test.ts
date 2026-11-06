@@ -50,8 +50,12 @@ describe("GET /api/tokens", () => {
       settleChain: "near",
     });
     // 1Click's short codes are translated once, here, so no client has to learn them
-    expect(assets.find((asset) => asset.blockchain === "eth")).toMatchObject({ settleChain: "ethereum" });
-    expect(assets.find((asset) => asset.blockchain === "sol")).toMatchObject({ settleChain: "solana" });
+    expect(assets.find((asset) => asset.blockchain === "eth")).toMatchObject({
+      settleChain: "ethereum",
+    });
+    expect(assets.find((asset) => asset.blockchain === "sol")).toMatchObject({
+      settleChain: "solana",
+    });
   });
 
   it("keeps assets we cannot check a refund address for, but marks them unofferable", async () => {
@@ -83,7 +87,9 @@ describe("GET /api/tokens", () => {
     const second = await tokens();
 
     expect(second).toEqual(first);
-    expect(harness.oneClick.calls.filter((call) => call.path === "/v0/tokens")).toHaveLength(before + 1);
+    expect(harness.oneClick.calls.filter((call) => call.path === "/v0/tokens")).toHaveLength(
+      before + 1,
+    );
   });
 
   it("re-fetches once the cache is older than the TTL", async () => {

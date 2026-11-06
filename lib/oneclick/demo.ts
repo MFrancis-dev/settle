@@ -411,7 +411,10 @@ export function createDemoOneClickFetch(options: DemoOneClickOptions): FetchLike
     // The judge picked a token the recording does not carry, so price it from the live list.
     const upstream = options.upstream;
     const wanted = [String(request.originAsset), String(request.destinationAsset)];
-    if (upstream && wanted.some((assetId) => !knownTokens.some((token) => token.assetId === assetId))) {
+    if (
+      upstream &&
+      wanted.some((assetId) => !knownTokens.some((token) => token.assetId === assetId))
+    ) {
       await handleTokens(`${upstream.baseUrl.replace(/\/+$/, "")}/v0/tokens`, { method: "GET" });
     }
 
@@ -441,7 +444,9 @@ export function createDemoOneClickFetch(options: DemoOneClickOptions): FetchLike
     const path = url.pathname.replace(/\/+$/, "");
     const method = init?.method ?? "GET";
     const body =
-      typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : undefined;
+      typeof init?.body === "string"
+        ? (JSON.parse(init.body) as Record<string, unknown>)
+        : undefined;
 
     if (path === "/v0/tokens" && method === "GET") return handleTokens(input, init);
 

@@ -92,7 +92,10 @@ describe("POST /api/pay/:publicId/submit-tx", () => {
 
   it("refuses an invoice that is already paid", async () => {
     const seeded = await harness.seededInvoice();
-    await harness.db.update(invoices).set({ status: "paid" }).where(eq(invoices.id, seeded.invoiceId));
+    await harness.db
+      .update(invoices)
+      .set({ status: "paid" })
+      .where(eq(invoices.id, seeded.invoiceId));
 
     const response = await submit(seeded.publicId, { txHash: TX_HASH });
 
@@ -192,7 +195,9 @@ describe("POST /api/pay/:publicId/submit-tx", () => {
     harness.oneClick.statuses(statusesFixture.SUCCESS);
 
     const status = await jsonOf(
-      await STATUS(apiRequest(`/api/pay/${publicId}/status`), { params: Promise.resolve({ publicId }) }),
+      await STATUS(apiRequest(`/api/pay/${publicId}/status`), {
+        params: Promise.resolve({ publicId }),
+      }),
     );
 
     expect(status).toMatchObject({ paid: true, invoiceStatus: "paid" });

@@ -188,7 +188,11 @@ export async function requestInvoiceQuote(
   }
 
   if (!opts.dry && !hasAddress) {
-    throw new OneClickError("malformed_response", 200, "a non-dry quote must carry a depositAddress");
+    throw new OneClickError(
+      "malformed_response",
+      200,
+      "a non-dry quote must carry a depositAddress",
+    );
   }
 
   return {

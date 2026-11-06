@@ -50,7 +50,9 @@ describe("PUT /api/payout", () => {
   it("requires a session before anything else", async () => {
     const { signer } = await harness.seededInvoice();
 
-    expect((await put("settle_session=forged.value", change(signer, "anyone.testnet"))).status).toBe(401);
+    expect(
+      (await put("settle_session=forged.value", change(signer, "anyone.testnet"))).status,
+    ).toBe(401);
     expect((await PUT(apiRequest("/api/payout", { method: "PUT", body: {} }))).status).toBe(401);
   });
 
@@ -61,7 +63,11 @@ describe("PUT /api/payout", () => {
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({ changed: true });
-    expect(body.payout).toMatchObject({ chain: "near", address: "new-payout.testnet", active: true });
+    expect(body.payout).toMatchObject({
+      chain: "near",
+      address: "new-payout.testnet",
+      active: true,
+    });
   });
 
   it("reports a USDC storage read it could not run instead of guessing", async () => {
@@ -71,17 +77,27 @@ describe("PUT /api/payout", () => {
     // "we do not know". A false `registered: false` would let the UI promise a payout will land.
     const body = await jsonOf(await put(cookie, change(signer, "another.testnet")));
 
-    expect(body.storage).toMatchObject({ checked: false, registered: null, reason: "unconfigured" });
+    expect(body.storage).toMatchObject({
+      checked: false,
+      registered: null,
+      reason: "unconfigured",
+    });
   });
 
   it("skips the storage check for an asset it does not apply to", async () => {
     const { signer, cookie } = await harness.seededInvoice();
 
     // Only USDC on NEAR needs a storage bond, so a wNEAR destination must not show a bond warning.
-    const body = await jsonOf(await put(cookie, change(signer, "wrapped.testnet", "near", "nep141:wrap.near")));
+    const body = await jsonOf(
+      await put(cookie, change(signer, "wrapped.testnet", "near", "nep141:wrap.near")),
+    );
 
     expect(body.storage).toBeNull();
-    expect(body.payout).toMatchObject({ assetId: "nep141:wrap.near", assetSymbol: "wNEAR", address: "wrapped.testnet" });
+    expect(body.payout).toMatchObject({
+      assetId: "nep141:wrap.near",
+      assetSymbol: "wNEAR",
+      address: "wrapped.testnet",
+    });
   });
 
   it("says nothing changed when the same address is submitted twice", async () => {
@@ -108,7 +124,9 @@ describe("PUT /api/payout", () => {
   it("reports nothing in flight when no quote is open (S7.8)", async () => {
     const { signer, cookie } = await harness.seededInvoice();
 
-    expect(await jsonOf(await put(cookie, change(signer, "quiet.testnet")))).toMatchObject({ openQuotes: 0 });
+    expect(await jsonOf(await put(cookie, change(signer, "quiet.testnet")))).toMatchObject({
+      openQuotes: 0,
+    });
   });
 
   it("refuses when the two address fields disagree", async () => {
@@ -118,7 +136,10 @@ describe("PUT /api/payout", () => {
     const response = await put(cookie, body);
 
     expect(response.status).toBe(400);
-    expect(issuesOf(await errorOf(response))).toContainEqual({ path: "addressConfirm", message: "The two addresses must match" });
+    expect(issuesOf(await errorOf(response))).toContainEqual({
+      path: "addressConfirm",
+      message: "The two addresses must match",
+    });
   });
 
   it("refuses an address that is not valid for the chain", async () => {
@@ -176,7 +197,9 @@ describe("PUT /api/payout", () => {
     const { cookie } = await harness.seededInvoice({ destinationAddress: "keep-me.testnet" });
     const before = await jsonOf(await GET(apiRequest("/api/payout", { cookie })));
     const body = {
-      ...signClaims(harness.foreignSigner(), { message: "Settle payout change to never.testnet on near" }),
+      ...signClaims(harness.foreignSigner(), {
+        message: "Settle payout change to never.testnet on near",
+      }),
       assetId: USDC_ON_NEAR,
       chain: "near",
       address: "never.testnet",
@@ -191,7 +214,9 @@ describe("PUT /api/payout", () => {
 describe("GET /api/payout", () => {
   it("requires a session", async () => {
     expect((await GET(apiRequest("/api/payout"))).status).toBe(401);
-    expect((await GET(apiRequest("/api/payout", { cookie: "settle_session=YWJj.ZGVm" }))).status).toBe(401);
+    expect(
+      (await GET(apiRequest("/api/payout", { cookie: "settle_session=YWJj.ZGVm" }))).status,
+    ).toBe(401);
   });
 
   it("returns the whole change log with exactly one active row", async () => {

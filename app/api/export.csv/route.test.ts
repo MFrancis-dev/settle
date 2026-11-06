@@ -5,7 +5,13 @@ import { eq } from "drizzle-orm";
 import { GET } from "./route";
 import { POST as CREATE_INVOICE } from "../invoices/route";
 import { users } from "@/lib/db/schema";
-import { USDC_ON_NEAR, apiRequest, createRouteHarness, jsonOf, type RouteHarness } from "@/lib/server/__fixtures__/routes";
+import {
+  USDC_ON_NEAR,
+  apiRequest,
+  createRouteHarness,
+  jsonOf,
+  type RouteHarness,
+} from "@/lib/server/__fixtures__/routes";
 
 let harness: RouteHarness;
 
@@ -77,7 +83,10 @@ describe("GET /api/export.csv", () => {
       apiRequest("/api/invoices", {
         method: "POST",
         cookie,
-        body: { clientName: 'Acme, "Big" Corp', items: [{ description: "Work", quantity: "1", unitPrice: "100" }] },
+        body: {
+          clientName: 'Acme, "Big" Corp',
+          items: [{ description: "Work", quantity: "1", unitPrice: "100" }],
+        },
       }),
     );
 
@@ -93,7 +102,10 @@ describe("GET /api/export.csv", () => {
       apiRequest("/api/invoices", {
         method: "POST",
         cookie,
-        body: { clientName: "=1+1", items: [{ description: "Work", quantity: "1", unitPrice: "100" }] },
+        body: {
+          clientName: "=1+1",
+          items: [{ description: "Work", quantity: "1", unitPrice: "100" }],
+        },
       }),
     );
 

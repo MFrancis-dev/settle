@@ -15,7 +15,11 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import bs58 from "bs58";
 
 import tokensFixture from "../../oneclick/__fixtures__/tokens.json";
-import { TEST_MANAGER_PUBLIC_KEY, signFixture, tamperAmountOut } from "../../oneclick/__fixtures__/signing";
+import {
+  TEST_MANAGER_PUBLIC_KEY,
+  signFixture,
+  tamperAmountOut,
+} from "../../oneclick/__fixtures__/signing";
 import type { ConnectedDatabase, PgliteDb } from "../../db/client";
 import { nextAccountId, openTestDatabase } from "../../db/__fixtures__/testdb";
 import { createInvoice } from "../../db/queries/invoices";
@@ -53,7 +57,8 @@ const TEST_ENV = parseEnv(TEST_ENV_BASE);
 const TEST_DEMO_ENV = parseEnv({ ...TEST_ENV_BASE, DEMO_MODE: "1" });
 
 /** The USDC-on-NEAR asset the token fixture lists; `signIn` seeds it as the default destination. */
-export const USDC_ON_NEAR = "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1";
+export const USDC_ON_NEAR =
+  "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1";
 
 /** A stable client address for the per-IP rate limiter; tests that need a second caller pass their own. */
 export const CLIENT_IP = "203.0.113.10";
@@ -110,7 +115,10 @@ export interface RouteHarness {
   /** Runs the real sign-in flow and returns a `Cookie:` header value for subsequent requests. */
   cookieFor(signer: Signer): Promise<string>;
   /** Sign a seller in through the real flow, then seed a destination + invoice for them. */
-  seededInvoice(options?: { status?: "draft" | "open"; destinationAddress?: string }): Promise<SeededInvoice>;
+  seededInvoice(options?: {
+    status?: "draft" | "open";
+    destinationAddress?: string;
+  }): Promise<SeededInvoice>;
   advance(ms: number): void;
   close(): Promise<void>;
 }
@@ -130,9 +138,9 @@ let nonceSequence = 0;
 /** A 32-byte base64 nonce, never reused within a process. */
 export function freshNonce(): string {
   nonceSequence += 1;
-  return Buffer.from(new Uint8Array(32).map((_, index) => (nonceSequence * 31 + index) % 256)).toString(
-    "base64",
-  );
+  return Buffer.from(
+    new Uint8Array(32).map((_, index) => (nonceSequence * 31 + index) % 256),
+  ).toString("base64");
 }
 
 export interface SignOptions {
@@ -187,10 +195,10 @@ export function payoutBody(
   options: SignOptions = {},
 ) {
   return {
-    ...signClaims(
-      signer,
-      { message: options.message ?? payoutMessage(fields.chain, fields.address), ...optionals(options) },
-    ),
+    ...signClaims(signer, {
+      message: options.message ?? payoutMessage(fields.chain, fields.address),
+      ...optionals(options),
+    }),
     ...fields,
     addressConfirm: fields.address,
   };
@@ -214,7 +222,10 @@ function depositAddressFor(sequence: number): string {
 }
 
 /** Echo the request into a quote envelope so a test can assert what Settle actually asked for. */
-function quoteEnvelope(request: Record<string, unknown>, sequence: number): Record<string, unknown> {
+function quoteEnvelope(
+  request: Record<string, unknown>,
+  sequence: number,
+): Record<string, unknown> {
   const dry = request.dry === true;
   const amountOut = String(request.amount);
   // 1 % slippage on the deposit side, mirroring `DEFAULT_SLIPPAGE_BPS`.
@@ -313,7 +324,9 @@ export function createOneClickStub(): OneClickStub {
     tamperedQuote() {
       quoteHandler = (body) => {
         sequence += 1;
-        const signed = signFixture(quoteEnvelope((body ?? {}) as Record<string, unknown>, sequence));
+        const signed = signFixture(
+          quoteEnvelope((body ?? {}) as Record<string, unknown>, sequence),
+        );
         return jsonResponse(tamperAmountOut(signed, "1"));
       };
     },
@@ -358,7 +371,8 @@ export async function createRouteHarness(options: RouteHarnessOptions = {}): Pro
 
   const realFetch = globalThis.fetch;
   if (options.demo) {
-    globalThis.fetch = (() => Promise.reject(new Error("offline: the demo harness has no network"))) as typeof fetch;
+    globalThis.fetch = (() =>
+      Promise.reject(new Error("offline: the demo harness has no network"))) as typeof fetch;
   }
 
   const deps = createServerDeps({
@@ -466,14 +480,16 @@ export function apiRequest(path: string, options: RequestOptions = {}): Request 
 
 export async function jsonOf(response: Response): Promise<Record<string, unknown>> {
   const parsed: unknown = await response.json();
-  if (typeof parsed !== "object" || parsed === null) throw new Error("response body is not an object");
+  if (typeof parsed !== "object" || parsed === null)
+    throw new Error("response body is not an object");
   return parsed as Record<string, unknown>;
 }
 
 /** For the routes that answer with a bare array (`GET /api/invoices`, `GET /api/tokens`). */
 export async function arrayOf(response: Response): Promise<Record<string, unknown>[]> {
   const parsed: unknown = await response.json();
-  if (!Array.isArray(parsed)) throw new Error(`response body is not an array: ${JSON.stringify(parsed)}`);
+  if (!Array.isArray(parsed))
+    throw new Error(`response body is not an array: ${JSON.stringify(parsed)}`);
   return parsed as Record<string, unknown>[];
 }
 
@@ -481,7 +497,8 @@ export async function arrayOf(response: Response): Promise<Record<string, unknow
 export async function errorOf(response: Response): Promise<Record<string, unknown>> {
   const body = await jsonOf(response);
   const error = body.error;
-  if (typeof error !== "object" || error === null) throw new Error("response has no `error` object");
+  if (typeof error !== "object" || error === null)
+    throw new Error("response has no `error` object");
   return error as Record<string, unknown>;
 }
 

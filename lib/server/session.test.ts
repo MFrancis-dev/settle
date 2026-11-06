@@ -44,7 +44,9 @@ describe("session: cookie codec", () => {
     const value = await codecAt(1_730_000_000_000).issue(PAYLOAD);
     const signature = value.split(".")[1];
     // `isDemo: true` for a user who is not a demo: the body changes, so the signature stops matching.
-    const forged = Buffer.from(JSON.stringify({ ...PAYLOAD, isDemo: true }), "utf8").toString("base64url");
+    const forged = Buffer.from(JSON.stringify({ ...PAYLOAD, isDemo: true }), "utf8").toString(
+      "base64url",
+    );
 
     await expect(codecAt(1_730_000_000_000).read(`${forged}.${signature}`)).rejects.toMatchObject({
       reason: "unsigned",
@@ -109,12 +111,15 @@ describe("session: reading from a request", () => {
     const value = await codec.issue(PAYLOAD);
     const request = { headers: cookieHeaderFor(value) };
 
-    await expect(readSession(request, codec)).resolves.toMatchObject({ nearAccountId: "alice.testnet" });
+    await expect(readSession(request, codec)).resolves.toMatchObject({
+      nearAccountId: "alice.testnet",
+    });
   });
 
   it("throws `absent` when the header has no session cookie", async () => {
-    await expect(readSession({ headers: new Headers({ cookie: "theme=dark" }) }, codecAt(1)))
-      .rejects.toMatchObject({ reason: "absent" });
+    await expect(
+      readSession({ headers: new Headers({ cookie: "theme=dark" }) }, codecAt(1)),
+    ).rejects.toMatchObject({ reason: "absent" });
   });
 
   it("throws `absent` when there is no cookie header at all", async () => {
@@ -162,7 +167,9 @@ describe("session: secret and origin", () => {
   });
 
   it("pins NEP-413 `recipient` to the origin host, not the whole URL", () => {
-    expect(expectedRecipient({ PUBLIC_APP_URL: "https://settle.app:8443/base" })).toBe("settle.app:8443");
+    expect(expectedRecipient({ PUBLIC_APP_URL: "https://settle.app:8443/base" })).toBe(
+      "settle.app:8443",
+    );
     expect(expectedRecipient({ PUBLIC_APP_URL: "http://localhost:3000" })).toBe("localhost:3000");
   });
 });

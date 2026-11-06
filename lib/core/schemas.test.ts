@@ -172,7 +172,9 @@ describe("schemas: the remaining bodies", () => {
   });
 
   it("requires a receipt token of unguessable length", () => {
-    expect(receiptQueryInput.safeParse({ token: "c2VjcmV0dG9rZW4xMjM0NTY3ODkw" }).success).toBe(true);
+    expect(receiptQueryInput.safeParse({ token: "c2VjcmV0dG9rZW4xMjM0NTY3ODkw" }).success).toBe(
+      true,
+    );
     expect(receiptQueryInput.safeParse({ token: "short" }).success).toBe(false);
     expect(receiptQueryInput.safeParse({}).success).toBe(false);
   });

@@ -49,10 +49,10 @@ function ReceiptView() {
         }
       >
         <p>
-          A receipt link carries a payment reference after the <span className="font-mono">?</span>. A
-          link that was cut short — by an email client, a chat app, or a copy that stopped at the end of
-          a line — arrives without it, and the reference cannot be guessed. The Receipt button on the
-          payment page always includes it.
+          A receipt link carries a payment reference after the <span className="font-mono">?</span>.
+          A link that was cut short — by an email client, a chat app, or a copy that stopped at the
+          end of a line — arrives without it, and the reference cannot be guessed. The Receipt
+          button on the payment page always includes it.
         </p>
       </Alert>
     );

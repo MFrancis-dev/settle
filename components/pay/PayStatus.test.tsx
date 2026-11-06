@@ -95,7 +95,10 @@ describe("PayStatus", () => {
         status={view({
           invoiceStatus: "paid",
           paid: true,
-          attempt: attempt({ status: "success", deposited: near("2700000000000000000000000", "2.7") }),
+          attempt: attempt({
+            status: "success",
+            deposited: near("2700000000000000000000000", "2.7"),
+          }),
         })}
       />,
     );
@@ -128,9 +131,16 @@ describe("PayStatus", () => {
         status={view({
           invoiceStatus: "overpaid",
           paid: true,
-          attempt: attempt({ status: "success", deposited: near("2700000000000000000000000", "2.7") }),
+          attempt: attempt({
+            status: "success",
+            deposited: near("2700000000000000000000000", "2.7"),
+          }),
           otherPayments: [
-            { status: "success", deposited: near("2700000000000000000000000", "2.7"), refunded: null },
+            {
+              status: "success",
+              deposited: near("2700000000000000000000000", "2.7"),
+              refunded: null,
+            },
           ],
         })}
       />,

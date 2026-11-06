@@ -52,7 +52,8 @@ function links(
   entries: readonly { hash: string; explorerUrl: string }[],
   fallbackHashes: readonly string[],
 ): ReceiptLink[] {
-  if (entries.length > 0) return entries.map((entry) => ({ hash: entry.hash, url: entry.explorerUrl }));
+  if (entries.length > 0)
+    return entries.map((entry) => ({ hash: entry.hash, url: entry.explorerUrl }));
   return fallbackHashes.map((hash) => ({ hash, url: "" }));
 }
 
@@ -100,7 +101,11 @@ export async function receipt(
     },
     seller: seller?.displayName ?? "Settle seller",
     sent: await moneyView(deps, attempt.originAsset, attempt.amountIn),
-    delivered: await moneyView(deps, destination?.assetId ?? attempt.originAsset, attempt.amountOut),
+    delivered: await moneyView(
+      deps,
+      destination?.assetId ?? attempt.originAsset,
+      attempt.amountOut,
+    ),
     feeUsd: attempt.feeUsd,
     deposit: { address: attempt.depositAddress, memo: attempt.depositMemo },
     paidAt: attempt.status === "success" ? attempt.updatedAt.toISOString() : null,

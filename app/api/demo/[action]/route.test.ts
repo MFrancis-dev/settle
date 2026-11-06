@@ -36,7 +36,9 @@ function ctx(action: string) {
 function invoiceWith(view: DemoSessionView, predicate: (invoice: DemoInvoiceSummary) => boolean) {
   const found = view.invoices.find(predicate);
   if (!found) {
-    throw new Error(`the demo seed has no invoice in that state; it has ${view.invoices.map((i) => i.status).join(", ")}`);
+    throw new Error(
+      `the demo seed has no invoice in that state; it has ${view.invoices.map((i) => i.status).join(", ")}`,
+    );
   }
   return found;
 }
@@ -78,7 +80,10 @@ describe("the demo routes in demo mode", () => {
 
   describe("GET /api/demo/session", () => {
     it("seeds the story on first read and signs the visitor in as the freelancer", async () => {
-      const response = await GET(apiRequest("/api/demo/session", { ip: "203.0.113.21" }), ctx("session"));
+      const response = await GET(
+        apiRequest("/api/demo/session", { ip: "203.0.113.21" }),
+        ctx("session"),
+      );
       expect(response.status).toBe(200);
 
       const view = (await jsonOf(response)) as unknown as DemoSessionView;
@@ -144,7 +149,10 @@ describe("the demo routes in demo mode", () => {
      * `/demo` does, which keeps these tests on the path a judge takes rather than beside it.
      */
     async function restart(ip: string): Promise<DemoSessionView> {
-      const response = await POST(apiRequest("/api/demo/reset", { method: "POST", ip }), ctx("reset"));
+      const response = await POST(
+        apiRequest("/api/demo/reset", { method: "POST", ip }),
+        ctx("reset"),
+      );
       expect(response.status).toBe(200);
       return (await jsonOf(response)) as unknown as DemoSessionView;
     }
@@ -160,15 +168,25 @@ describe("the demo routes in demo mode", () => {
         { params: Promise.resolve({ publicId }) },
       );
       expect(quote.status).toBe(200);
-      const body = (await jsonOf(quote)) as { attempt?: { status: string; depositAddress: string } };
+      const body = (await jsonOf(quote)) as {
+        attempt?: { status: string; depositAddress: string };
+      };
       expect(body.attempt?.status).toBe("awaiting_deposit");
       expect(body.attempt?.depositAddress.startsWith("settle-demo-")).toBe(true);
       return body.attempt!.depositAddress;
     }
 
-    async function simulate(publicId: string, outcome: string, ip: string): Promise<DemoSimulationView> {
+    async function simulate(
+      publicId: string,
+      outcome: string,
+      ip: string,
+    ): Promise<DemoSimulationView> {
       const response = await POST(
-        apiRequest("/api/demo/simulate-payment", { method: "POST", ip, body: { publicId, outcome } }),
+        apiRequest("/api/demo/simulate-payment", {
+          method: "POST",
+          ip,
+          body: { publicId, outcome },
+        }),
         ctx("simulate-payment"),
       );
       if (!response.ok) throw new Error(`simulate ${outcome} answered ${response.status}`);
@@ -198,7 +216,9 @@ describe("the demo routes in demo mode", () => {
         // Every step still offers the next one, right up to the one that settles the payment.
         expect(step.paid).toBe(step.attempt.status === "success");
         expect(step.next.includes("next")).toBe(step.attempt.status !== "success");
-        expect(step.invoiceStatus).toBe(step.attempt.status === "success" ? "paid" : step.attempt.status);
+        expect(step.invoiceStatus).toBe(
+          step.attempt.status === "success" ? "paid" : step.attempt.status,
+        );
       }
       expect(seen).toEqual(["payment_detected", "processing", "success"]);
       expect(await pollStatus(target.publicId, "203.0.113.34")).toMatchObject({
@@ -232,7 +252,10 @@ describe("the demo routes in demo mode", () => {
     });
 
     it("reads a simulation back through the public status poll, so the two cannot disagree", async () => {
-      const target = invoiceWith(await restart("203.0.113.43"), (i) => i.status === "payment_detected");
+      const target = invoiceWith(
+        await restart("203.0.113.43"),
+        (i) => i.status === "payment_detected",
+      );
 
       const step = await simulate(target.publicId, "next", "203.0.113.44");
       expect(step.attempt.status).toBe("processing");
@@ -339,7 +362,9 @@ describe("the demo routes in demo mode", () => {
       expect(view.seeded).toBe(true);
       expect(view.invoices).toHaveLength(10);
       // Every walk the earlier tests ran is gone: the story starts from its own statuses again.
-      expect(view.invoices.filter((invoice) => invoice.status === "open").length).toBeGreaterThan(0);
+      expect(view.invoices.filter((invoice) => invoice.status === "open").length).toBeGreaterThan(
+        0,
+      );
 
       const cookie = response.headers.get("set-cookie")?.split(";")[0]?.trim();
       const me = await jsonOf(await ME(apiRequest("/api/me", { cookie: cookie ?? null })));

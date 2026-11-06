@@ -46,7 +46,9 @@ export type SignInDismissal = "user-triggered" | "wallet-navigation";
  * the wallet to prove the account controls a key (NEP-413) instead of granting Settle an access key
  * it could use later.
  */
-export async function showSignInModal(onDismissed?: (reason: SignInDismissal) => void): Promise<void> {
+export async function showSignInModal(
+  onDismissed?: (reason: SignInDismissal) => void,
+): Promise<void> {
   const selector = await getWalletSelector();
   if (modal === null) {
     modal = setupModal(selector, { theme: "light" });

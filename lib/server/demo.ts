@@ -18,14 +18,13 @@
  */
 
 import type { AttemptStatus, InvoiceStatus, OneClickStatus } from "../core/status";
-import { attemptStatusFromOneClick, canTransition, TERMINAL_ATTEMPT_STATUSES } from "../core/status";
-import { demoOutcomeInput, type DemoOutcome } from "../core/schemas";
 import {
-  DEMO_DISPLAY_NAME,
-  clearDemoData,
-  findDemoUser,
-  seedDemo,
-} from "../db/seed-demo";
+  attemptStatusFromOneClick,
+  canTransition,
+  TERMINAL_ATTEMPT_STATUSES,
+} from "../core/status";
+import { demoOutcomeInput, type DemoOutcome } from "../core/schemas";
+import { DEMO_DISPLAY_NAME, clearDemoData, findDemoUser, seedDemo } from "../db/seed-demo";
 import {
   getInvoiceByPublicId,
   listInvoicesForUser,
@@ -45,13 +44,7 @@ import { assertDemoModeAllowed, demoSeedOptions } from "./adapters";
 import { isDemoMode } from "./env-schema";
 import { conflict, forbidden, notFound, rateLimited } from "./http";
 import { serializeSessionCookie } from "./session";
-import {
-  attemptView,
-  invoiceView,
-  receiptUrlFor,
-  type AttemptView,
-  type MoneyView,
-} from "./views";
+import { attemptView, invoiceView, receiptUrlFor, type AttemptView, type MoneyView } from "./views";
 import type { ServerDeps } from "./deps";
 
 /** What a judge can make happen to an open payment — the union the request body is parsed with. */
@@ -272,11 +265,13 @@ export async function simulatePayment(
   const view = await attemptView(deps, stored);
 
   const invoiceStatus = await storeDerivedInvoiceStatus(deps.db, { invoiceId: invoice.id, at });
-  if (invoiceStatus === null) throw new Error(`invoice ${invoice.id} vanished under a payment attempt`);
+  if (invoiceStatus === null)
+    throw new Error(`invoice ${invoice.id} vanished under a payment attempt`);
 
   return {
     outcome: call.outcome,
-    oneclickStatus: call.outcome === "expired" ? null : (stored.oneclickStatus as OneClickStatus | null),
+    oneclickStatus:
+      call.outcome === "expired" ? null : (stored.oneclickStatus as OneClickStatus | null),
     attempt: view,
     invoiceStatus,
     paid: PAID_INVOICE_STATUSES.includes(invoiceStatus),

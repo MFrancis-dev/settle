@@ -35,19 +35,27 @@ function quoteBody(overrides: Record<string, unknown> = {}) {
   return { originAsset: WNEAR, refundTo: "payer.testnet", dry: true, ...overrides };
 }
 
-function quote(publicId: string, body: Record<string, unknown> = {}, ip?: string): Promise<Response> {
+function quote(
+  publicId: string,
+  body: Record<string, unknown> = {},
+  ip?: string,
+): Promise<Response> {
   return POST(apiRequest(`/api/pay/${publicId}/quote`, { method: "POST", body, ip }), {
     params: Promise.resolve({ publicId }),
   });
 }
 
 async function storedAttempts(invoiceId: string) {
-  return await harness.db.select().from(paymentAttempts).where(eq(paymentAttempts.invoiceId, invoiceId));
+  return await harness.db
+    .select()
+    .from(paymentAttempts)
+    .where(eq(paymentAttempts.invoiceId, invoiceId));
 }
 
 function attemptOf(body: Record<string, unknown>): Record<string, unknown> {
   const attempt = body.attempt;
-  if (typeof attempt !== "object" || attempt === null) throw new Error("quote response has no attempt");
+  if (typeof attempt !== "object" || attempt === null)
+    throw new Error("quote response has no attempt");
   return attempt as Record<string, unknown>;
 }
 
@@ -60,12 +68,18 @@ describe("POST /api/pay/:publicId/quote", () => {
   });
 
   it("previews a quote without storing anything", async () => {
-    const { publicId, invoiceId } = await harness.seededInvoice({ destinationAddress: "seller-payout.testnet" });
+    const { publicId, invoiceId } = await harness.seededInvoice({
+      destinationAddress: "seller-payout.testnet",
+    });
     const body = await jsonOf(await quote(publicId, quoteBody()));
 
     expect(body).toMatchObject({ dry: true, reused: false, attempt: null, timeEstimateS: 45 });
     expect(body.deposit).toMatchObject({ assetId: WNEAR, baseUnits: "5050003", decimals: 24 });
-    expect(body.payout).toMatchObject({ assetId: USDC_ON_NEAR, baseUnits: "5000003", amount: "5.000003" });
+    expect(body.payout).toMatchObject({
+      assetId: USDC_ON_NEAR,
+      baseUnits: "5000003",
+      amount: "5.000003",
+    });
     expect(body.feeUsd).toBe("0.01");
     // §3.2: a NEAR-origin deposit gets the 30-minute window.
     expect(body.deadline).toBe(new Date(TEST_NOW_MS + 30 * 60_000).toISOString());
@@ -74,7 +88,9 @@ describe("POST /api/pay/:publicId/quote", () => {
   });
 
   it("asks 1Click for the seller's destination, never for one the caller chose", async () => {
-    const { publicId } = await harness.seededInvoice({ destinationAddress: "seller-payout.testnet" });
+    const { publicId } = await harness.seededInvoice({
+      destinationAddress: "seller-payout.testnet",
+    });
     await quote(publicId, quoteBody({ dry: false }));
 
     const sent = harness.oneClick.quoteRequests()[0] as Record<string, unknown>;
@@ -127,7 +143,10 @@ describe("POST /api/pay/:publicId/quote", () => {
     const { publicId } = await harness.seededInvoice();
     const opened = await jsonOf(await quote(publicId, quoteBody({ dry: false })));
     // A different refund address makes this a different quote, not a re-ask for the open one.
-    const response = await quote(publicId, quoteBody({ dry: false, refundTo: "second-payer.testnet" }));
+    const response = await quote(
+      publicId,
+      quoteBody({ dry: false, refundTo: "second-payer.testnet" }),
+    );
     const error = await errorOf(response);
 
     expect(response.status).toBe(409);
@@ -139,7 +158,9 @@ describe("POST /api/pay/:publicId/quote", () => {
   });
 
   it("refuses the token the invoice already pays out in, without asking for a quote (S7.4)", async () => {
-    const { publicId } = await harness.seededInvoice({ destinationAddress: "seller-payout.testnet" });
+    const { publicId } = await harness.seededInvoice({
+      destinationAddress: "seller-payout.testnet",
+    });
     const response = await quote(publicId, quoteBody({ originAsset: USDC_ON_NEAR }));
     const error = await errorOf(response);
 
@@ -170,9 +191,10 @@ describe("POST /api/pay/:publicId/quote", () => {
       .where(eq(invoices.id, cancelled.invoiceId));
 
     expect((await quote(cancelled.publicId, quoteBody())).status).toBe(409);
-    expect((await quote((await harness.seededInvoice({ status: "draft" })).publicId, quoteBody())).status).toBe(
-      409,
-    );
+    expect(
+      (await quote((await harness.seededInvoice({ status: "draft" })).publicId, quoteBody()))
+        .status,
+    ).toBe(409);
   });
 
   it("refuses when the seller has no payout address yet", async () => {
@@ -243,7 +265,10 @@ describe("POST /api/pay/:publicId/quote", () => {
     const error = await errorOf(response);
 
     expect(response.status).toBe(400);
-    expect(error).toMatchObject({ code: "amount_too_low", details: { minimumBaseUnits: "300001" } });
+    expect(error).toMatchObject({
+      code: "amount_too_low",
+      details: { minimumBaseUnits: "300001" },
+    });
   });
 
   it("rate limits quote spam per pay page and caller, not globally", async () => {

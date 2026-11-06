@@ -26,7 +26,14 @@ import type { InvoiceStatus, OneClickStatus } from "../core/status";
 import { toBaseUnits } from "../core/money";
 import type { BaseUnits, QuoteSummary } from "../core/types";
 import type { Database } from "./client";
-import { invoiceItems, invoices, paymentAttempts, payoutDestinations, users, type User } from "./schema";
+import {
+  invoiceItems,
+  invoices,
+  paymentAttempts,
+  payoutDestinations,
+  users,
+  type User,
+} from "./schema";
 import {
   cancelInvoice,
   createInvoice,
@@ -50,8 +57,10 @@ export const DEMO_EMAIL = "ada@settle.demo";
 /** Asset ids from the recorded token list, so the demo never hardcodes a decimal count. */
 export const DEMO_USDC_ON_NEAR =
   "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1";
-export const DEMO_USDC_ON_ETHEREUM = "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near";
-export const DEMO_USDC_ON_ARBITRUM = "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near";
+export const DEMO_USDC_ON_ETHEREUM =
+  "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near";
+export const DEMO_USDC_ON_ARBITRUM =
+  "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near";
 export const DEMO_WNEAR = "nep141:wrap.near";
 
 /** Where the demo freelancer cashes out. Fictional, and checked by the same validators as a real one. */
@@ -413,7 +422,10 @@ export async function seedDemo(db: Database, options: SeedDemoOptions): Promise<
       // An invoice is a draft until it is sent, so the seed sends it the way the app does.
       status: "draft",
     });
-    await db.update(invoices).set({ createdAt: issuedAt, updatedAt: issuedAt }).where(eq(invoices.id, invoice.id));
+    await db
+      .update(invoices)
+      .set({ createdAt: issuedAt, updatedAt: issuedAt })
+      .where(eq(invoices.id, invoice.id));
 
     if (spec.sent) {
       await setInvoiceStatus(db, { invoiceId: invoice.id, status: "open", at: issuedAt });
@@ -425,7 +437,9 @@ export async function seedDemo(db: Database, options: SeedDemoOptions): Promise<
     for (const attemptSpec of spec.attempts) {
       const startedAt = daysAgo(nowMs, attemptSpec.startedDaysAgo);
       const settledAt =
-        attemptSpec.settledDaysAgo === undefined ? null : daysAgo(nowMs, attemptSpec.settledDaysAgo);
+        attemptSpec.settledDaysAgo === undefined
+          ? null
+          : daysAgo(nowMs, attemptSpec.settledDaysAgo);
       const refundTo = CLIENT_REFUND_ADDRESS[attemptSpec.originAsset] ?? "client.near";
 
       const row = await createPaymentAttempt(db, {
@@ -447,7 +461,9 @@ export async function seedDemo(db: Database, options: SeedDemoOptions): Promise<
         const updated = await recordAttemptStatus(db, {
           attemptId: row.id,
           oneclickStatus,
-          depositTxHash: options.hashFor(`${invoice.publicId}:${attemptSpec.startedDaysAgo}:deposit`),
+          depositTxHash: options.hashFor(
+            `${invoice.publicId}:${attemptSpec.startedDaysAgo}:deposit`,
+          ),
           deliveryTxHash:
             oneclickStatus === "SUCCESS"
               ? options.hashFor(`${invoice.publicId}:${attemptSpec.startedDaysAgo}:delivery`)
@@ -455,7 +471,8 @@ export async function seedDemo(db: Database, options: SeedDemoOptions): Promise<
           statusRaw: { demo: true, seeded: oneclickStatus },
           at: settledAt ?? new Date(nowMs),
         });
-        if (!updated) throw new Error(`demo seed could not move attempt ${row.id} to ${oneclickStatus}`);
+        if (!updated)
+          throw new Error(`demo seed could not move attempt ${row.id} to ${oneclickStatus}`);
       }
 
       await db
@@ -467,7 +484,10 @@ export async function seedDemo(db: Database, options: SeedDemoOptions): Promise<
     // Derived, not asserted: the status the dashboard shows is the one the app's own rule gives.
     const derived = await storeDerivedInvoiceStatus(db, {
       invoiceId: invoice.id,
-      at: daysAgo(nowMs, spec.attempts[0]?.settledDaysAgo ?? spec.attempts[0]?.startedDaysAgo ?? spec.issuedDaysAgo),
+      at: daysAgo(
+        nowMs,
+        spec.attempts[0]?.settledDaysAgo ?? spec.attempts[0]?.startedDaysAgo ?? spec.issuedDaysAgo,
+      ),
     });
     if (derived === null) throw new Error(`demo seed lost invoice ${invoice.publicId}`);
 

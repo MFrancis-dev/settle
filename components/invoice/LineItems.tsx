@@ -21,10 +21,18 @@ export function LineItems({ lines, total }: { lines: InvoiceLineView[]; total: M
         <caption className="sr-only">Invoice line items</caption>
         <thead>
           <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-ink-faint">
-            <th scope="col" className="py-2 pr-4 font-medium">Description</th>
-            <th scope="col" className="py-2 pr-4 font-medium">Qty</th>
-            <th scope="col" className="py-2 pr-4 text-right font-medium">Unit price</th>
-            <th scope="col" className="py-2 text-right font-medium">Amount</th>
+            <th scope="col" className="py-2 pr-4 font-medium">
+              Description
+            </th>
+            <th scope="col" className="py-2 pr-4 font-medium">
+              Qty
+            </th>
+            <th scope="col" className="py-2 pr-4 text-right font-medium">
+              Unit price
+            </th>
+            <th scope="col" className="py-2 text-right font-medium">
+              Amount
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -45,7 +53,11 @@ export function LineItems({ lines, total }: { lines: InvoiceLineView[]; total: M
               Total
             </td>
             <td className="py-3 text-right">
-              {total ? <Money money={total} className="font-semibold" /> : <span className="text-ink-muted">Total unavailable</span>}
+              {total ? (
+                <Money money={total} className="font-semibold" />
+              ) : (
+                <span className="text-ink-muted">Total unavailable</span>
+              )}
             </td>
           </tr>
         </tfoot>

@@ -7,7 +7,12 @@
  * the status route's per-address budget.
  */
 
-import { useMutation, useQuery, useQueryClient, type QueryClientConfig } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClientConfig,
+} from "@tanstack/react-query";
 
 import { ApiError, api } from "./client";
 import type { CreateInvoiceInput, DemoOutcome, PayQuoteInput } from "@/lib/core/schemas";
@@ -66,7 +71,10 @@ export function useInvoice(id: string) {
 }
 
 export function usePayoutLog() {
-  return useQuery({ queryKey: queryKeys.payoutLog, queryFn: () => api.payoutLog().then((r) => r.payouts) });
+  return useQuery({
+    queryKey: queryKeys.payoutLog,
+    queryFn: () => api.payoutLog().then((r) => r.payouts),
+  });
 }
 
 export function usePublicInvoice(publicId: string) {

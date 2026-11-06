@@ -31,7 +31,13 @@ const UNSETTLED: readonly InvoiceStatus[] = ["open", "payment_detected", "proces
 const SETTLED: readonly InvoiceStatus[] = ["paid", "overpaid", "paid_after_cancel"];
 
 /** The states where somebody has to decide something. Same group as the invoice list's tab. */
-const ATTENTION: readonly InvoiceStatus[] = ["underpaid", "overpaid", "paid_after_cancel", "failed", "refunded"];
+const ATTENTION: readonly InvoiceStatus[] = [
+  "underpaid",
+  "overpaid",
+  "paid_after_cancel",
+  "failed",
+  "refunded",
+];
 
 const ATTENTION_REASON: Record<string, string> = {
   underpaid: "Less arrived than the invoice asked for.",
@@ -49,7 +55,9 @@ export default function Page() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="mt-1 text-sm text-ink-muted">What you have invoiced, and what still needs you.</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            What you have invoiced, and what still needs you.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <a
@@ -68,7 +76,11 @@ export default function Page() {
       {invoices.isPending ? (
         <p className="text-sm text-ink-muted">Loading your numbers…</p>
       ) : invoices.isError ? (
-        <ErrorCard title="Your numbers could not be loaded" error={invoices.error} onRetry={() => invoices.refetch()} />
+        <ErrorCard
+          title="Your numbers could not be loaded"
+          error={invoices.error}
+          onRetry={() => invoices.refetch()}
+        />
       ) : (
         <Summary invoices={invoices.data} />
       )}
@@ -80,9 +92,7 @@ function Summary({ invoices }: { invoices: InvoiceView[] }) {
   const unsettled = invoices.filter((invoice) => UNSETTLED.includes(invoice.status));
   const settled = invoices.filter((invoice) => SETTLED.includes(invoice.status));
   const attention = invoices.filter((invoice) => ATTENTION.includes(invoice.status));
-  const recent = [...invoices]
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-    .slice(0, 6);
+  const recent = [...invoices].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6);
 
   return (
     <>
@@ -90,28 +100,37 @@ function Summary({ invoices }: { invoices: InvoiceView[] }) {
         <Card title="Still owed to you">
           <Amounts list={unsettled} empty="Nothing is waiting on a payment right now." />
           <p className="mt-2 text-xs text-ink-faint">
-            {unsettled.length} {unsettled.length === 1 ? "invoice" : "invoices"} awaiting, converting, or
-            short. Cancelled, failed and refunded invoices are not counted here.
+            {unsettled.length} {unsettled.length === 1 ? "invoice" : "invoices"} awaiting,
+            converting, or short. Cancelled, failed and refunded invoices are not counted here.
           </p>
         </Card>
         <Card title="Settled">
           <Amounts list={settled} empty="No invoice has been paid yet." />
           <p className="mt-2 text-xs text-ink-faint">
-            {settled.length} {settled.length === 1 ? "invoice" : "invoices"} recorded as paid, including
-            any that arrived over or after a cancel.
+            {settled.length} {settled.length === 1 ? "invoice" : "invoices"} recorded as paid,
+            including any that arrived over or after a cancel.
           </p>
         </Card>
       </div>
 
-      <Card title="Needs your attention" description="Every invoice where the money did not arrive exactly as asked.">
+      <Card
+        title="Needs your attention"
+        description="Every invoice where the money did not arrive exactly as asked."
+      >
         {attention.length === 0 ? (
           <p className="text-sm text-ink-muted">Nothing needs a decision.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {attention.map((invoice) => (
-              <li key={invoice.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line pb-3 last:border-0 last:pb-0">
+              <li
+                key={invoice.id}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line pb-3 last:border-0 last:pb-0"
+              >
                 <StatusBadge status={invoice.status} />
-                <Link href={`/invoices/${invoice.id}`} className="text-sm font-medium underline-offset-4 hover:underline">
+                <Link
+                  href={`/invoices/${invoice.id}`}
+                  className="text-sm font-medium underline-offset-4 hover:underline"
+                >
                   {invoice.number} · {invoice.clientName}
                 </Link>
                 {invoice.total ? <Money money={invoice.total} className="text-sm" /> : null}
@@ -126,7 +145,8 @@ function Summary({ invoices }: { invoices: InvoiceView[] }) {
         {recent.length === 0 ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-ink-muted">
-              No invoices yet. The first one takes about a minute: who it is for, what you did, the total.
+              No invoices yet. The first one takes about a minute: who it is for, what you did, the
+              total.
             </p>
             <div>
               <Link href="/invoices/new" className={buttonClass({ variant: "secondary" })}>
@@ -139,7 +159,10 @@ function Summary({ invoices }: { invoices: InvoiceView[] }) {
             {recent.map((invoice) => (
               <li key={invoice.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <StatusBadge status={invoice.status} />
-                <Link href={`/invoices/${invoice.id}`} className="min-w-0 flex-1 truncate text-sm font-medium underline-offset-4 hover:underline">
+                <Link
+                  href={`/invoices/${invoice.id}`}
+                  className="min-w-0 flex-1 truncate text-sm font-medium underline-offset-4 hover:underline"
+                >
                   {invoice.number} · {invoice.clientName}
                 </Link>
                 {invoice.total ? <Money money={invoice.total} className="text-sm" /> : null}
@@ -164,7 +187,9 @@ function Amounts({ list, empty }: { list: InvoiceView[]; empty: string }) {
   if (totals.length === 0) {
     return (
       <>
-        <p className="text-sm text-ink-muted">{unresolved > 0 ? "Amounts not resolved yet." : empty}</p>
+        <p className="text-sm text-ink-muted">
+          {unresolved > 0 ? "Amounts not resolved yet." : empty}
+        </p>
         {unresolved > 0 ? <Unresolved count={unresolved} /> : null}
       </>
     );
@@ -187,18 +212,25 @@ function Amounts({ list, empty }: { list: InvoiceView[]; empty: string }) {
 function Unresolved({ count }: { count: number }) {
   return (
     <p className="mt-1 text-xs text-warn">
-      {count} {count === 1 ? "invoice is" : "invoices are"} priced in a token that could not be read from
-      the live list, so they add to no total here.
+      {count} {count === 1 ? "invoice is" : "invoices are"} priced in a token that could not be read
+      from the live list, so they add to no total here.
     </p>
   );
 }
 
 function sumByAsset(list: InvoiceView[]): MoneyView[] {
-  const groups = new Map<string, { parts: BaseUnits[]; symbol: string | null; decimals: number | null }>();
+  const groups = new Map<
+    string,
+    { parts: BaseUnits[]; symbol: string | null; decimals: number | null }
+  >();
   for (const invoice of list) {
     const total = invoice.total;
     if (total === null) continue;
-    const group = groups.get(total.assetId) ?? { parts: [], symbol: total.symbol, decimals: total.decimals };
+    const group = groups.get(total.assetId) ?? {
+      parts: [],
+      symbol: total.symbol,
+      decimals: total.decimals,
+    };
     group.parts.push(total.baseUnits);
     groups.set(total.assetId, group);
   }

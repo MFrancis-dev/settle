@@ -53,21 +53,27 @@ describe("body parsing", () => {
   const withText = (text: string) => ({ text: async () => text });
 
   it("returns schema-parsed data, including coercion", async () => {
-    await expect(parseJsonBody(withText('{"name":"alice","count":"3"}'), bodySchema)).resolves.toEqual({
+    await expect(
+      parseJsonBody(withText('{"name":"alice","count":"3"}'), bodySchema),
+    ).resolves.toEqual({
       name: "alice",
       count: 3,
     });
   });
 
   it("calls an empty body a 400 rather than a JSON error", async () => {
-    const error = await parseJsonBody(withText("   "), bodySchema).catch((thrown: unknown) => thrown);
+    const error = await parseJsonBody(withText("   "), bodySchema).catch(
+      (thrown: unknown) => thrown,
+    );
 
     expect(error).toBeInstanceOf(HttpError);
     expect((error as HttpError).status).toBe(400);
   });
 
   it("calls unparsable JSON a 400", async () => {
-    const error = await parseJsonBody(withText("{name"), bodySchema).catch((thrown: unknown) => thrown);
+    const error = await parseJsonBody(withText("{name"), bodySchema).catch(
+      (thrown: unknown) => thrown,
+    );
 
     expect((error as HttpError).message).toContain("not valid JSON");
   });
@@ -113,15 +119,17 @@ describe("query parsing", () => {
 
   it("ignores parameters the schema does not mention", () => {
     const strict = z.object({ status: z.string() });
-    expect(parseQuery(new URLSearchParams("status=paid&junk=1"), strict)).toEqual({ status: "paid" });
+    expect(parseQuery(new URLSearchParams("status=paid&junk=1"), strict)).toEqual({
+      status: "paid",
+    });
   });
 });
 
 describe("client address", () => {
   it("takes the first hop of a proxy chain", () => {
-    expect(clientIp(requestWith({ "x-forwarded-for": "203.0.113.7, 10.0.0.1, 198.51.100.2" }))).toBe(
-      "203.0.113.7",
-    );
+    expect(
+      clientIp(requestWith({ "x-forwarded-for": "203.0.113.7, 10.0.0.1, 198.51.100.2" })),
+    ).toBe("203.0.113.7");
   });
 
   it("falls back to one shared bucket when no proxy header is present", () => {
@@ -134,15 +142,30 @@ describe("error envelope", () => {
   const cases: readonly { name: string; thrown: unknown; status: number; code: string }[] = [
     { name: "HttpError", thrown: conflict("Nope"), status: 409, code: "conflict" },
     { name: "ZodError", thrown: bodySchema.safeParse({}).error, status: 400, code: "bad_request" },
-    { name: "SessionRejection", thrown: new SessionRejection("expired"), status: 401, code: "unauthorized" },
+    {
+      name: "SessionRejection",
+      thrown: new SessionRejection("expired"),
+      status: 401,
+      code: "unauthorized",
+    },
     {
       name: "QuoteSignatureError",
       thrown: new QuoteSignatureError("corr-1", "bad"),
       status: 502,
       code: "upstream_rejected",
     },
-    { name: "OneClick unreachable", thrown: new OneClickError("unreachable", null, "down"), status: 502, code: "upstream_unreachable" },
-    { name: "OneClick 404", thrown: new OneClickError("not_found", 404, "gone"), status: 404, code: "not_found" },
+    {
+      name: "OneClick unreachable",
+      thrown: new OneClickError("unreachable", null, "down"),
+      status: 502,
+      code: "upstream_unreachable",
+    },
+    {
+      name: "OneClick 404",
+      thrown: new OneClickError("not_found", 404, "gone"),
+      status: 404,
+      code: "not_found",
+    },
     {
       name: "OneClick amount too low",
       thrown: new OneClickError("amount_too_low", 400, "min", "300001"),
@@ -167,7 +190,12 @@ describe("error envelope", () => {
       status: 502,
       code: "upstream_unreachable",
     },
-    { name: "anything else", thrown: new Error("internal detail"), status: 500, code: "internal_error" },
+    {
+      name: "anything else",
+      thrown: new Error("internal detail"),
+      status: 500,
+      code: "internal_error",
+    },
   ];
 
   for (const testCase of cases) {
@@ -197,7 +225,9 @@ describe("error envelope", () => {
 
     // The response may carry it: it is the caller's own request being described.
     const body = await bodyOf(errorResponse(thrown));
-    expect((body.error as { details: { detail: string } }).details.detail).toContain("no route from");
+    expect((body.error as { details: { detail: string } }).details.detail).toContain(
+      "no route from",
+    );
 
     // The log may not. Every log site in this repo prints `error.message` — the worker's
     // `describeFailure`, `lib/server/auth.ts`, the scripts — so `message` is the leak surface.
@@ -219,11 +249,17 @@ describe("error envelope", () => {
   });
 
   it("answers an unauthorized helper with 401 and a reason", async () => {
-    const response = errorResponse(unauthorized("Signature rejected (replayed).", { reason: "replayed" }));
+    const response = errorResponse(
+      unauthorized("Signature rejected (replayed).", { reason: "replayed" }),
+    );
 
     expect(response.status).toBe(401);
     expect(await bodyOf(response)).toEqual({
-      error: { code: "unauthorized", message: "Signature rejected (replayed).", details: { reason: "replayed" } },
+      error: {
+        code: "unauthorized",
+        message: "Signature rejected (replayed).",
+        details: { reason: "replayed" },
+      },
     });
   });
 

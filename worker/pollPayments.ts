@@ -58,7 +58,11 @@ function describeFailure(error: unknown): string {
   return typeof error;
 }
 
-async function pollOne(deps: WorkerDeps, attempt: PaymentAttemptRecord, tick: PollTick): Promise<void> {
+async function pollOne(
+  deps: WorkerDeps,
+  attempt: PaymentAttemptRecord,
+  tick: PollTick,
+): Promise<void> {
   try {
     const sync = await syncAttempt(deps, attempt);
     if (!sync.polled) {
@@ -74,7 +78,10 @@ async function pollOne(deps: WorkerDeps, attempt: PaymentAttemptRecord, tick: Po
 }
 
 /** One tick of the loop. */
-export async function pollPayments(deps: WorkerDeps, options: { limit?: number } = {}): Promise<PollTick> {
+export async function pollPayments(
+  deps: WorkerDeps,
+  options: { limit?: number } = {},
+): Promise<PollTick> {
   const attempts = await listLiveAttempts(deps.db, { limit: options.limit ?? POLL_BATCH });
   const tick: PollTick = { ...EMPTY_POLL_TICK, checked: attempts.length };
 

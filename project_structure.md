@@ -37,9 +37,11 @@ settle/
 ```
 
 Import direction inside `lib/` (never the other way):
+
 ```
 app/, worker/ ──► lib/server ──► lib/db, lib/oneclick, lib/near ──► lib/core
 ```
+
 `lib/core` has no I/O and imports nothing else from the project.
 
 ## 2. `app/`
@@ -67,9 +69,11 @@ app/
    ├─ export.csv/route.ts
    └─ demo/[action]/route.ts                # simulate-payment, reset
 ```
+
 Route handlers stay thin: zod-validate → call `lib/` → respond.
 
 ## 3. `components/`
+
 ```
 components/
 ├─ ui/          # our own primitives: alert, badge, button, card (+ DefinitionList), field, money, copy-button, error-card
@@ -81,6 +85,7 @@ components/
 ```
 
 ## 4. `lib/`
+
 ```
 lib/
 ├─ core/            # pure: money.ts, status.ts (unions + 1Click mapping + transitions),
@@ -115,6 +120,7 @@ lib/
 └─ wallet/          # CLIENT side: selector.ts (one wallet-selector instance), sign-in.ts (NEP-413 body),
                     # payout-signature.ts (the signed payout change), buffer-global.ts
 ```
+
 `lib/api`, `lib/ui` and `lib/wallet` are the browser's half: they import `lib/core` and nothing from
 `lib/server`, so a client component cannot pull the database or a secret into the bundle.
 Tests sit next to source as `*.test.ts` (and `*.test.tsx` for components, which opt into jsdom with a
@@ -123,12 +129,14 @@ beside their `route.ts` and call the exported handlers directly, so they exercis
 rather than a mock of it.
 
 ## 5. `worker/`
+
 ```
 worker/
 ├─ index.ts                 # startLoop (injected sleep) · startWorker · main() behind an entrypoint guard
 ├─ pollPayments.ts          # 5 s · one tick returns {checked, advanced, unchanged, silent, failed}
 └─ expireQuotes.ts          # 60 s · one tick returns {checked, expired, lateDeposit, deferred, failed}
 ```
+
 Each loop is `tick(deps) → summary` with every dependency injected, so a test runs **one tick** against the
 route harness (real PGlite, real quote route, scripted 1Click, frozen clock) and asserts on the tables
 afterwards. `startLoop`'s `sleep` is injected too, so "did it poll again" and "did shutdown wait for the
@@ -136,6 +144,7 @@ write in flight" are assertions, not timeouts. The status write itself is `lib/s
 and the status route call the same function.
 
 ## 6. `e2e/`, `scripts/`
+
 ```
 e2e/playwright.config.ts · e2e/demo-journey.spec.ts   # PRD §8, run in CI; Playwright starts `pnpm demo` itself
 scripts/demo.ts · scripts/seed-demo.ts · scripts/check-env.ts · scripts/setup-storage-payer.ts
@@ -147,27 +156,30 @@ scripts/demo.ts · scripts/seed-demo.ts · scripts/check-env.ts · scripts/setup
 ```
 
 ## 7. Where does X go?
-| Adding… | Put it in |
-|---|---|
-| Money math | `lib/core/money.ts` + test |
-| Status / mapping | `lib/core/status.ts` |
-| Address rule for a chain | `lib/core/address.ts` |
-| Id shape check for a URL param | `lib/core/ids.ts` |
-| A decision a route makes (not its parsing) | `lib/server/<area>.ts` — e.g. `pay.ts` |
-| How an error renders as a response | `lib/server/http.ts` |
-| What the API returns to the client | `lib/server/views.ts` |
-| 1Click call | `lib/oneclick/` |
-| NEAR RPC / NEP-413 / storage | `lib/near/` |
-| Table or column | `lib/db/schema.ts` → `pnpm db:generate` |
-| Freelancer page | `app/(dashboard)/…` |
-| Anything a client sees | `app/pay/…` + `components/pay/` |
-| Background job | `worker/` |
-| Secret / config | `.env` + `.env.example` + `lib/server/env.ts` |
-| Demo behaviour | `lib/oneclick/demo.ts` / `lib/db/seed-demo.ts` |
-| Stretch receipt contract | `contracts/receipts/` (only when ROADMAP says so) |
+
+| Adding…                                    | Put it in                                         |
+| ------------------------------------------ | ------------------------------------------------- |
+| Money math                                 | `lib/core/money.ts` + test                        |
+| Status / mapping                           | `lib/core/status.ts`                              |
+| Address rule for a chain                   | `lib/core/address.ts`                             |
+| Id shape check for a URL param             | `lib/core/ids.ts`                                 |
+| A decision a route makes (not its parsing) | `lib/server/<area>.ts` — e.g. `pay.ts`            |
+| How an error renders as a response         | `lib/server/http.ts`                              |
+| What the API returns to the client         | `lib/server/views.ts`                             |
+| 1Click call                                | `lib/oneclick/`                                   |
+| NEAR RPC / NEP-413 / storage               | `lib/near/`                                       |
+| Table or column                            | `lib/db/schema.ts` → `pnpm db:generate`           |
+| Freelancer page                            | `app/(dashboard)/…`                               |
+| Anything a client sees                     | `app/pay/…` + `components/pay/`                   |
+| Background job                             | `worker/`                                         |
+| Secret / config                            | `.env` + `.env.example` + `lib/server/env.ts`     |
+| Demo behaviour                             | `lib/oneclick/demo.ts` / `lib/db/seed-demo.ts`    |
+| Stretch receipt contract                   | `contracts/receipts/` (only when ROADMAP says so) |
 
 ## 8. Naming
+
 TS `camelCase.ts`, components `PascalCase.tsx`, routes `kebab-case`, DB `snake_case` plural tables, timestamps `_at`, env `SCREAMING_SNAKE_CASE`.
 
 ## 9. Never commit
+
 `.env*` (except `.env.example`), `node_modules/`, `.next/`, local DB files (`*.db`, `pglite/`), `coverage/`, `playwright-report/`, keys.

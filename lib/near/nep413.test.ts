@@ -14,7 +14,10 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 // S0.14: the reference implementation of the shape below is the library real logins use, so the
 // byte layout is checked against it rather than against our reading of the NEP.
-import { serializeNep413, verifySignature as vendorVerifySignature } from "@near-wallet-selector/core";
+import {
+  serializeNep413,
+  verifySignature as vendorVerifySignature,
+} from "@near-wallet-selector/core";
 import bs58 from "bs58";
 import { describe, expect, it } from "vitest";
 

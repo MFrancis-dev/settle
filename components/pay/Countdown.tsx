@@ -51,7 +51,9 @@ export function Countdown({ deadline, onExpire }: { deadline: string; onExpire?:
   return (
     // A `span`, not a `p`: the quote preview puts the clock inside a sentence, and a paragraph inside a
     // paragraph is closed early by the parser, which silently drops the rest of the line.
-    <span className={`money inline-flex items-baseline text-sm ${minutes <= 2 ? "font-medium text-warn" : "text-ink-muted"}`}>
+    <span
+      className={`money inline-flex items-baseline text-sm ${minutes <= 2 ? "font-medium text-warn" : "text-ink-muted"}`}
+    >
       <span aria-hidden>{`${minutes}:${String(seconds).padStart(2, "0")}`}</span>
       <span className="sr-only">{`Price holds for ${minutes} minutes and ${seconds} seconds.`}</span>
     </span>

@@ -48,7 +48,10 @@ beforeAll(async () => {
   db = connected.db;
   const real = await seedUser(db, "real.freelancer.near");
   realUserId = real.id;
-  seed = await seedDemo(db, demoSeedOptions(() => NOW));
+  seed = await seedDemo(
+    db,
+    demoSeedOptions(() => NOW),
+  );
 });
 
 afterAll(async () => {
@@ -86,7 +89,9 @@ describe("seedDemo — the story", () => {
     expect(statuses).not.toContain("failed");
 
     // The refund is on the attempt, which is where the invoice detail page shows it.
-    const refunded = seed.invoices.find((invoice) => invoice.clientName === "Ostro Games" && invoice.status === "open");
+    const refunded = seed.invoices.find(
+      (invoice) => invoice.clientName === "Ostro Games" && invoice.status === "open",
+    );
     expect(refunded).toBeDefined();
   });
 
@@ -126,7 +131,9 @@ describe("seedDemo — the story", () => {
 describe("seedDemo — the attempts it writes", () => {
   it("gives every attempt a quote the vendor's verifier accepts under the demo key", async () => {
     const attempts = (
-      await Promise.all(seed.invoices.map((invoice) => listAttemptsForInvoice(db, invoice.invoiceId)))
+      await Promise.all(
+        seed.invoices.map((invoice) => listAttemptsForInvoice(db, invoice.invoiceId)),
+      )
     ).flat();
     expect(attempts.length).toBeGreaterThanOrEqual(8);
 
@@ -174,7 +181,10 @@ describe("clearDemoData", () => {
     await clearDemoData(db);
 
     expect(await findDemoUser(db)).toBeNull();
-    const demoInvoices = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.userId, seed.userId));
+    const demoInvoices = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(eq(invoices.userId, seed.userId));
     expect(demoInvoices).toHaveLength(0);
     const demoDestinations = await db
       .select({ id: payoutDestinations.id })
@@ -182,14 +192,20 @@ describe("clearDemoData", () => {
       .where(eq(payoutDestinations.userId, seed.userId));
     expect(demoDestinations).toHaveLength(0);
 
-    const stillThere = await db.select().from(payoutDestinations).where(eq(payoutDestinations.id, realDestination.id));
+    const stillThere = await db
+      .select()
+      .from(payoutDestinations)
+      .where(eq(payoutDestinations.id, realDestination.id));
     expect(stillThere).toHaveLength(1);
     const realStillOpen = await db.select().from(invoices).where(eq(invoices.id, realInvoice.id));
     expect(realStillOpen[0]?.status).toBe("open");
   });
 
   it("seeds the same story twice, so a restart mid-demo is not additive", async () => {
-    const again = await seedDemo(db, demoSeedOptions(() => NOW));
+    const again = await seedDemo(
+      db,
+      demoSeedOptions(() => NOW),
+    );
     expect(again.invoices).toHaveLength(10);
     expect(demoStatuses(again)).toEqual(demoStatuses(seed));
   });

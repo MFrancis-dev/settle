@@ -4,7 +4,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SignedMessageFields } from "../core/schemas";
 import { HttpError } from "./http";
 import { checkSignedMessage, requireSigned, verifySigned } from "./signature";
-import { createRouteHarness, signClaims, type RouteHarness, type Signer } from "./__fixtures__/routes";
+import {
+  createRouteHarness,
+  signClaims,
+  type RouteHarness,
+  type Signer,
+} from "./__fixtures__/routes";
 
 let harness: RouteHarness;
 let signer: Signer;
@@ -24,7 +29,9 @@ function signed(overrides: Partial<SignedMessageFields> = {}): SignedMessageFiel
 
 describe("signed message checks", () => {
   it("accepts a signature from a key the account owns", async () => {
-    const result = await checkSignedMessage(harness.deps, signed(), { accountId: signer.accountId });
+    const result = await checkSignedMessage(harness.deps, signed(), {
+      accountId: signer.accountId,
+    });
 
     expect(result.valid).toBe(true);
     if (result.valid) expect(result.claims.message).toBe("Settle sign-in");
@@ -84,19 +91,29 @@ describe("signed message checks", () => {
     // 33 bytes cannot be written into `[u8; 32]`, so there is no digest to check against at all.
     const long = Buffer.from(new Uint8Array(33)).toString("base64");
     expect(
-      await checkSignedMessage(harness.deps, signClaims(signer, { message: "Settle sign-in", nonce: long }), {
-        accountId: signer.accountId,
-      }),
+      await checkSignedMessage(
+        harness.deps,
+        signClaims(signer, { message: "Settle sign-in", nonce: long }),
+        {
+          accountId: signer.accountId,
+        },
+      ),
     ).toEqual({ valid: false, reason: "malformed_payload" });
 
     expect(
-      await checkSignedMessage(harness.deps, signed({ message: "" }), { accountId: signer.accountId }),
+      await checkSignedMessage(harness.deps, signed({ message: "" }), {
+        accountId: signer.accountId,
+      }),
     ).toEqual({ valid: false, reason: "malformed_payload" });
   });
 
   it("rejects a body that is missing the signed trio", async () => {
     expect(
-      await checkSignedMessage(harness.deps, { accountId: signer.accountId }, { accountId: signer.accountId }),
+      await checkSignedMessage(
+        harness.deps,
+        { accountId: signer.accountId },
+        { accountId: signer.accountId },
+      ),
     ).toEqual({
       valid: false,
       reason: "malformed_payload",
@@ -153,9 +170,9 @@ describe("signed message checks", () => {
   it("throws a 401 with the reason when a check is required", async () => {
     const body = signClaims(signer, { message: "Settle sign-in", recipient: "evil.example" });
 
-    await expect(requireSigned(harness.deps, body, { accountId: signer.accountId })).rejects.toThrowError(
-      HttpError,
-    );
+    await expect(
+      requireSigned(harness.deps, body, { accountId: signer.accountId }),
+    ).rejects.toThrowError(HttpError);
 
     const error = (await requireSigned(harness.deps, body, { accountId: signer.accountId }).catch(
       (thrown: unknown) => thrown,
@@ -164,6 +181,4 @@ describe("signed message checks", () => {
     expect(error.details).toEqual({ reason: "recipient_mismatch" });
     expect(error.message).toContain("recipient_mismatch");
   });
-
-
 });

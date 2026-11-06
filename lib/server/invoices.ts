@@ -7,10 +7,19 @@
  * API cannot be used to probe which invoice ids other users hold (§6, invoice enumeration).
  */
 
-import { createInvoiceInput, invoiceListQueryInput, type CreateInvoiceInput } from "../core/schemas";
+import {
+  createInvoiceInput,
+  invoiceListQueryInput,
+  type CreateInvoiceInput,
+} from "../core/schemas";
 import { isUuid } from "../core/ids";
 import type { InvoiceStatus } from "../core/status";
-import { cancelInvoice, createInvoice, getInvoiceById, listInvoicesForUser } from "../db/queries/invoices";
+import {
+  cancelInvoice,
+  createInvoice,
+  getInvoiceById,
+  listInvoicesForUser,
+} from "../db/queries/invoices";
 import type { InvoiceRecord } from "../db/queries/invoices";
 import { listAttemptsForInvoice } from "../db/queries/paymentAttempts";
 import { getActiveDestination } from "../db/queries/payoutDestinations";
@@ -30,7 +39,11 @@ export interface InvoiceDetail extends InvoiceView {
  * Both id routes share this so "not yours" and "not there" and "not even shaped like one" all give
  * the same 404: the API must not confirm that an unknown invoice id exists (§6).
  */
-async function ownedInvoice(deps: ServerDeps, principal: Principal, id: string): Promise<InvoiceRecord> {
+async function ownedInvoice(
+  deps: ServerDeps,
+  principal: Principal,
+  id: string,
+): Promise<InvoiceRecord> {
   if (!isUuid(id)) throw notFound("No such invoice.");
   const invoice = await getInvoiceById(deps.db, id);
   if (!invoice || invoice.userId !== principal.user.id) throw notFound("No such invoice.");
@@ -43,7 +56,10 @@ async function payoutAssetId(deps: ServerDeps, invoice: InvoiceRecord): Promise<
   return destination?.assetId ?? null;
 }
 
-export async function invoiceSummary(deps: ServerDeps, invoice: InvoiceRecord): Promise<InvoiceView> {
+export async function invoiceSummary(
+  deps: ServerDeps,
+  invoice: InvoiceRecord,
+): Promise<InvoiceView> {
   return invoiceView(deps, invoice, await payoutAssetId(deps, invoice));
 }
 
@@ -85,7 +101,11 @@ export async function list(
 }
 
 /** `GET /api/invoices/:id` — the detail page: the invoice, plus every quote ever taken on it. */
-export async function detail(deps: ServerDeps, principal: Principal, id: string): Promise<InvoiceDetail> {
+export async function detail(
+  deps: ServerDeps,
+  principal: Principal,
+  id: string,
+): Promise<InvoiceDetail> {
   const invoice = await ownedInvoice(deps, principal, id);
   const attempts = await listAttemptsForInvoice(deps.db, invoice.id);
   return {
@@ -100,7 +120,11 @@ export async function detail(deps: ServerDeps, principal: Principal, id: string)
  * An attempt that is still live keeps working: if the client pays after this call, the derived status
  * is `paid_after_cancel` and the money still arrives, which is the honest record of what happened.
  */
-export async function cancel(deps: ServerDeps, principal: Principal, id: string): Promise<InvoiceView> {
+export async function cancel(
+  deps: ServerDeps,
+  principal: Principal,
+  id: string,
+): Promise<InvoiceView> {
   const invoice = await ownedInvoice(deps, principal, id);
   if (invoice.status === "cancelled") {
     return invoiceSummary(deps, invoice);
@@ -223,25 +247,27 @@ export async function exportCsv(deps: ServerDeps, principal: Principal): Promise
     for (const attempt of await Promise.all(attempts.map((row) => attemptView(deps, row)))) {
       lines.push(
         CSV_COLUMNS.map((name) =>
-          csvCell({
-            ...invoiceColumns,
-            attempt_id: attempt.id,
-            attempt_status: attempt.status,
-            oneclick_status: attempt.oneclickStatus,
-            paid_in_asset: attempt.originAsset.assetId,
-            paid_in_base_units: attempt.originAsset.baseUnits,
-            paid_in: attempt.originAsset.amount,
-            delivered_asset: attempt.payoutAsset.assetId,
-            delivered_base_units: attempt.payoutAsset.baseUnits,
-            delivered: attempt.payoutAsset.amount,
-            fee_usd: attempt.feeUsd,
-            deposit_address: attempt.depositAddress,
-            deposit_memo: attempt.depositMemo,
-            deposit_tx_hash: attempt.depositTxHash,
-            delivery_tx_hash: attempt.deliveryTxHash,
-            quote_deadline: attempt.quoteDeadline,
-            receipt_url: attempt.receiptUrl,
-          }[name]),
+          csvCell(
+            {
+              ...invoiceColumns,
+              attempt_id: attempt.id,
+              attempt_status: attempt.status,
+              oneclick_status: attempt.oneclickStatus,
+              paid_in_asset: attempt.originAsset.assetId,
+              paid_in_base_units: attempt.originAsset.baseUnits,
+              paid_in: attempt.originAsset.amount,
+              delivered_asset: attempt.payoutAsset.assetId,
+              delivered_base_units: attempt.payoutAsset.baseUnits,
+              delivered: attempt.payoutAsset.amount,
+              fee_usd: attempt.feeUsd,
+              deposit_address: attempt.depositAddress,
+              deposit_memo: attempt.depositMemo,
+              deposit_tx_hash: attempt.depositTxHash,
+              delivery_tx_hash: attempt.deliveryTxHash,
+              quote_deadline: attempt.quoteDeadline,
+              receipt_url: attempt.receiptUrl,
+            }[name],
+          ),
         ).join(","),
       );
     }

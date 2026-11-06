@@ -51,7 +51,8 @@ async function defaultPayoutAssetId(deps: ServerDeps): Promise<string | null> {
   const assets = await deps.tokens.assets();
   const found = assets.find(
     (asset) =>
-      asset.symbol === DEFAULT_PAYOUT.symbol && chainFromCode(asset.blockchain) === DEFAULT_PAYOUT.chain,
+      asset.symbol === DEFAULT_PAYOUT.symbol &&
+      chainFromCode(asset.blockchain) === DEFAULT_PAYOUT.chain,
   );
   return found?.assetId ?? null;
 }
@@ -138,7 +139,10 @@ export function limitWrite(
   request: { headers: Headers },
   userId?: string,
 ): void {
-  limit(deps.authLimits, `${action}:${clientIp(request)}${userId === undefined ? "" : `:${userId}`}`);
+  limit(
+    deps.authLimits,
+    `${action}:${clientIp(request)}${userId === undefined ? "" : `:${userId}`}`,
+  );
 }
 
 /** Token metadata is display sugar: an unreachable list must not blank a profile page. */
@@ -162,7 +166,10 @@ export interface PayoutView {
   deactivatedAt: string | null;
 }
 
-export async function toPayoutView(deps: ServerDeps, row: PayoutDestinationRow): Promise<PayoutView> {
+export async function toPayoutView(
+  deps: ServerDeps,
+  row: PayoutDestinationRow,
+): Promise<PayoutView> {
   const asset = await assetFor(deps, row.assetId);
   return {
     assetId: row.assetId,
@@ -177,7 +184,9 @@ export async function toPayoutView(deps: ServerDeps, row: PayoutDestinationRow):
 }
 
 export async function payoutHistory(deps: ServerDeps, user: User): Promise<PayoutView[]> {
-  return Promise.all((await listDestinations(deps.db, user.id)).map((row) => toPayoutView(deps, row)));
+  return Promise.all(
+    (await listDestinations(deps.db, user.id)).map((row) => toPayoutView(deps, row)),
+  );
 }
 
 export interface MeView {

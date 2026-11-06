@@ -16,7 +16,11 @@ import { customAlphabet } from "nanoid";
 
 import type { BaseUnits, InvoiceLineInput } from "../../core/types";
 import { computeInvoice, nextInvoiceNumber } from "../../core/invoice";
-import { deriveInvoiceStatus, SETTLED_INVOICE_STATUSES, type InvoiceStatus } from "../../core/status";
+import {
+  deriveInvoiceStatus,
+  SETTLED_INVOICE_STATUSES,
+  type InvoiceStatus,
+} from "../../core/status";
 import { parseBaseUnits } from "../../core/money";
 import type { Database } from "../client";
 import { invoiceItems, invoices, type Invoice, type InvoiceItem } from "../schema";

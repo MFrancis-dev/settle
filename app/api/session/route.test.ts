@@ -6,7 +6,16 @@ import { DELETE, POST } from "./route";
 import { GET as GET_ME } from "../me/route";
 import { users } from "@/lib/db/schema";
 import { SESSION_COOKIE } from "@/lib/server/session";
-import { errorOf, jsonOf, apiRequest, createRouteHarness, signClaims, signInBody, type RouteHarness, type Signer } from "@/lib/server/__fixtures__/routes";
+import {
+  errorOf,
+  jsonOf,
+  apiRequest,
+  createRouteHarness,
+  signClaims,
+  signInBody,
+  type RouteHarness,
+  type Signer,
+} from "@/lib/server/__fixtures__/routes";
 
 let harness: RouteHarness;
 let signer: Signer;
@@ -26,8 +35,14 @@ describe("POST /api/session", () => {
     const body = await jsonOf(response);
 
     expect(response.status).toBe(201);
-    expect(body).toEqual({ nearAccountId: signer.accountId, displayName: signer.accountId, isNew: true });
-    expect(response.headers.get("Set-Cookie")).toMatch(/^settle_session=[^;]+; Path=\/; HttpOnly; SameSite=Lax/);
+    expect(body).toEqual({
+      nearAccountId: signer.accountId,
+      displayName: signer.accountId,
+      isNew: true,
+    });
+    expect(response.headers.get("Set-Cookie")).toMatch(
+      /^settle_session=[^;]+; Path=\/; HttpOnly; SameSite=Lax/,
+    );
     expect(response.headers.get("Set-Cookie")).toContain("Max-Age=604800");
   });
 
@@ -65,13 +80,17 @@ describe("POST /api/session", () => {
     // 429 rather than the 400, which is the point: a caller guessing signatures is refused without
     // Settle parsing the body, checking the nonce or reading the NEAR RPC.
     for (let attempt = 0; attempt < 11; attempt += 1) {
-      const response = await POST(apiRequest("/api/session", { body: { message: "not a sign-in" }, ip }));
+      const response = await POST(
+        apiRequest("/api/session", { body: { message: "not a sign-in" }, ip }),
+      );
       statuses.push(response.status);
     }
 
     expect(statuses.slice(0, 10)).toEqual(Array.from({ length: 10 }, () => 400));
     expect(statuses[10]).toBe(429);
-    expect((await errorOf(await POST(apiRequest("/api/session", { body: {}, ip })))).code).toBe("rate_limited");
+    expect((await errorOf(await POST(apiRequest("/api/session", { body: {}, ip })))).code).toBe(
+      "rate_limited",
+    );
   });
 
   it("refuses a signed message from a key the account does not own", async () => {
@@ -79,14 +98,20 @@ describe("POST /api/session", () => {
     const response = await POST(apiRequest("/api/session", { body: signInBody(stranger) }));
 
     expect(response.status).toBe(401);
-    expect(await errorOf(response)).toMatchObject({ code: "unauthorized", details: { reason: "signature_mismatch" } });
+    expect(await errorOf(response)).toMatchObject({
+      code: "unauthorized",
+      details: { reason: "signature_mismatch" },
+    });
   });
 
   it("refuses a message addressed to another site", async () => {
     const response = await POST(
       apiRequest("/api/session", {
         body: {
-          ...signClaims(harness.newSigner(), { message: "Settle sign-in", recipient: "evil.example" }),
+          ...signClaims(harness.newSigner(), {
+            message: "Settle sign-in",
+            recipient: "evil.example",
+          }),
           accountId: "x.testnet",
         },
       }),
@@ -108,7 +133,9 @@ describe("POST /api/session", () => {
   });
 
   it("does not set a cookie when the signature is rejected", async () => {
-    const response = await POST(apiRequest("/api/session", { body: signInBody(harness.foreignSigner()) }));
+    const response = await POST(
+      apiRequest("/api/session", { body: signInBody(harness.foreignSigner()) }),
+    );
 
     expect(response.headers.get("Set-Cookie")).toBeNull();
   });

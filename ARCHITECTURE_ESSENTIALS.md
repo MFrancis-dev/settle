@@ -4,12 +4,15 @@
 > **Every contribution updates `ROADMAP.md`.** If code disagrees with a rule here, stop and ask.
 
 ## One line
+
 Client pays an invoice in any token on any chain → 1Click delivers the **exact** USD amount **directly** to the freelancer's payout destination. Settle never holds funds. Track `realworld`.
 
 ## Independence (hackathon Q-015)
+
 Separate repo from **Stack** (track 01). Never import Stack code; README names Stack.
 
 ## ✅ Decided
+
 - No smart contract in MVP (receipt registry = stretch)
 - No custody, no relayer
 - Single Next.js app + `worker/` script (no monorepo)
@@ -20,21 +23,25 @@ Separate repo from **Stack** (track 01). Never import Stack code; README names S
 - **SD-7** Address checks use `@noble/hashes` (keccak256 → EIP-55) and `bs58` (Solana). A chain with no validator is **rejected**, never accepted unchecked
 
 ## 🔍 Verify before coding against
+
 Answered from the docs while building Phase 2 (2026-11-05), still **unconfirmed by the vendor**:
+
 1. **No evidence** 1Click storage-registers NEAR recipients — its `ft_withdraw` warns a withdrawal to an unregistered account is not refunded → the app keeps paying storage (S2.8 reads, S2.10 spends)
 2. Status enum: exactly the seven values we map, pinned against the installed SDK by a test. Overpayment: the excess above `amountIn` refunds to `refundTo`. A deposit below `minAmountIn` refunds at the deadline. **Still open:** can a client top up after `INCOMPLETE_DEPOSIT`?
-4. Minimums: no table — a 400 saying `try at least <baseUnits>`, surfaced as `OneClickError.minimumBaseUnits` and **rendered in the client's chosen token** by `lib/ui/quote-failure.ts` (S7.6)
+3. Minimums: no table — a 400 saying `try at least <baseUnits>`, surfaced as `OneClickError.minimumBaseUnits` and **rendered in the client's chosen token** by `lib/ui/quote-failure.ts` (S7.6)
 
 Still open: one live end-to-end wallet login (the shape below is the library's code, the wallet's own confirmation dialog is not testable offline).
 
 **Answered 2026-11-06 (S7.4) — same-asset quotes:** refused, not attempted. `lib/server/pay.ts` compares `origin.assetId === destination.assetId` and answers `409 same_asset` naming the asset and chain — it does **not** publish the seller's destination address (PRD §11 sketched "direct-transfer instructions"; a pay link is public, so the address stays private and the client is told to ask).
 
-**Answered 2026-11-05 (S0.14) — wallet sign-in:** `@near-wallet-selector/*@10.1.4`; `wallet.signMessage({message, recipient, nonce: Buffer, callbackUrl?, state?})` → `{accountId, publicKey, signature (base64), state?}`. The signed bytes are **Borsh** `{tag u32 = 2**31+413, message, nonce[u8;32], recipient, callbackUrl?}` and the digest is `sha256` of them — *not* `"near:" + JSON`. Since 2026-11-06 the **request path verifies that shape only** (`verifyNep413SignedMessage`); `verifyNep413` (the JSON convention) stays exported and tested with no caller. MetaMask (`ethereum-wallets`) **throws** on sign-message → not a sign-in option. v10 removed `signIn({messagePayload})` and tells you to drop `near-api-js` (v7 dropped `keyStores`, wants node ≥ 22.22.2) → wallet packages stay client-side, our own RPC + noble/bs58 do the server work.
+**Answered 2026-11-05 (S0.14) — wallet sign-in:** `@near-wallet-selector/*@10.1.4`; `wallet.signMessage({message, recipient, nonce: Buffer, callbackUrl?, state?})` → `{accountId, publicKey, signature (base64), state?}`. The signed bytes are **Borsh** `{tag u32 = 2**31+413, message, nonce[u8;32], recipient, callbackUrl?}` and the digest is `sha256` of them — _not_ `"near:" + JSON`. Since 2026-11-06 the **request path verifies that shape only** (`verifyNep413SignedMessage`); `verifyNep413` (the JSON convention) stays exported and tested with no caller. MetaMask (`ethereum-wallets`) **throws** on sign-message → not a sign-in option. v10 removed `signIn({messagePayload})` and tells you to drop `near-api-js` (v7 dropped `keyStores`, wants node ≥ 22.22.2) → wallet packages stay client-side, our own RPC + noble/bs58 do the server work.
 
 ## Stack
+
 Next.js 15 + TS strict · Tailwind v4 role tokens, hand-rolled `components/ui/*` (no component library) · TanStack Query · zod · Drizzle (PGlite/Postgres) · 1Click SDK ≥ 0.1.24 · wallet selector (NEP-413 sign-in) · vitest (+ jsdom/Testing Library for components) + Playwright · pnpm
 
 ## 1Click rules
+
 - `EXACT_OUTPUT` · destination = payout asset · recipient = payout address · refundTo = client address · deadline per origin chain
 - `verifyQuoteSignature()` before showing `depositAddress` — a real quote's address is never returned or stored unverified
 - Calls go through our own `fetch` + zod client (the SDK's services are axios with no injection point, so tests could not run offline); the SDK still supplies the types, `quoteHash()` and the verifier
@@ -44,24 +51,27 @@ Next.js 15 + TS strict · Tailwind v4 role tokens, hand-rolled `components/ui/*`
 - After tx hash: `/v0/deposit/submit`; poll `/v0/status`
 
 ## Status mapping
-| 1Click | Attempt | Invoice |
-|---|---|---|
-| PENDING_DEPOSIT | awaiting_deposit | open |
-| KNOWN_DEPOSIT_TX | payment_detected | payment_detected |
-| PROCESSING | processing | processing |
-| SUCCESS | success | paid / overpaid / paid_after_cancel |
-| INCOMPLETE_DEPOSIT | underpaid | underpaid |
-| REFUNDED | refunded | open |
-| FAILED | failed | open + alert |
-| deadline, no deposit | expired | open |
-Transitions are monotonic per attempt.
+
+| 1Click                                 | Attempt          | Invoice                             |
+| -------------------------------------- | ---------------- | ----------------------------------- |
+| PENDING_DEPOSIT                        | awaiting_deposit | open                                |
+| KNOWN_DEPOSIT_TX                       | payment_detected | payment_detected                    |
+| PROCESSING                             | processing       | processing                          |
+| SUCCESS                                | success          | paid / overpaid / paid_after_cancel |
+| INCOMPLETE_DEPOSIT                     | underpaid        | underpaid                           |
+| REFUNDED                               | refunded         | open                                |
+| FAILED                                 | failed           | open + alert                        |
+| deadline, no deposit                   | expired          | open                                |
+| Transitions are monotonic per attempt. |
 
 Rules as implemented in `lib/core/status.ts`:
+
 - An attempt moves forward only; `success`, `refunded`, `failed`, `expired` absorb. `expired` is reachable only from `awaiting_deposit` (the rule is "deadline passed **and no deposit**").
 - Invoice: 2+ successes → `overpaid` · 1 success → `paid`, or `paid_after_cancel` if cancelled · else the strongest live attempt (`underpaid` > `processing` > `payment_detected`) · `refunded`/`failed`/`expired` → `open` · no attempts + `draft` stays `draft`.
 - A read that shows no success never un-pays a settled invoice. Callers pass **every** attempt for the invoice.
 
 ## Payout destination rules
+
 - Default USDC on NEAR to the signed-in account; storage-registered by the app if needed (cost read from `storage_balance_bounds`, never hardcoded; an account that does not exist yet counts as unregistered)
 - Change = fresh NEP-413 signature + typed twice + chain named + change log
 - Each attempt stores the destination snapshot it used
@@ -69,15 +79,17 @@ Rules as implemented in `lib/core/status.ts`:
 - Origin-chain refunds (BTC, TON, …) have no validator yet → S1.7 / #100
 
 ## Routes (built in Phase 3)
+
 - `route.ts` stays thin: zod-validate → `lib/server/<area>.ts` → respond. Codes and payloads come from `lib/server/http.ts` + `views.ts`.
 - Every handler is given `ServerDeps` (`lib/server/deps.ts`); tests install PGlite + a scripted 1Click `fetch` and call the same exports the app calls.
 - A malformed uuid id answers the same 404 as an unknown or foreign one (`lib/core/ids.ts`) — never a 500.
 - Payout changes sign `Settle payout change to <address> on <chain>` (`lib/core/payout-message.ts`); the settings page and `PUT /api/payout` must derive it identically.
 - Quotes: 6/min per `publicId`+IP; status polls: 60/min. Rejection carries `Retry-After`.
 - `POST /api/demo/:action` answers 403 unless the whole process is a demo (`assertDemoModeAllowed`).
-- **Two runtimes, one secret:** `middleware.ts` runs on Edge and route handlers on Node, so any per-process module state is *two* values. `lib/server/session.ts` therefore takes the session secret from `sessionSecretFrom(env.SESSION_SECRET, isDemoMode(env))` — a fixed demo key in demo mode, a random fallback otherwise. Never add per-process randomness that a cookie has to survive across.
+- **Two runtimes, one secret:** `middleware.ts` runs on Edge and route handlers on Node, so any per-process module state is _two_ values. `lib/server/session.ts` therefore takes the session secret from `sessionSecretFrom(env.SESSION_SECRET, isDemoMode(env))` — a fixed demo key in demo mode, a random fallback otherwise. Never add per-process randomness that a cookie has to survive across.
 
 ## UI (built in Phase 4)
+
 - Client pages read `lib/api/types.ts`, a hand-written mirror of the server's views — a client component must never reach `lib/server` (it would pull the DB and the secrets into the bundle).
 - Amounts: always the exact base-unit string. `amount`/`symbol`/`decimals` are the display half and are `null` when the token list could not be read → show base units **and say so**, never an estimated unit. Totals are summed per asset id, never across assets.
 - The pay page creates nothing on load: first button is the free `dry: true` preview, the address comes from a second press, and one live attempt per invoice means a 409 with an `attemptId` re-reads the invoice instead of opening a second address.
@@ -86,16 +98,20 @@ Rules as implemented in `lib/core/status.ts`:
 - `next.config.ts` → `serverExternalPackages: ["@electric-sql/pglite", "postgres"]`. Without it every API route 500s in the server bundle and the tests still pass.
 
 ## Data model (amounts numeric(78,0) base units)
+
 `users` · `payout_destinations` (history) · `invoices` + `invoice_items` · `payment_attempts` (deposit_address uniq, payout_destination_id, quote_raw, signature, status, receipt_token)
 
 ## Worker (built in Phase 5)
+
 `pollPayments` 5 s · `expireQuotes` 60 s · both on the app's own `ServerDeps`, 50 rows max a tick, oldest first.
-- The read-modify-write lives in **`lib/server/sync.ts`**, called by the worker *and* by `GET /api/pay/:publicId/status` *and* by `submit-tx` — one implementation, so the poll really is the worker's write. An invoice is always re-derived from **every** attempt it has.
+
+- The read-modify-write lives in **`lib/server/sync.ts`**, called by the worker _and_ by `GET /api/pay/:publicId/status` _and_ by `submit-tx` — one implementation, so the poll really is the worker's write. An invoice is always re-derived from **every** attempt it has.
 - A tick never throws: 1Click down = `silent` (no write), illegal transition = `failed` (logged with the attempt id only — no address, no client, no upstream body), and the rest still run.
 - Expiry is **confirmed**: `expired` is terminal, so `expireQuotes` reads 1Click once more — late money is recorded forward, an unreachable service defers a minute, a 404 expires (no record exists, and a live row would wedge the invoice).
 - `stop()` wakes the parked interval and awaits the tick in flight; a second signal exits now. Nothing runs at import time (`main()` is entrypoint-guarded); `sleep` is injected in tests. Run for real: `pnpm worker` exits 0 on SIGTERM/SIGINT.
 
 ## Demo & dry-run (built in Phase 6)
+
 - `pnpm demo` = zero secrets, no network, PGlite, ten seeded invoices (one per status the app can reach), simulate payment. Dry-run = real `dry: true` quotes. Demo never moves funds.
 - `DEMO_MODE` is **process-wide**, read once by `createPaymentAdapters`: one process is either demo or real, never both. `demoModeConflict` refuses it next to a `DATABASE_URL` or an `https://` `PUBLIC_APP_URL`.
 - The demo substitutes the **transport** (`FetchLike` in `lib/oneclick/demo.ts`), never the implementation — schemas, quote verification and status transitions all run unchanged. A **non-dry** quote is never forwarded (a fake address that looks real is the one thing a demo must not hand out); a dry quote is re-signed with the published demo key that `managerKeyFor()` pins.
@@ -104,7 +120,9 @@ Rules as implemented in `lib/core/status.ts`:
 - Refusals that stay refusals: `/api/export.csv` is 403 for a demo account — seeded rows must not leave the app looking like a real ledger.
 
 ## Never
+
 Hold user funds · show unconfirmed statuses · use an unverified quote · put client data on-chain · commit secrets · send funds, deploy, post, push or submit without the human's explicit OK · finish a contribution without updating `ROADMAP.md`
 
 ## Env
+
 `ONECLICK_BASE_URL ONECLICK_JWT NEAR_RPC_URL USDC_CONTRACT_ID STORAGE_PAYER_ACCOUNT_ID STORAGE_PAYER_PRIVATE_KEY DATABASE_URL SESSION_SECRET PUBLIC_APP_URL DEMO_MODE`

@@ -47,11 +47,17 @@ interface DemoInvoice {
  * Scraping the href races the re-render that follows a reset, and the link it can hand back belongs
  * to the story that was just wiped — which the pay page then answers with "No such payment link".
  */
-async function freshPayUrl(context: BrowserContext, number: string, status: string): Promise<string> {
+async function freshPayUrl(
+  context: BrowserContext,
+  number: string,
+  status: string,
+): Promise<string> {
   const response = await context.request.post("/api/demo/reset");
   expect(response.ok()).toBeTruthy();
   const body = (await response.json()) as { invoices: DemoInvoice[] };
-  const match = body.invoices.filter((invoice) => invoice.number === number && invoice.status === status);
+  const match = body.invoices.filter(
+    (invoice) => invoice.number === number && invoice.status === status,
+  );
   expect(match, `the seed has no ${number} in ${status}`).toHaveLength(1);
   return new URL(match[0]!.payUrl).pathname;
 }
@@ -83,7 +89,9 @@ test("the demo page says what it is, and shows one invoice per status", async ({
   }
 
   // An invoice that was never paid must not claim its payments have finished.
-  await expect(page.getByText("No payment has been started on this invoice yet").first()).toBeVisible();
+  await expect(
+    page.getByText("No payment has been started on this invoice yet").first(),
+  ).toBeVisible();
 
   // Restarting is idempotent: the story is written again, not written twice.
   await page.getByRole("button", { name: "Restart the story" }).click();
@@ -146,7 +154,9 @@ test("a client prices a payment, gets one address, and watches it reach Paid", a
   // Step 4: the statuses arrive in order, one press each.
   for (const label of ["Payment seen", "Converting", "Paid"]) {
     await page.getByRole("button", { name: "The client sent it" }).click();
-    await expect(page.getByRole("status").or(page.locator("body")).getByText(label).first()).toBeVisible({
+    await expect(
+      page.getByRole("status").or(page.locator("body")).getByText(label).first(),
+    ).toBeVisible({
       timeout: 15_000,
     });
   }
@@ -182,7 +192,9 @@ test("the outcomes off the happy path explain themselves", async ({ page, contex
   await page.getByRole("button", { name: "Get a payment address" }).click();
   await page.getByRole("button", { name: "Send it back" }).click();
 
-  await expect(page.getByText("This payment has finished").first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("This payment has finished").first()).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByText("Refunded to you").first()).toBeVisible();
   // §3.3: a refund puts the invoice back to open, so the client can pay it again.
   await expect(page.getByText("Awaiting payment").first()).toBeVisible();

@@ -74,7 +74,9 @@ async function markAsPaid(seed: SeededInvoice): Promise<void> {
 describe("POST /api/invoices", () => {
   it("requires a session", async () => {
     expect((await create("settle_session=YWJj.ZGVm")).status).toBe(401);
-    expect((await CREATE(apiRequest("/api/invoices", { method: "POST", body: twoLines }))).status).toBe(401);
+    expect(
+      (await CREATE(apiRequest("/api/invoices", { method: "POST", body: twoLines }))).status,
+    ).toBe(401);
   });
 
   it("opens the invoice with its total, lines and pay link", async () => {
@@ -89,11 +91,22 @@ describe("POST /api/invoices", () => {
       status: "open",
       clientName: "Client Co",
       lines: [
-        { description: "Design, sprint 12", quantity: "1", unitPrice: "5000000", amount: "5000000", position: 0 },
+        {
+          description: "Design, sprint 12",
+          quantity: "1",
+          unitPrice: "5000000",
+          amount: "5000000",
+          position: 0,
+        },
         { description: "Rush surcharge", quantity: "1", unitPrice: "3", amount: "3", position: 1 },
       ],
     });
-    expect(body.total).toMatchObject({ baseUnits: TOTAL, amount: "5.000003", symbol: "USDC", decimals: 6 });
+    expect(body.total).toMatchObject({
+      baseUnits: TOTAL,
+      amount: "5.000003",
+      symbol: "USDC",
+      decimals: 6,
+    });
     expect(body.payUrl).toBe(`${APP_ORIGIN}/pay/${body.publicId}`);
   });
 
@@ -158,7 +171,10 @@ describe("POST /api/invoices", () => {
   });
 
   it("refuses a malformed email", async () => {
-    const response = await create((await seller()).cookie, { ...twoLines, clientEmail: "not-an-email" });
+    const response = await create((await seller()).cookie, {
+      ...twoLines,
+      clientEmail: "not-an-email",
+    });
 
     expect(response.status).toBe(400);
     expect(issuesOf(await errorOf(response))[0]?.path).toBe("clientEmail");
@@ -227,7 +243,12 @@ describe("GET /api/invoices/:id", () => {
     const { cookie, invoiceId, publicId, total } = await harness.seededInvoice();
     const body = await jsonOf(await detail(cookie, invoiceId));
 
-    expect(body).toMatchObject({ id: invoiceId, publicId, total: { baseUnits: total }, attempts: [] });
+    expect(body).toMatchObject({
+      id: invoiceId,
+      publicId,
+      total: { baseUnits: total },
+      attempts: [],
+    });
   });
 
   it("answers 404 for another user's invoice", async () => {

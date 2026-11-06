@@ -65,7 +65,14 @@ const OUTCOME_LABELS: Readonly<Record<DemoOutcome, string>> = {
   expired: "Quote lapsed",
 };
 
-const OUTCOME_ORDER: readonly DemoOutcome[] = ["next", "paid", "underpaid", "refunded", "failed", "expired"];
+const OUTCOME_ORDER: readonly DemoOutcome[] = [
+  "next",
+  "paid",
+  "underpaid",
+  "refunded",
+  "failed",
+  "expired",
+];
 
 export default function Page() {
   const session = useDemoSession();
@@ -102,8 +109,9 @@ export default function Page() {
         <Alert tone="danger" title="This server is not running the demo">
           <p>{session.error instanceof Error ? session.error.message : "Unknown error."}</p>
           <p className="mt-2 text-ink-muted">
-            Stop the app and start it with <code className="font-mono">pnpm demo</code>. Demo mode is
-            refused next to a real database or a public URL, so it cannot be turned on by accident here.
+            Stop the app and start it with <code className="font-mono">pnpm demo</code>. Demo mode
+            is refused next to a real database or a public URL, so it cannot be turned on by
+            accident here.
           </p>
         </Alert>
       </main>
@@ -150,7 +158,9 @@ export default function Page() {
             onClick={async () => {
               setMessage(null);
               await reset.mutateAsync();
-              setMessage("The story was reset: ten invoices, one per status, and no payments in flight.");
+              setMessage(
+                "The story was reset: ten invoices, one per status, and no payments in flight.",
+              );
             }}
           >
             Restart the story
@@ -185,8 +195,8 @@ export default function Page() {
       <section id="invoices" className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Ten invoices, one per status</h2>
         <p className="text-sm text-ink-muted">
-          Open a pay link to see the client&rsquo;s side. Where a payment is still moving, the buttons
-          underneath it are the ones that move it.
+          Open a pay link to see the client&rsquo;s side. Where a payment is still moving, the
+          buttons underneath it are the ones that move it.
         </p>
 
         {message ? <Alert tone="neutral">{message}</Alert> : null}
@@ -220,7 +230,9 @@ function DemoInvoice({
           <p className="truncate text-sm font-medium">{invoice.clientName}</p>
           <p className="text-xs text-ink-muted">
             {invoice.number}
-            {invoice.activeAttempt ? ` · paying in ${invoice.activeAttempt.originAsset.symbol ?? "…"}` : ""}
+            {invoice.activeAttempt
+              ? ` · paying in ${invoice.activeAttempt.originAsset.symbol ?? "…"}`
+              : ""}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -230,11 +242,17 @@ function DemoInvoice({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Link href={`/pay/${invoice.publicId}`} className={buttonClass({ variant: "secondary", size: "sm" })}>
+        <Link
+          href={`/pay/${invoice.publicId}`}
+          className={buttonClass({ variant: "secondary", size: "sm" })}
+        >
           Open the pay page
         </Link>
         {invoice.receiptUrl ? (
-          <Link href={invoice.receiptUrl} className={buttonClass({ variant: "secondary", size: "sm" })}>
+          <Link
+            href={invoice.receiptUrl}
+            className={buttonClass({ variant: "secondary", size: "sm" })}
+          >
             Read the receipt
           </Link>
         ) : null}
@@ -256,10 +274,14 @@ function DemoInvoice({
             ))}
           </span>
         ) : invoice.finishedPayments > 0 ? (
-          <span className="text-xs text-ink-faint">Every payment on this invoice has finished.</span>
+          <span className="text-xs text-ink-faint">
+            Every payment on this invoice has finished.
+          </span>
         ) : (
           // A draft or an unpaid invoice has nothing in flight either, and must not claim otherwise.
-          <span className="text-xs text-ink-faint">No payment has been started on this invoice yet.</span>
+          <span className="text-xs text-ink-faint">
+            No payment has been started on this invoice yet.
+          </span>
         )}
       </div>
     </article>

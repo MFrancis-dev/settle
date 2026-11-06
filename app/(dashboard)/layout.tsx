@@ -45,8 +45,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {isUnauthorized(me.error) ? (
           <Cardish title="Sign in to see your invoices">
             <p className="text-sm text-ink-muted">
-              Settle needs your wallet to sign a message before it shows anything. That does not move money
-              and does not give Settle permission to spend anything.
+              Settle needs your wallet to sign a message before it shows anything. That does not
+              move money and does not give Settle permission to spend anything.
             </p>
             <div className="mt-4">
               <SignInButton redirectTo={pathname} />
@@ -72,7 +72,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <Link href="/dashboard" className="text-base font-semibold tracking-tight">
           Settle
         </Link>
-        <nav aria-label="Sections" className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto sm:order-2 sm:w-auto">
+        <nav
+          aria-label="Sections"
+          className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto sm:order-2 sm:w-auto"
+        >
           {NAV.map((item) => (
             <NavLink key={item.href} href={item.href} active={pathname.startsWith(item.href)}>
               {item.label}
@@ -80,7 +83,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="order-2 flex items-center gap-3 sm:order-3">
-          <span className="hidden max-w-[18rem] truncate text-sm text-ink-muted sm:inline" title={me.data.nearAccountId}>
+          <span
+            className="hidden max-w-[18rem] truncate text-sm text-ink-muted sm:inline"
+            title={me.data.nearAccountId}
+          >
             {me.data.displayName}
           </span>
           <SignOut />
@@ -111,13 +117,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function NavLink({ href, active, children }: { href: string; active: boolean; children: ReactNode }) {
+function NavLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: ReactNode;
+}) {
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
       className={`whitespace-nowrap rounded-control px-3 py-1.5 text-sm ${
-        active ? "bg-surface-sunk font-medium text-ink" : "text-ink-muted hover:bg-surface-sunk hover:text-ink"
+        active
+          ? "bg-surface-sunk font-medium text-ink"
+          : "text-ink-muted hover:bg-surface-sunk hover:text-ink"
       }`}
     >
       {children}

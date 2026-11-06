@@ -23,9 +23,15 @@ export function InvoiceTable({ invoices }: { invoices: InvoiceView[] }) {
         <caption className="sr-only">Invoices</caption>
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-faint">
-            <th scope="col" className="py-2 pr-4 font-medium">Invoice</th>
-            <th scope="col" className="py-2 pr-4 font-medium">Status</th>
-            <th scope="col" className="py-2 pr-4 text-right font-medium">Total</th>
+            <th scope="col" className="py-2 pr-4 font-medium">
+              Invoice
+            </th>
+            <th scope="col" className="py-2 pr-4 font-medium">
+              Status
+            </th>
+            <th scope="col" className="py-2 pr-4 text-right font-medium">
+              Total
+            </th>
             <th scope="col" className="py-2 font-medium">
               <span className="hidden sm:inline">Pay link</span>
               <span className="sm:hidden">Open</span>
@@ -41,7 +47,9 @@ export function InvoiceTable({ invoices }: { invoices: InvoiceView[] }) {
                 </Link>
                 <p className="mt-0.5 max-w-[16rem] truncate text-ink-muted">{invoice.clientName}</p>
                 <p className="mt-0.5 text-xs text-ink-faint">
-                  {invoice.dueDate ? `Due ${dateText(invoice.dueDate)}` : `Issued ${dateText(invoice.createdAt)}`}
+                  {invoice.dueDate
+                    ? `Due ${dateText(invoice.dueDate)}`
+                    : `Issued ${dateText(invoice.createdAt)}`}
                 </p>
               </td>
               <td className="py-3 pr-4">
@@ -51,7 +59,9 @@ export function InvoiceTable({ invoices }: { invoices: InvoiceView[] }) {
                 {invoice.total ? (
                   <Money money={invoice.total} className="justify-end font-medium" />
                 ) : (
-                  <span className="text-xs text-ink-faint">Set a payout address to see the total</span>
+                  <span className="text-xs text-ink-faint">
+                    Set a payout address to see the total
+                  </span>
                 )}
               </td>
               <td className="py-3 text-right">

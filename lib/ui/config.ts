@@ -28,4 +28,5 @@ export function recipientFromLocation(): string {
 }
 
 /** Wallet sessions and payouts are useless without a wallet, so the button degrades to disabled. */
-export const WALLET_SUPPORTED = typeof window !== "undefined" && Boolean(window.crypto?.getRandomValues);
+export const WALLET_SUPPORTED =
+  typeof window !== "undefined" && Boolean(window.crypto?.getRandomValues);

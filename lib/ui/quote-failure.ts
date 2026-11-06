@@ -83,9 +83,13 @@ export function describeQuoteFailure(error: unknown, token: TokenOption | null):
     // exchange's own sentence about the request we sent.
     case "upstream_rejected": {
       const detail =
-        typeof details?.detail === "string" && details.detail.trim() !== "" ? details.detail.trim() : null;
+        typeof details?.detail === "string" && details.detail.trim() !== ""
+          ? details.detail.trim()
+          : null;
       shown.message = `${
-        detail ? `The exchange refused this route: ${detail}. ` : "The exchange refused this route. "
+        detail
+          ? `The exchange refused this route: ${detail}. `
+          : "The exchange refused this route. "
       }Nothing was created. Pick another token, or ask the seller to invoice in an asset you already hold.`;
       return shown;
     }

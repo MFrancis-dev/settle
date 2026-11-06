@@ -92,10 +92,7 @@ export type Nep413RejectReason =
  * has already spent. With the recipient check, those are what make "a fresh NEP-413 signature" (§6)
  * mean something rather than "a signature that happens to be valid".
  */
-export type SignatureRejection =
-  | Nep413RejectReason
-  | "message_mismatch"
-  | "replayed";
+export type SignatureRejection = Nep413RejectReason | "message_mismatch" | "replayed";
 
 export interface Nep413Checks {
   /** Who the message must name as recipient — pins it to this app (replay across apps). */
@@ -299,10 +296,7 @@ export function serializeNep413Payload(fields: {
  * 32 bytes means there is no payload to check against. That is still answered before the recipient,
  * so nothing about the message leaks from a length the caller chose.
  */
-export function verifyNep413SignedMessage(
-  input: unknown,
-  checks: Nep413Checks,
-): Nep413Result {
+export function verifyNep413SignedMessage(input: unknown, checks: Nep413Checks): Nep413Result {
   const parsed = signedMessageFieldsSchema.safeParse(input);
   if (!parsed.success) return { valid: false, reason: "malformed_payload" };
   const fields = parsed.data;
@@ -374,4 +368,3 @@ export function createNonce(
 ): string {
   return Buffer.from(random(new Uint8Array(NONCE_BYTES))).toString("base64");
 }
-

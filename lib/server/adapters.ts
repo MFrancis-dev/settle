@@ -14,7 +14,10 @@
  */
 
 import type { Database } from "../db/client";
-import { findAttemptByDepositAddress, type PaymentAttemptRecord } from "../db/queries/paymentAttempts";
+import {
+  findAttemptByDepositAddress,
+  type PaymentAttemptRecord,
+} from "../db/queries/paymentAttempts";
 import { DEMO_USDC_ON_NEAR, type SeedDemoOptions } from "../db/seed-demo";
 import {
   DEMO_MANAGER_PUBLIC_KEY,
@@ -99,7 +102,8 @@ export function demoStageFromAttempt(row: PaymentAttemptRecord): DemoStage | nul
     status,
     depositedAmount: status === "INCOMPLETE_DEPOSIT" ? short : deposited,
     refundedAmount: status === "REFUNDED" ? row.amountIn : null,
-    refundReason: status === "REFUNDED" ? "The deadline passed before the full deposit arrived." : null,
+    refundReason:
+      status === "REFUNDED" ? "The deadline passed before the full deposit arrived." : null,
     depositTxHash: row.depositTxHash,
     deliveryTxHash: row.deliveryTxHash,
     quoteResponse: row.quoteRaw,

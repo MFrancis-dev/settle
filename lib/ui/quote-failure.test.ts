@@ -95,22 +95,28 @@ describe("describeQuoteFailure", () => {
   });
 
   it("falls back to the server's own sentence rather than guessing", () => {
-    expect(describeQuoteFailure(new ApiError(409, "conflict", "This invoice has been cancelled."), WNEAR).message).toBe(
-      "This invoice has been cancelled.",
-    );
-    expect(describeQuoteFailure(new ApiError(400, "bad_request", "Invalid request body"), WNEAR).message).toBe(
-      "Invalid request body",
-    );
+    expect(
+      describeQuoteFailure(new ApiError(409, "conflict", "This invoice has been cancelled."), WNEAR)
+        .message,
+    ).toBe("This invoice has been cancelled.");
+    expect(
+      describeQuoteFailure(new ApiError(400, "bad_request", "Invalid request body"), WNEAR).message,
+    ).toBe("Invalid request body");
   });
 
   it("answers a rate limit with how long to wait", () => {
-    expect(describeQuoteFailure(new ApiError(429, "rate_limited", "slow down", { retryAfterS: 12 }), WNEAR).message).toContain(
-      "12 seconds",
-    );
+    expect(
+      describeQuoteFailure(
+        new ApiError(429, "rate_limited", "slow down", { retryAfterS: 12 }),
+        WNEAR,
+      ).message,
+    ).toContain("12 seconds");
   });
 
   it("handles something that is not an API error at all", () => {
-    expect(describeQuoteFailure(new Error("network went away"), WNEAR).message).toBe("network went away");
+    expect(describeQuoteFailure(new Error("network went away"), WNEAR).message).toBe(
+      "network went away",
+    );
     expect(describeQuoteFailure("nope", WNEAR).message).toBe("The price could not be prepared.");
   });
 });

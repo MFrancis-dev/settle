@@ -23,9 +23,9 @@ export function DemoBanner() {
       }
     >
       <p>
-        This is a fictional freelancer&rsquo;s data. The invoices, the payments and the receipts were
-        written in this process, the payment service answers from a recording, and no wallet is ever
-        asked to sign anything.
+        This is a fictional freelancer&rsquo;s data. The invoices, the payments and the receipts
+        were written in this process, the payment service answers from a recording, and no wallet is
+        ever asked to sign anything.
       </p>
     </Alert>
   );

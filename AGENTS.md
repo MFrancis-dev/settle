@@ -10,6 +10,7 @@ Read this file fully before your first change.
 **Every contribution updates `ROADMAP.md` in the same change.** No exceptions, including docs-only, test-only and "tiny" fixes.
 
 For each contribution:
+
 1. Tick or update the task(s) you worked on (`[ ]` → `[~]` in progress → `[x]` done), with the date.
 2. Update the phase's progress % and the **Readiness** table at the top.
 3. Add new tasks you discovered (bugs, follow-ups, verified 🔍 items) to the right phase.
@@ -31,14 +32,14 @@ A contribution without a `ROADMAP.md` update is not done.
 
 ## 2. Read order
 
-| When | Read |
-|---|---|
-| Every session, first | `ROADMAP.md` (what's next, what's blocked) then `ARCHITECTURE_ESSENTIALS.md` |
-| Building a feature | Matching section of `ARCHITECTURE.md` |
-| Creating or moving a file | `project_structure.md` |
-| Unsure what the product should do | `PRD.md` |
-| Hackathon rules, demo post, submission | https://nearhackathon.com/HACKATHON.md (re-read live before submitting) |
-| Any external API | Its official docs. Never code against an API from memory. |
+| When                                   | Read                                                                         |
+| -------------------------------------- | ---------------------------------------------------------------------------- |
+| Every session, first                   | `ROADMAP.md` (what's next, what's blocked) then `ARCHITECTURE_ESSENTIALS.md` |
+| Building a feature                     | Matching section of `ARCHITECTURE.md`                                        |
+| Creating or moving a file              | `project_structure.md`                                                       |
+| Unsure what the product should do      | `PRD.md`                                                                     |
+| Hackathon rules, demo post, submission | https://nearhackathon.com/HACKATHON.md (re-read live before submitting)      |
+| Any external API                       | Its official docs. Never code against an API from memory.                    |
 
 If code and docs disagree, stop and ask.
 
@@ -60,14 +61,14 @@ See `project_structure.md`. Summary: one Next.js app (`app/`, `components/`, `li
 
 Installed and verified 2026-11-04 with **pnpm 11** (`packageManager` is pinned; esbuild's build script is approved in `pnpm-workspace.yaml`). Exact versions are pinned in `package.json`; add new ones pinned too. Keep this table accurate.
 
-| Task | Command |
-|---|---|
-| Install | `pnpm install` |
-| Dev app / worker | `pnpm dev` / `pnpm worker` |
-| **Demo mode (zero config)** | `pnpm demo` |
-| Typecheck / lint / format | `pnpm typecheck` / `pnpm lint` / `pnpm format` |
-| Tests / E2E | `pnpm test` / `pnpm e2e` |
-| DB | `pnpm db:generate && pnpm db:migrate` |
+| Task                               | Command                                                                                               |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Install                            | `pnpm install`                                                                                        |
+| Dev app / worker                   | `pnpm dev` / `pnpm worker`                                                                            |
+| **Demo mode (zero config)**        | `pnpm demo`                                                                                           |
+| Typecheck / lint / format          | `pnpm typecheck` / `pnpm lint` / `pnpm format`                                                        |
+| Tests / E2E                        | `pnpm test` / `pnpm e2e`                                                                              |
+| DB                                 | `pnpm db:generate && pnpm db:migrate`                                                                 |
 | Storage payer (S0.10, 👤 funds it) | `pnpm payer` status · `pnpm payer:generate` local key → `.env` · `pnpm payer:check` read-only balance |
 
 Before saying done: `pnpm typecheck && pnpm lint && pnpm test`. `pnpm demo` must work on a fresh clone with **no `.env`, no keys, no external DB**.
@@ -75,18 +76,21 @@ Before saying done: `pnpm typecheck && pnpm lint && pnpm test`. `pnpm demo` must
 ## 6. Code rules
 
 **Money**
+
 - Integers in base units: `bigint` in TS, `numeric(78,0)` in SQL, strings in JSON. Never floats for money (display-only USD estimates excepted).
 - One helper module (`lib/core/money.ts`) for unit conversion and rounding. Decimals from the 1Click token list.
 - Round half-up per invoice line; total = sum of lines.
 
 **TypeScript**
+
 - `strict`, no `any`, no silencing casts. `zod` at every boundary (bodies, env, 1Click responses).
 - `verifyQuoteSignature()` before any `depositAddress` is shown or stored.
 - Status unions defined once (`lib/core/status.ts`), exhaustive `switch`, monotonic transitions.
 - Server-only code (`lib/server/`, keys, JWT, DB) never imported by client components.
 
 **General**
-- Match the surrounding style; comments explain *why*.
+
+- Match the surrounding style; comments explain _why_.
 - No new dependency without a reason in your summary.
 - Client pages: plain language, no crypto jargon.
 - Don't describe environments by network name in code, docs, UI or README; use **"dry-run"** and **"demo mode"**.
@@ -94,6 +98,7 @@ Before saying done: `pnpm typecheck && pnpm lint && pnpm test`. `pnpm demo` must
 ## 7. Ask the human first
 
 Never without an explicit "yes" in chat:
+
 - Send real funds or sign real transactions (including the storage-payer account).
 - Submit the hackathon form or call its API (print the payload first; one attempt per project).
 - Post on X or anywhere else.
@@ -105,34 +110,36 @@ Always: secrets in `.env` (git-ignored) with names in `.env.example`; client dat
 
 ## 8. Tests
 
-| Change | Required |
-|---|---|
-| Money / rounding | Unit tests incl. 0, 1 base unit, large values |
-| Status logic | Every 1Click status, overpaid, paid-after-cancel, monotonic |
-| 1Click | Fixtures per status; valid + tampered signatures |
-| Address validation | Valid/invalid per supported chain |
-| API route | Happy path + validation error + auth error |
-| UI flow | Playwright demo journey (PRD §8) |
+| Change             | Required                                                    |
+| ------------------ | ----------------------------------------------------------- |
+| Money / rounding   | Unit tests incl. 0, 1 base unit, large values               |
+| Status logic       | Every 1Click status, overpaid, paid-after-cancel, monotonic |
+| 1Click             | Fixtures per status; valid + tampered signatures            |
+| Address validation | Valid/invalid per supported chain                           |
+| API route          | Happy path + validation error + auth error                  |
+| UI flow            | Playwright demo journey (PRD §8)                            |
 
 Tests never call paid APIs or move funds.
 
 ## 9. Keeping docs in sync
 
-| You changed… | Update… |
-|---|---|
-| **Anything** | **`ROADMAP.md`** (task, %, update log) |
-| Product behaviour | `PRD.md` |
-| Route, table, status, flow, env var | `ARCHITECTURE.md` + `ARCHITECTURE_ESSENTIALS.md` |
+| You changed…                             | Update…                                                     |
+| ---------------------------------------- | ----------------------------------------------------------- |
+| **Anything**                             | **`ROADMAP.md`** (task, %, update log)                      |
+| Product behaviour                        | `PRD.md`                                                    |
+| Route, table, status, flow, env var      | `ARCHITECTURE.md` + `ARCHITECTURE_ESSENTIALS.md`            |
 | A decision was made / a 🔍 item verified | ESSENTIALS ✅/🔍 lists, `ARCHITECTURE.md` §11, `ROADMAP.md` |
-| A command or script | §5 here |
-| A folder or file location | `project_structure.md` |
+| A command or script                      | §5 here                                                     |
+| A folder or file location                | `project_structure.md`                                      |
 
 Keep `ARCHITECTURE_ESSENTIALS.md` under ~120 lines.
 
 ## 10. Hackathon requirements affecting code
+
 Code counts from 2026-10-19 · libraries listed in README · public repo + MIT LICENSE by the deadline · README written for AI screeners ("do X → see Y") and names **Stack** · demo post on X by the human · track `realworld`.
 
 ## 11. Definition of done
+
 - [ ] Matches PRD/ARCHITECTURE (or docs updated with the human's agreement)
 - [ ] Typecheck, lint, tests pass
 - [ ] `pnpm demo` works from a fresh clone
