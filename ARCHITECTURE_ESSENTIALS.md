@@ -85,8 +85,12 @@ Rules as implemented in `lib/core/status.ts`:
 ## Data model (amounts numeric(78,0) base units)
 `users` · `payout_destinations` (history) · `invoices` + `invoice_items` · `payment_attempts` (deposit_address uniq, payout_destination_id, quote_raw, signature, status, receipt_token)
 
-## Worker
-`pollPayments` 5 s · `expireQuotes` 60 s
+## Worker (built in Phase 5)
+`pollPayments` 5 s · `expireQuotes` 60 s · both on the app's own `ServerDeps`, 50 rows max a tick, oldest first.
+- The read-modify-write lives in **`lib/server/sync.ts`**, called by the worker *and* by `GET /api/pay/:publicId/status` *and* by `submit-tx` — one implementation, so the poll really is the worker's write. An invoice is always re-derived from **every** attempt it has.
+- A tick never throws: 1Click down = `silent` (no write), illegal transition = `failed` (logged with the attempt id only — no address, no client, no upstream body), and the rest still run.
+- Expiry is **confirmed**: `expired` is terminal, so `expireQuotes` reads 1Click once more — late money is recorded forward, an unreachable service defers a minute, a 404 expires (no record exists, and a live row would wedge the invoice).
+- `stop()` wakes the parked interval and awaits the tick in flight; a second signal exits now. Nothing runs at import time (`main()` is entrypoint-guarded); `sleep` is injected in tests. Run for real: `pnpm worker` exits 0 on SIGTERM/SIGINT.
 
 ## Demo & dry-run
 `pnpm demo` = zero secrets, PGlite, seeded invoices in every status, simulate payment. Dry-run = real `dry: true` quotes. Demo never moves funds.

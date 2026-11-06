@@ -10,7 +10,7 @@
  * walk an already-successful attempt back to `awaiting_deposit`.
  */
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 
 import type { BaseUnits, QuoteSummary } from "../../core/types";
@@ -150,6 +150,77 @@ export async function findActiveAttemptForInvoice(
     .orderBy(desc(paymentAttempts.createdAt))
     .limit(1);
   return rows[0] ? toRecord(rows[0]) : null;
+}
+
+/**
+ * Every attempt that can still move, oldest first — the worker's polling set (S5.2).
+ *
+ * Not filtered by invoice: the worker has no user and no session, it works from the table. `limit`
+ * bounds one tick so a backlog costs a slow loop rather than an unbounded burst of upstream reads.
+ */
+export async function listLiveAttempts(
+  db: Database,
+  options: { limit?: number } = {},
+): Promise<readonly PaymentAttemptRecord[]> {
+  const rows = await db
+    .select()
+    .from(paymentAttempts)
+    .where(inArray(paymentAttempts.status, LIVE_ATTEMPT_STATUSES))
+    .orderBy(paymentAttempts.createdAt)
+    .limit(options.limit ?? 100);
+  return rows.map(toRecord);
+}
+
+/**
+ * Attempts whose quote deadline has passed with no deposit seen (S5.3).
+ *
+ * `awaiting_deposit` *is* the "no deposit" half of the rule: the first status 1Click reports after
+ * money lands is `KNOWN_DEPOSIT_TX`, so anything further along has a deposit by definition.
+ */
+export async function listExpiredQuoteAttempts(
+  db: Database,
+  input: { now: Date; limit?: number },
+): Promise<readonly PaymentAttemptRecord[]> {
+  const rows = await db
+    .select()
+    .from(paymentAttempts)
+    .where(
+      and(
+        eq(paymentAttempts.status, "awaiting_deposit"),
+        lt(paymentAttempts.quoteDeadline, input.now),
+      ),
+    )
+    .orderBy(paymentAttempts.quoteDeadline)
+    .limit(input.limit ?? 100);
+  return rows.map(toRecord);
+}
+
+/**
+ * Mark an attempt `expired`.
+ *
+ * Separate from `recordAttemptStatus` because expiry is not something 1Click reports: there is no
+ * upstream status to map from. It is still guarded by `canTransition`, so an attempt that moved on
+ * between the read and this write is refused rather than walked back — and `expired` is terminal,
+ * which is why the caller checks upstream one last time first.
+ */
+export async function expireAttempt(
+  db: Database,
+  input: { attemptId: string; at?: Date },
+): Promise<PaymentAttemptRecord | null> {
+  const current = await findAttemptById(db, input.attemptId);
+  if (!current) return null;
+  if (current.status === "expired") return current;
+  if (!canTransition(current.status, "expired")) return current;
+
+  const updated = await db
+    .update(paymentAttempts)
+    .set({ status: "expired", updatedAt: input.at ?? new Date() })
+    .where(and(eq(paymentAttempts.id, input.attemptId), eq(paymentAttempts.status, current.status)))
+    .returning();
+
+  // No row matched: somebody else moved this attempt while we were writing. Report what it is now
+  // rather than the stale copy we read, so the caller re-derives the invoice from the truth.
+  return updated[0] ? toRecord(updated[0]) : findAttemptById(db, input.attemptId);
 }
 
 export interface RecordStatusInput {

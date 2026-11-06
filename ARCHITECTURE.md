@@ -156,6 +156,15 @@ Callers pass **every** attempt for the invoice — a partial list derives a weak
 
 Idempotency: unique `deposit_address`; status updates are monotonic (never move backwards).
 
+As implemented (S5.1–S5.3):
+
+- **One write path.** `lib/server/sync.ts` (`syncAttempt`, `refreshInvoiceStatus`) is called by `pollPayments` *and* by `GET /api/pay/:publicId/status` *and* by `submit-tx`. The table above says the poll is the worker's write; sharing the module is what makes that true rather than aspirational. An invoice is always re-derived from **every** attempt it has, never from the one row that changed.
+- **Bounded ticks.** `listLiveAttempts` / `listExpiredQuoteAttempts` cap a tick at 50 rows (`POLL_BATCH`, `EXPIRE_BATCH`), oldest first, so a backlog drains over several ticks instead of firing an unbounded burst at a partner service. Attempts are polled sequentially for the same reason.
+- **A tick never throws.** 1Click being unreachable is `silent` (nothing is written, so "no signal yet" is never stored as "not paid"); an illegal transition is `failed`, logged with the attempt id and the error kind only — no address, no client name, no upstream body — and the rest of the tick still runs. One bad row must not freeze every other payment behind it.
+- **Expiry is confirmed, not assumed.** `expired` is terminal and absorbs, so `expireQuotes` reads 1Click once more before writing: money that landed in the final seconds is recorded forward (`lateDeposit`), an unreachable service **defers** the decision to the next minute, and a 404 does expire — the service keeps no record of that deposit address, and leaving the row live would wedge the invoice under the one-live-attempt rule.
+- **Graceful shutdown.** `stop()` sets a flag *and* wakes the parked interval, then awaits the tick in flight. Killing a tick mid-write is how a payment ends up polled upstream and never recorded. A second signal exits immediately.
+- **Nothing runs at import time.** `main()` is behind an entrypoint guard, so the Next.js app or a test can import this module without spawning a process; `sleep` is injected in tests, so scheduling is asserted without fake timers.
+
 ### 3.5 Payout storage registration
 On setting a USDC-on-NEAR payout: RPC `storage_balance_of(account)` on the USDC contract; if missing, the app's `STORAGE_PAYER` account calls `storage_deposit(account)`.
 
@@ -266,6 +275,7 @@ key; unset, the SDK's built-in production manager key is used.
   the handler, `lib/server`, the queries and the vendor's signature verifier all run together. Nothing of ours
   is mocked.
 - UI: component tests in `jsdom` (`// @vitest-environment jsdom` docblock; the default environment stays `node` so the server suite never pays for a DOM). They cover the parts where a wrong word or a wrong number is a money bug: `Money`/`MoneyExact` (exact base units, and the label that says the token could not be resolved — never an invented decimal), `CopyButton` (it reports "Select it and press Ctrl+C" when the browser refused the clipboard, which is what a demo over plain http gets), `Countdown` (the expiry sentence, the screen-reader sentence, and `onExpire` firing once), `DepositPanel` (memo warning only when the network needs one) and `StatusBadge` (walks both status unions, so a new status cannot render as a blank pill). `lib/wallet/api-contract.test.ts` is the pair-test: the bodies a browser builds must survive `signInInput`/`payoutInput` **and** `verifyNep413SignedMessage`, because those two halves were once green separately and incompatible together.
+- Worker: one tick per test, against the same harness — a real PGlite database, an attempt opened through the real quote route, a scripted 1Click and a frozen clock advanced past the quote's own deadline. `worker/index.test.ts` drives the loop runner with an injected `sleep`, so "did it poll again" and "did shutdown wait for the write" are assertions rather than timeouts. The process itself was also run: `pnpm worker` starts both loops and exits 0 on SIGTERM and SIGINT.
 - E2E: PRD §8 journey in demo mode.
 - Manual: one small real payment, recorded for the video (human approval required).
 
