@@ -31,14 +31,15 @@
 
 | Layer | Choice |
 |---|---|
-| App | **Next.js 15** (App Router) + **TypeScript** (strict), Tailwind CSS, shadcn/ui, TanStack Query |
+| App | **Next.js 15** (App Router) + **TypeScript** (strict), Tailwind CSS v4, TanStack Query |
+| UI components | hand-rolled in `components/ui/*` on Tailwind **role tokens** (`@theme` in `app/globals.css`: `--color-ink`, `--color-brand`, `--color-warn`, `--radius-card`, …). No component library: the parts that carry money are ~8 small files, and a library would have put its own words, rounding and focus styles between us and §6. |
 | Validation | `zod` at every boundary (bodies, env, 1Click responses) |
 | 1Click | `@defuse-protocol/one-click-sdk-typescript` ≥ 0.1.24 (`verifyQuoteSignature`) |
 | NEAR | **wallet selector v10** for sign-in (`@near-wallet-selector/{core,modal-ui,my-near-wallet,hot-wallet}@10.1.4` — S0.14, see §11); NEP-413 verification; RPC views (`storage_balance_of`); one app-funded account to pay USDC storage for payout accounts |
-| DB | **Drizzle ORM**: **PGlite** for local + demo (zero config), **Postgres** when `DATABASE_URL` is set (hosted) |
+| DB | **Drizzle ORM**: **PGlite** for local + demo (zero config), **Postgres** when `DATABASE_URL` is set (hosted). Both drivers are listed in `next.config.ts` → `serverExternalPackages`: bundled by webpack they hand Node a `URL` where `fs` wants a path, and every API route answers 500 `ERR_INVALID_ARG_TYPE` — a fault no unit test can see, because it only exists in the server bundle. |
 | Worker | `worker/index.ts` run with `tsx`; interval loops; long-running host (not serverless) |
 | Address validation | per-chain validators (EVM checksum, NEAR account rules, others via a small, listed library) |
-| Tests | `vitest`, Playwright (demo journey) |
+| Tests | `vitest` (node by default; component tests opt into `jsdom` + `@testing-library/react` with a `@vitest-environment jsdom` docblock), Playwright (demo journey) |
 | Package manager | `pnpm` (single app, no workspaces) |
 
 No smart contract in the MVP (stretch: receipt registry, §10).
@@ -264,6 +265,7 @@ key; unset, the SDK's built-in production manager key is used.
   NEAR RPC read and a frozen clock, then the test calls the exported `GET`/`POST` of the real `route.ts` — so
   the handler, `lib/server`, the queries and the vendor's signature verifier all run together. Nothing of ours
   is mocked.
+- UI: component tests in `jsdom` (`// @vitest-environment jsdom` docblock; the default environment stays `node` so the server suite never pays for a DOM). They cover the parts where a wrong word or a wrong number is a money bug: `Money`/`MoneyExact` (exact base units, and the label that says the token could not be resolved — never an invented decimal), `CopyButton` (it reports "Select it and press Ctrl+C" when the browser refused the clipboard, which is what a demo over plain http gets), `Countdown` (the expiry sentence, the screen-reader sentence, and `onExpire` firing once), `DepositPanel` (memo warning only when the network needs one) and `StatusBadge` (walks both status unions, so a new status cannot render as a blank pill). `lib/wallet/api-contract.test.ts` is the pair-test: the bodies a browser builds must survive `signInInput`/`payoutInput` **and** `verifyNep413SignedMessage`, because those two halves were once green separately and incompatible together.
 - E2E: PRD §8 journey in demo mode.
 - Manual: one small real payment, recorded for the video (human approval required).
 

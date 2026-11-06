@@ -249,7 +249,7 @@ function QuotePreview({ quote }: { quote: QuoteView }) {
   const fee = usdText(quote.feeUsd);
   return (
     <div className="rounded-card border border-brand/30 bg-brand-soft p-4">
-      <h3 className="text-sm font-semibold text-brand">This is what the payment would be</h3>
+      <h2 className="text-sm font-semibold text-brand">This is what the payment would be</h2>
       <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs uppercase tracking-wide text-ink-faint">You send</dt>

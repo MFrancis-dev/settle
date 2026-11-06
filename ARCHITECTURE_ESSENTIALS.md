@@ -27,10 +27,10 @@ Answered from the docs while building Phase 2 (2026-11-05), still **unconfirmed 
 
 Still open: 3. same-asset quotes · one live end-to-end wallet login (the shape below is the library's code, the wallet's own confirmation dialog is not testable offline).
 
-**Answered 2026-11-05 (S0.14) — wallet sign-in:** `@near-wallet-selector/*@10.1.4`; `wallet.signMessage({message, recipient, nonce: Buffer, callbackUrl?, state?})` → `{accountId, publicKey, signature (base64), state?}`. The signed bytes are **Borsh** `{tag u32 = 2**31+413, message, nonce[u8;32], recipient, callbackUrl?}` and the digest is `sha256` of them — *not* `"near:" + JSON`, so `lib/near/nep413.ts` now verifies both shapes (`verifyNep413SignedMessage` = wallets, `verifyNep413` = the JSON/RAAT bodies our fixtures sign). MetaMask (`ethereum-wallets`) **throws** on sign-message → not a sign-in option. v10 removed `signIn({messagePayload})` and tells you to drop `near-api-js` (v7 dropped `keyStores`, wants node ≥ 22.22.2) → wallet packages stay client-side, our own RPC + noble/bs58 do the server work.
+**Answered 2026-11-05 (S0.14) — wallet sign-in:** `@near-wallet-selector/*@10.1.4`; `wallet.signMessage({message, recipient, nonce: Buffer, callbackUrl?, state?})` → `{accountId, publicKey, signature (base64), state?}`. The signed bytes are **Borsh** `{tag u32 = 2**31+413, message, nonce[u8;32], recipient, callbackUrl?}` and the digest is `sha256` of them — *not* `"near:" + JSON`. Since 2026-11-06 the **request path verifies that shape only** (`verifyNep413SignedMessage`); `verifyNep413` (the JSON convention) stays exported and tested with no caller. MetaMask (`ethereum-wallets`) **throws** on sign-message → not a sign-in option. v10 removed `signIn({messagePayload})` and tells you to drop `near-api-js` (v7 dropped `keyStores`, wants node ≥ 22.22.2) → wallet packages stay client-side, our own RPC + noble/bs58 do the server work.
 
 ## Stack
-Next.js 15 + TS strict · Tailwind + shadcn/ui · TanStack Query · zod · Drizzle (PGlite/Postgres) · 1Click SDK ≥ 0.1.24 · wallet selector (NEP-413 sign-in) · vitest + Playwright · pnpm
+Next.js 15 + TS strict · Tailwind v4 role tokens, hand-rolled `components/ui/*` (no component library) · TanStack Query · zod · Drizzle (PGlite/Postgres) · 1Click SDK ≥ 0.1.24 · wallet selector (NEP-413 sign-in) · vitest (+ jsdom/Testing Library for components) + Playwright · pnpm
 
 ## 1Click rules
 - `EXACT_OUTPUT` · destination = payout asset · recipient = payout address · refundTo = client address · deadline per origin chain
@@ -73,6 +73,14 @@ Rules as implemented in `lib/core/status.ts`:
 - Payout changes sign `Settle payout change to <address> on <chain>` (`lib/core/payout-message.ts`); the settings page and `PUT /api/payout` must derive it identically.
 - Quotes: 6/min per `publicId`+IP; status polls: 60/min. Rejection carries `Retry-After`.
 - `POST /api/demo/:action` is Phase 6, not built yet.
+
+## UI (built in Phase 4)
+- Client pages read `lib/api/types.ts`, a hand-written mirror of the server's views — a client component must never reach `lib/server` (it would pull the DB and the secrets into the bundle).
+- Amounts: always the exact base-unit string. `amount`/`symbol`/`decimals` are the display half and are `null` when the token list could not be read → show base units **and say so**, never an estimated unit. Totals are summed per asset id, never across assets.
+- The pay page creates nothing on load: first button is the free `dry: true` preview, the address comes from a second press, and one live attempt per invoice means a 409 with an `attemptId` re-reads the invoice instead of opening a second address.
+- Every status the API can return has a sentence in `lib/ui/status.ts` (exhaustive `switch`); `role="alert"` is only on warn/danger so a poll never interrupts.
+- `middleware.ts` puts the requested path in `?next=`; `lib/ui/return-path.ts` decides what may be pushed back (gated prefixes only — `//host` is an open redirect).
+- `next.config.ts` → `serverExternalPackages: ["@electric-sql/pglite", "postgres"]`. Without it every API route 500s in the server bundle and the tests still pass.
 
 ## Data model (amounts numeric(78,0) base units)
 `users` · `payout_destinations` (history) · `invoices` + `invoice_items` · `payment_attempts` (deposit_address uniq, payout_destination_id, quote_raw, signature, status, receipt_token)

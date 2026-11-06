@@ -24,12 +24,22 @@ let connection: Promise<ConnectedDatabase> | undefined;
 
 /** The connection for this process, engine chosen from the environment. */
 export function getDatabase(): Promise<ConnectedDatabase> {
-  connection ??= createDatabase(databaseConfig());
+  if (connection === undefined) {
+    connection = createDatabase(databaseConfig());
+    // A failed open must not stay cached: every later request would be handed the same rejection, so
+    // one bad start (or one bad `DATABASE_URL`) would take the app down until a restart. The handler
+    // also marks the rejection handled, so an idle failure is logged by the caller, not by the process.
+    connection.catch(() => {
+      connection = undefined;
+    });
+  }
   return connection;
 }
 
 export async function closeDatabase(): Promise<void> {
-  const active = await connection;
+  const opening = connection;
   connection = undefined;
-  await active?.close();
+  if (opening === undefined) return;
+  const opened = await opening.catch(() => undefined);
+  await opened?.close();
 }

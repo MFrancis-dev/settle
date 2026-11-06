@@ -11,13 +11,22 @@ import Link from "next/link";
 
 import { SignInButton } from "@/components/wallet/SignInButton";
 import { buttonClass } from "@/components/ui/button";
+import { returnPath } from "@/lib/ui/return-path";
 
-export default function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  // `middleware.ts` sends a signed-out visitor here with the page they asked for in `?next=`; without
+  // reading it, everybody who follows a bookmarked `/settings` link lands on the dashboard instead.
+  const requested = returnPath((await searchParams).next);
+
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 pb-16 sm:px-8">
       <header className="flex items-center justify-between gap-4 py-5">
         <span className="text-lg font-semibold tracking-tight">Settle</span>
-        <SignInButton redirectTo="/dashboard" size="sm" />
+        <SignInButton redirectTo={requested ?? "/dashboard"} size="sm" />
       </header>
 
       <main id="main" className="flex-1">
@@ -31,7 +40,7 @@ export default function Page() {
             invoice, settled.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <SignInButton redirectTo="/invoices/new" size="lg" />
+            <SignInButton redirectTo={requested ?? "/invoices/new"} size="lg" />
             <Link href="/invoices/new" className={buttonClass({ variant: "secondary", size: "lg" })}>
               Write an invoice
             </Link>
@@ -96,7 +105,7 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
   return (
     <div>
       <p className="money text-sm font-semibold text-brand">{n}</p>
-      <h3 className="mt-1 text-base font-semibold">{title}</h3>
+      <h2 className="mt-1 text-base font-semibold">{title}</h2>
       <p className="mt-1 text-sm text-ink-muted">{body}</p>
     </div>
   );
