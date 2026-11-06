@@ -96,6 +96,7 @@ lib/
                     # http.ts (errors → responses), session.ts, auth.ts (session → principal),
                     # signature.ts (NEP-413 + quote signature), nonces.ts (replay guard),
                     # rateLimit.ts, pay.ts, invoices.ts, payout.ts, receipts.ts, views.ts
+                    # sync.ts — the one attempt/invoice write, shared by the status route, submit-tx and the worker
                     # __fixtures__/routes.ts — PGlite + scripted 1Click + fake RPC for the route tests
 ├─ api/             # CLIENT side: client.ts (fetch + ApiError), queries.ts (React Query keys, polling,
 │                   # invalidation), types.ts (hand-written mirror of the server's views), receipt-link.ts
@@ -114,11 +115,15 @@ rather than a mock of it.
 ## 5. `worker/`
 ```
 worker/
-├─ index.ts                 # start loops, graceful shutdown
-├─ pollPayments.ts          # 5 s
-└─ expireQuotes.ts          # 60 s
+├─ index.ts                 # startLoop (injected sleep) · startWorker · main() behind an entrypoint guard
+├─ pollPayments.ts          # 5 s · one tick returns {checked, advanced, unchanged, silent, failed}
+└─ expireQuotes.ts          # 60 s · one tick returns {checked, expired, lateDeposit, deferred, failed}
 ```
-Each loop is `(deps) => Promise<void>` so tests can run one tick with fake deps.
+Each loop is `tick(deps) → summary` with every dependency injected, so a test runs **one tick** against the
+route harness (real PGlite, real quote route, scripted 1Click, frozen clock) and asserts on the tables
+afterwards. `startLoop`'s `sleep` is injected too, so "did it poll again" and "did shutdown wait for the
+write in flight" are assertions, not timeouts. The status write itself is `lib/server/sync.ts` — the worker
+and the status route call the same function.
 
 ## 6. `e2e/`, `scripts/`
 ```

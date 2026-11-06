@@ -11,7 +11,7 @@
  */
 
 import { SUPPORTED_CHAINS, validateAddress } from "../core/address";
-import { deriveInvoiceStatus, type InvoiceStatus } from "../core/status";
+import type { InvoiceStatus } from "../core/status";
 import type { PayQuoteInput, SubmitTxInput } from "../core/schemas";
 import type { QuoteSummary } from "../core/types";
 import { getInvoiceByPublicId, setInvoiceStatus, type InvoiceRecord } from "../db/queries/invoices";
@@ -26,9 +26,10 @@ import { getActiveDestination } from "../db/queries/payoutDestinations";
 import { findUserById } from "../db/queries/users";
 import { OneClickError } from "../oneclick/client";
 import { requestInvoiceQuote, type InvoiceQuoteParams } from "../oneclick/quote";
-import { getExecutionStatus, submitDepositTx, type ExecutionStatus } from "../oneclick/status";
+import { submitDepositTx } from "../oneclick/status";
 import { chainFromCode } from "../oneclick/tokens";
 import { badRequest, conflict, HttpError, notFound, rateLimited } from "./http";
+import { syncAttempt, refreshInvoiceStatus } from "./sync";
 import { attemptView, invoiceView, moneyView, payUrlFor, type AttemptView, type MoneyView } from "./views";
 import type { ServerDeps } from "./deps";
 
@@ -356,6 +357,11 @@ export async function submitTx(
       at: new Date(deps.now()),
     });
 
+    // The attempt moved, so the invoice is re-derived from it here rather than left for the next
+    // poll: a response that says `payment_detected` over an invoice row still saying `open` is the
+    // kind of disagreement the dashboard and the pay page would show side by side.
+    await refreshInvoiceStatus(deps, attempt.invoiceId);
+
     return {
       attempt: await attemptView(deps, updated ?? attempt),
       forwarded: true,
@@ -383,9 +389,13 @@ export interface StatusView {
 /**
  * `GET /api/pay/:publicId/status` — the pay page's poll.
  *
- * Writing from a public read is deliberate: it is the same idempotent, forward-only update the worker
- * does (§3.4), and it means a payment looks paid the moment the client asks. An *illegal* transition
- * is left to throw on purpose — that is a mapping bug, and swallowing it would mis-report a payment.
+ * Writing from a public read is deliberate, and it is not a copy of the worker's write: both call
+ * `syncAttempt` (`lib/server/sync.ts`), so §3.4's promise — the poll *is* the idempotent,
+ * forward-only update the worker does — holds by construction rather than by convention.
+ *
+ * An *illegal* transition is left to throw on purpose here: that is a mapping bug, and swallowing it
+ * would mis-report a payment. `pollPayments` catches the same throw per attempt instead, because one
+ * broken row must not stop the other payments from being polled.
  */
 export async function pollStatus(
   deps: ServerDeps,
@@ -409,58 +419,14 @@ export async function pollStatus(
     };
   }
 
-  let upstream: ExecutionStatus | null = null;
-  let pollReason: StatusView["pollReason"] = null;
-  try {
-    upstream = await getExecutionStatus(deps.oneClick, current.depositAddress, current.depositMemo);
-  } catch (error) {
-    if (error instanceof OneClickError && error.kind === "not_found") {
-      pollReason = "upstream_not_found";
-    } else if (
-      error instanceof OneClickError &&
-      (error.kind === "unreachable" || error.kind === "server_error")
-    ) {
-      pollReason = "upstream_unreachable";
-    } else {
-      throw error;
-    }
-  }
-
-  let stored = current;
-  if (upstream) {
-    stored =
-      (await recordAttemptStatus(deps.db, {
-        attemptId: current.id,
-        oneclickStatus: upstream.status,
-        depositTxHash: upstream.depositTxHashes[0] ?? null,
-        deliveryTxHash: upstream.deliveryTxHashes[0] ?? null,
-        statusRaw: upstream.raw,
-        at: new Date(deps.now()),
-      })) ?? current;
-  }
-
-  const every = await listAttemptsForInvoice(deps.db, invoice.id);
-  const derived = deriveInvoiceStatus({
-    current: invoice.status,
-    cancelled: invoice.cancelledAt !== null,
-    attempts: every.map((row) => row.status),
-  });
-  const invoiceStatus =
-    derived === invoice.status
-      ? invoice.status
-      : ((await setInvoiceStatus(deps.db, {
-          invoiceId: invoice.id,
-          status: derived,
-          at: new Date(deps.now()),
-        }))?.status ?? derived);
-
-  const view = await attemptView(deps, stored);
+  const sync = await syncAttempt(deps, current);
+  const view = await attemptView(deps, sync.attempt);
   return {
-    invoiceStatus,
+    invoiceStatus: sync.invoiceStatus,
     attempt: view,
-    polled: upstream !== null,
-    pollReason,
-    paid: ALREADY_PAID.includes(invoiceStatus),
+    polled: sync.polled,
+    pollReason: sync.reason,
+    paid: ALREADY_PAID.includes(sync.invoiceStatus),
     receiptUrl: view.receiptUrl,
   };
 }

@@ -197,4 +197,17 @@ describe("POST /api/pay/:publicId/submit-tx", () => {
 
     expect(status).toMatchObject({ paid: true, invoiceStatus: "paid" });
   });
+
+  it("moves the invoice with the attempt, so the dashboard is not a poll behind", async () => {
+    const { publicId, invoiceId } = await harness.seededInvoice();
+    await openAttempt(publicId);
+
+    const body = await jsonOf(await submit(publicId, { txHash: TX_HASH }));
+    const [invoice] = await harness.db.select().from(invoices).where(eq(invoices.id, invoiceId));
+
+    // The submit answer says the deposit tx is known; the invoice row must already agree rather
+    // than wait for the next status poll (S5.2 re-derives from every attempt, same as here).
+    expect(body.attempt).toMatchObject({ status: "payment_detected" });
+    expect(invoice).toMatchObject({ status: "payment_detected" });
+  });
 });

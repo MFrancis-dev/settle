@@ -8,18 +8,23 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 
 import { openTestDatabase, seedInvoice } from "../__fixtures__/testdb";
 import type { ConnectedDatabase, PgliteDb } from "../client";
+import { paymentAttempts } from "../schema";
 import type { QuoteSummary } from "../../core/types";
 import { parseBaseUnits } from "../../core/money";
 import {
   createPaymentAttempt,
+  expireAttempt,
   findActiveAttemptForInvoice,
   findAttemptByDepositAddress,
   findAttemptById,
   isAttemptSettled,
   listAttemptsForInvoice,
+  listExpiredQuoteAttempts,
+  listLiveAttempts,
   recordAttemptStatus,
 } from "./paymentAttempts";
 
@@ -267,5 +272,103 @@ describe("the attempt a client is paying now", () => {
     for (const status of ["success", "refunded", "failed", "expired"] as const) {
       expect(isAttemptSettled(status)).toBe(true);
     }
+  });
+});
+
+/**
+ * S5.2 / S5.3 — the two reads the worker runs, and the write only it makes.
+ *
+ * The database is shared with the tests above, so every assertion here looks for its own rows rather
+ * than counting the table: an earlier test's live attempt is not this test's business.
+ */
+describe("listLiveAttempts — the worker's polling set", () => {
+  it("includes an attempt that can still move, whatever invoice it belongs to", async () => {
+    const first = await attempt();
+    const second = await attempt();
+
+    const live = await listLiveAttempts(db);
+    const ids = live.map((row) => row.id);
+    expect(ids).toContain(first.row.id);
+    expect(ids).toContain(second.row.id);
+  });
+
+  it("drops an attempt once it settles, so the worker stops polling it", async () => {
+    const { row } = await attempt();
+    await recordAttemptStatus(db, { attemptId: row.id, oneclickStatus: "SUCCESS" });
+
+    const ids = (await listLiveAttempts(db)).map((live) => live.id);
+    expect(ids).not.toContain(row.id);
+  });
+
+  it("polls the oldest attempt first, and only `limit` of them", async () => {
+    const { row } = await attempt();
+    // Backdated so the ordering is decided by a timestamp, not by whichever insert won the clock.
+    await db
+      .update(paymentAttempts)
+      .set({ createdAt: new Date("2020-01-01T00:00:00Z") })
+      .where(eq(paymentAttempts.id, row.id));
+
+    const [oldest] = await listLiveAttempts(db, { limit: 1 });
+    expect(oldest?.id).toBe(row.id);
+  });
+});
+
+describe("listExpiredQuoteAttempts — deadline passed and no deposit", () => {
+  it("selects an unpaid attempt whose deadline is behind the clock", async () => {
+    const { row } = await attempt({ deadline: "2026-11-05T09:00:00Z" });
+
+    const due = await listExpiredQuoteAttempts(db, { now: new Date("2026-11-05T10:00:00Z") });
+    expect(due.map((candidate) => candidate.id)).toContain(row.id);
+  });
+
+  it("leaves an attempt whose deadline has not passed alone", async () => {
+    const { row } = await attempt({ deadline: "2026-11-05T12:00:00Z" });
+
+    const due = await listExpiredQuoteAttempts(db, { now: new Date("2026-11-05T10:00:00Z") });
+    expect(due.map((candidate) => candidate.id)).not.toContain(row.id);
+  });
+
+  it("ignores a deposit that arrived, even past the deadline — that is S7.1's late payment", async () => {
+    const { row } = await attempt({ deadline: "2026-11-05T09:00:00Z" });
+    await recordAttemptStatus(db, { attemptId: row.id, oneclickStatus: "KNOWN_DEPOSIT_TX" });
+
+    const due = await listExpiredQuoteAttempts(db, { now: new Date("2026-11-05T10:00:00Z") });
+    expect(due.map((candidate) => candidate.id)).not.toContain(row.id);
+  });
+});
+
+describe("expireAttempt", () => {
+  it("marks an unpaid attempt expired", async () => {
+    const { row } = await attempt();
+
+    const expired = await expireAttempt(db, { attemptId: row.id, at: new Date("2026-11-05T12:00:00Z") });
+
+    expect(expired).toMatchObject({ id: row.id, status: "expired" });
+    expect(isAttemptSettled(expired?.status ?? "awaiting_deposit")).toBe(true);
+    // Terminal, so it stops being the attempt a client is paying and a new address can be issued.
+    expect(await findActiveAttemptForInvoice(db, row.invoiceId)).toBeNull();
+  });
+
+  it("refuses to expire an attempt money already reached", async () => {
+    const { row } = await attempt();
+    await recordAttemptStatus(db, { attemptId: row.id, oneclickStatus: "PROCESSING" });
+
+    const unchanged = await expireAttempt(db, { attemptId: row.id });
+
+    // `expired` is terminal and would swallow the payment, so the guard wins over the caller.
+    expect(unchanged).toMatchObject({ id: row.id, status: "processing" });
+  });
+
+  it("is idempotent, because the loop runs every 60 s", async () => {
+    const { row } = await attempt();
+    await expireAttempt(db, { attemptId: row.id });
+
+    expect(await expireAttempt(db, { attemptId: row.id })).toMatchObject({ status: "expired" });
+  });
+
+  it("returns null for an attempt that is not there", async () => {
+    expect(
+      await expireAttempt(db, { attemptId: "00000000-0000-4000-8000-000000000000" }),
+    ).toBeNull();
   });
 });

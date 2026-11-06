@@ -3,7 +3,7 @@
 > Send an invoice. Get paid in dollars, from any token on any chain.
 > NEAR HACKATHON · track 08 Real-World Money (`realworld`)
 
-**Status:** core logic, integrations, every API route and the whole UI are built and tested (`ROADMAP.md` has the per-phase numbers). What is not built yet: the background worker (Phase 5) and demo data (Phase 6) — so the screens render, but there is nothing seeded to look at. The full README, written for a judge and for an AI screener, is task S9.1–S9.4.
+**Status:** core logic, integrations, every API route, the whole UI and the background worker are built and tested (`ROADMAP.md` has the per-phase numbers). What is not built yet: demo data (Phase 6) — so the screens render, but there is nothing seeded to look at. The full README, written for a judge and for an AI screener, is task S9.1–S9.4.
 
 ## Try it
 ```bash
@@ -18,6 +18,12 @@ No `.env`, no keys, no external database: with `DATABASE_URL` unset the app runs
 | the exact figures recorded at settlement | `/receipt/<token>` from a paid attempt |
 | how a payout change is authorised | `/settings` (typed twice + a fresh wallet signature) |
 | the rules a change has to satisfy | `ARCHITECTURE_ESSENTIALS.md`, then `ARCHITECTURE.md` |
+
+### The worker
+```bash
+pnpm worker    # pollPayments every 5 s · expireQuotes every 60 s
+```
+A payment completes with nobody watching: the worker asks 1Click about every attempt that can still move and writes the answer forward-only, and it expires a quote whose deadline passed **with no deposit** — after one last read, because a deposit that lands in the final seconds is recorded, never expired. This is the *same* write the pay page's status poll makes (`lib/server/sync.ts`), so the two cannot disagree about what a status means. `Ctrl-C` finishes the tick in flight before the process exits.
 
 ## Libraries added during the build (rule Q-005)
 Everything else came with the scaffold in `package.json`; these were chosen while coding, pinned to exact versions.
