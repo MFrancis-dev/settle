@@ -138,7 +138,10 @@ describe("GET /api/pay/:publicId/status", () => {
       pollReason: null,
       paid: false,
     });
-    expect(attempt).toMatchObject({ status: "awaiting_deposit", oneclickStatus: "PENDING_DEPOSIT" });
+    expect(attempt).toMatchObject({
+      status: "awaiting_deposit",
+      oneclickStatus: "PENDING_DEPOSIT",
+    });
     // the link exists from the moment the attempt does; the document it opens shows the status
     expect(body.receiptUrl).toBe(attempt.receiptUrl);
   });
@@ -238,9 +241,16 @@ describe("GET /api/pay/:publicId/status", () => {
     expect(body.attempt).toMatchObject({ status: "refunded", id: attempt.id });
 
     // the refund is not the end of the pay page: a fresh address is allowed once the old one is dead
-    expect((await QUOTE(apiRequest(`/api/pay/${publicId}/quote`, {
-      body: { originAsset: WNEAR, refundTo: "payer.testnet", dry: false },
-    }), { params: Promise.resolve({ publicId }) })).status).toBe(200);
+    expect(
+      (
+        await QUOTE(
+          apiRequest(`/api/pay/${publicId}/quote`, {
+            body: { originAsset: WNEAR, refundTo: "payer.testnet", dry: false },
+          }),
+          { params: Promise.resolve({ publicId }) },
+        )
+      ).status,
+    ).toBe(200);
     expect(await storedInvoice(invoiceId)).toMatchObject({ status: "open" });
   });
 
@@ -264,7 +274,11 @@ describe("GET /api/pay/:publicId/status", () => {
 
     // nothing queued: the stub answers 404 the way 1Click does for a deposit it has never seen
     const notFound = await jsonOf(await status(publicId));
-    expect(notFound).toMatchObject({ polled: false, pollReason: "upstream_not_found", paid: false });
+    expect(notFound).toMatchObject({
+      polled: false,
+      pollReason: "upstream_not_found",
+      paid: false,
+    });
     expect(notFound.attempt).toMatchObject({ id: attempt.id });
 
     harness.oneClick.failOnce("/v0/status", 500);
@@ -356,7 +370,9 @@ describe("GET /api/pay/:publicId/status", () => {
     // back — and the earlier one, which actually settled the invoice, is still reported.
     expect(others).toHaveLength(1);
     expect(others[0]).toMatchObject({ status: "success" });
-    expect((others[0]!.deposited as { baseUnits: string }).baseUnits).toBe("2700000000000000000000000");
+    expect((others[0]!.deposited as { baseUnits: string }).baseUnits).toBe(
+      "2700000000000000000000000",
+    );
     const newest = attemptOf(body);
     expect(newest.refunded?.baseUnits).toBe("20000");
     expect(newest.refundReason).toBe("amount above the quote");

@@ -43,7 +43,11 @@ export function DepositPanel({
   return (
     <Card
       title="Send this amount"
-      description={reused ? "This is the same address as before — the amount has not changed." : "One payment, from your own wallet."}
+      description={
+        reused
+          ? "This is the same address as before — the amount has not changed."
+          : "One payment, from your own wallet."
+      }
       actions={<Countdown deadline={deadline} onExpire={onExpire} />}
     >
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -81,7 +85,8 @@ export function DepositPanel({
                   <CopyButton value={memo} label="Copy memo" />
                 </dd>
                 <p className="mt-1 text-xs text-warn" role="alert">
-                  Your wallet must include this memo, or the payment cannot be matched to your invoice.
+                  Your wallet must include this memo, or the payment cannot be matched to your
+                  invoice.
                 </p>
               </div>
             ) : null}
@@ -93,7 +98,11 @@ export function DepositPanel({
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-ink-faint">How long</dt>
-                <dd className="mt-0.5">{timeEstimateS === null ? "A few minutes" : `About ${Math.max(1, Math.round(timeEstimateS / 60))} min`}</dd>
+                <dd className="mt-0.5">
+                  {timeEstimateS === null
+                    ? "A few minutes"
+                    : `About ${Math.max(1, Math.round(timeEstimateS / 60))} min`}
+                </dd>
               </div>
             </div>
           </dl>
@@ -101,8 +110,8 @@ export function DepositPanel({
           <ul className="mt-4 flex flex-col gap-1 text-xs text-ink-muted">
             <li>Send the full amount in one payment.</li>
             <li>
-              Send {deposit.symbol ?? "the token you chose"} to this address — another asset sent here cannot
-              be matched to your invoice.
+              Send {deposit.symbol ?? "the token you chose"} to this address — another asset sent
+              here cannot be matched to your invoice.
             </li>
             <li>Nothing else needs to be sent to anyone. This address is the whole payment.</li>
           </ul>

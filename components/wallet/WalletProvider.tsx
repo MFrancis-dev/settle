@@ -15,10 +15,24 @@
  * body, which rebuilds the selector — and re-reads the saved wallet session — on every re-render.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { WalletSelector } from "@near-wallet-selector/core";
 
-import { activeAccountOf, activeWallet, getWalletSelector, showSignInModal } from "@/lib/wallet/selector";
+import {
+  activeAccountOf,
+  activeWallet,
+  getWalletSelector,
+  showSignInModal,
+} from "@/lib/wallet/selector";
 import { signInBodyFromWallet, type MessageSigner, type SignInBody } from "@/lib/wallet/sign-in";
 import { payoutBodyFromWallet, type PayoutBody } from "@/lib/wallet/payout-signature";
 import { recipientFromLocation, WALLET_SUPPORTED } from "@/lib/ui/config";
@@ -38,7 +52,11 @@ interface WalletContextValue {
    * Sign a payout-destination change (PRD FR-6). The signed message *is* the new address, so a
    * captured signature cannot authorise a different one.
    */
-  signPayoutChange(destination: { assetId: string; chain: string; address: string }): Promise<PayoutBody>;
+  signPayoutChange(destination: {
+    assetId: string;
+    chain: string;
+    address: string;
+  }): Promise<PayoutBody>;
   /** Ask the wallet to drop its session. The caller still has to sign out of Settle itself. */
   signOutWallet(): Promise<void>;
 }
@@ -127,13 +145,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   );
 
   const signInBody = useCallback(
-    () => withSigner((signer) => signInBodyFromWallet({ signer, recipient: recipientFromLocation() })),
+    () =>
+      withSigner((signer) => signInBodyFromWallet({ signer, recipient: recipientFromLocation() })),
     [withSigner],
   );
 
   const signPayoutChange = useCallback(
     (destination: { assetId: string; chain: string; address: string }) =>
-      withSigner((signer) => payoutBodyFromWallet({ signer, recipient: recipientFromLocation(), destination })),
+      withSigner((signer) =>
+        payoutBodyFromWallet({ signer, recipient: recipientFromLocation(), destination }),
+      ),
     [withSigner],
   );
 

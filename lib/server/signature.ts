@@ -9,7 +9,11 @@
  * mattered.
  */
 
-import { verifyNep413SignedMessage, type Nep413Claims, type SignatureRejection } from "../near/nep413";
+import {
+  verifyNep413SignedMessage,
+  type Nep413Claims,
+  type SignatureRejection,
+} from "../near/nep413";
 import { signedMessageFields, type SignedMessageFields } from "../core/schemas";
 import { unauthorized } from "./http";
 import type { ServerDeps } from "./deps";
@@ -21,7 +25,8 @@ export interface SignedCheck {
   expectedMessage?: string;
 }
 
-export type SignedResult = { valid: true; claims: Nep413Claims } | { valid: false; reason: SignatureRejection };
+export type SignedResult =
+  { valid: true; claims: Nep413Claims } | { valid: false; reason: SignatureRejection };
 
 /**
  * Parse the signed fields out of a request body (so a malformed body is a 400, not a 401), then verify

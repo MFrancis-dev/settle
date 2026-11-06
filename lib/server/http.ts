@@ -100,7 +100,8 @@ export async function parseJsonBody<T>(
   }
 
   const parsed = schema.safeParse(raw);
-  if (!parsed.success) throw badRequest("Invalid request body", { issues: issueList(parsed.error) });
+  if (!parsed.success)
+    throw badRequest("Invalid request body", { issues: issueList(parsed.error) });
   return parsed.data;
 }
 
@@ -181,7 +182,11 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
                 : new HttpError(500, "internal_error", "Something went wrong.");
 
   const body: ApiErrorBody = {
-    error: { code: mapped.code, message: mapped.message, ...(mapped.details === undefined ? {} : { details: mapped.details }) },
+    error: {
+      code: mapped.code,
+      message: mapped.message,
+      ...(mapped.details === undefined ? {} : { details: mapped.details }),
+    },
   };
   const response = NextResponse.json(body, { status: mapped.status });
   if (mapped.status === 429) {

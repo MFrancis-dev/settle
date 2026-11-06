@@ -20,8 +20,8 @@ export function ShortPaymentWarning({ deposit }: { deposit: MoneyView }) {
         Send <Money money={deposit} /> in a single payment, from your own wallet.
       </p>
       <p>
-        If less arrives, the conversion cannot complete and the payment is held, then returned to the
-        refund address you gave. If more arrives, the extra comes back to that address too.
+        If less arrives, the conversion cannot complete and the payment is held, then returned to
+        the refund address you gave. If more arrives, the extra comes back to that address too.
       </p>
     </Alert>
   );

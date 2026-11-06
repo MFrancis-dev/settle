@@ -44,15 +44,19 @@ describe("demoModeConflict", () => {
   });
 
   it("refuses to run demo mode against a real database", () => {
-    const conflict = demoModeConflict(env({ DEMO_MODE: "1", DATABASE_URL: "postgres://example/db" }));
-    expect(conflict).toContain("DATABASE_URL");
-    expect(() => assertDemoModeAllowed(env({ DEMO_MODE: "1", DATABASE_URL: "postgres://example/db" }))).toThrow(
-      /DATABASE_URL/,
+    const conflict = demoModeConflict(
+      env({ DEMO_MODE: "1", DATABASE_URL: "postgres://example/db" }),
     );
+    expect(conflict).toContain("DATABASE_URL");
+    expect(() =>
+      assertDemoModeAllowed(env({ DEMO_MODE: "1", DATABASE_URL: "postgres://example/db" })),
+    ).toThrow(/DATABASE_URL/);
   });
 
   it("refuses to run demo mode on a public https deployment", () => {
-    const conflict = demoModeConflict(env({ DEMO_MODE: "1", PUBLIC_APP_URL: "https://settle.example" }));
+    const conflict = demoModeConflict(
+      env({ DEMO_MODE: "1", PUBLIC_APP_URL: "https://settle.example" }),
+    );
     expect(conflict).toContain("settle.example");
     expect(conflict).toContain("must never simulate one");
   });
@@ -109,7 +113,9 @@ describe("demoStageFromAttempt", () => {
   });
 
   it("reports a short deposit as half of what was asked for", () => {
-    const stage = demoStageFromAttempt(attempt({ status: "underpaid", oneclickStatus: "INCOMPLETE_DEPOSIT" }));
+    const stage = demoStageFromAttempt(
+      attempt({ status: "underpaid", oneclickStatus: "INCOMPLETE_DEPOSIT" }),
+    );
     expect(stage).toMatchObject({ status: "INCOMPLETE_DEPOSIT", depositedAmount: "505000" });
   });
 
@@ -136,7 +142,10 @@ describe("demoStageFromAttempt", () => {
       depositTxHash: "deposit-hash",
       deliveryTxHash: "delivery-hash",
     });
-    expect(stage?.quoteResponse).toEqual({ correlationId: "st-demo", quote: { amountOut: "1000000" } });
+    expect(stage?.quoteResponse).toEqual({
+      correlationId: "st-demo",
+      quote: { amountOut: "1000000" },
+    });
   });
 
   it("reports nothing at all for an expired quote, which is why the service answers 404", () => {
@@ -144,7 +153,9 @@ describe("demoStageFromAttempt", () => {
   });
 
   it("has an answer for every attempt status, so a new one cannot be silently dropped", () => {
-    const mapped = ATTEMPT_STATUSES.map((status: AttemptStatus) => demoStageFromAttempt(attempt({ status })));
+    const mapped = ATTEMPT_STATUSES.map((status: AttemptStatus) =>
+      demoStageFromAttempt(attempt({ status })),
+    );
     // `expired` is the only status with no 1Click equivalent; everything else must map.
     expect(mapped.filter((stage) => stage === null)).toHaveLength(1);
     expect(mapped.filter((stage) => stage !== null)).toHaveLength(ATTEMPT_STATUSES.length - 1);

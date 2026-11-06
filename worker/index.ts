@@ -53,7 +53,8 @@ const consoleLog = (message: string): void => {
 
 /** Start one loop. The returned `stop()` resolves once the in-flight tick has finished. */
 export function startLoop(spec: LoopSpec, controls: LoopControls = {}): RunningLoop {
-  const sleep = controls.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const sleep =
+    controls.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const log = controls.log ?? consoleLog;
 
   let stopping = false;
@@ -99,13 +100,15 @@ export interface RunningWorker {
 }
 
 function summarisePoll(tick: PollTick): string | null {
-  if (tick.failed > 0) return `${tick.checked} checked, ${tick.advanced} advanced, ${tick.failed} failed`;
+  if (tick.failed > 0)
+    return `${tick.checked} checked, ${tick.advanced} advanced, ${tick.failed} failed`;
   if (tick.advanced > 0) return `${tick.checked} checked, ${tick.advanced} advanced`;
   return null;
 }
 
 function summariseExpire(tick: ExpireTick): string | null {
-  if (tick.failed > 0) return `${tick.checked} candidates, ${tick.expired} expired, ${tick.failed} failed`;
+  if (tick.failed > 0)
+    return `${tick.checked} candidates, ${tick.expired} expired, ${tick.failed} failed`;
   if (tick.expired > 0 || tick.lateDeposit > 0) {
     return `${tick.checked} candidates, ${tick.expired} expired, ${tick.lateDeposit} moved on`;
   }
@@ -176,7 +179,9 @@ export async function main(log: (message: string) => void = consoleLog): Promise
   }
 
   const worker = startWorker({ deps, log });
-  log(`worker: pollPayments every ${POLL_INTERVAL_MS / 1000}s, expireQuotes every ${EXPIRE_INTERVAL_MS / 1000}s`);
+  log(
+    `worker: pollPayments every ${POLL_INTERVAL_MS / 1000}s, expireQuotes every ${EXPIRE_INTERVAL_MS / 1000}s`,
+  );
 
   let stopping = false;
   const shutdown = (signal: string): void => {

@@ -34,7 +34,13 @@ import { TokenPicker } from "@/components/pay/TokenPicker";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { DemoBanner } from "@/components/demo/DemoBanner";
 import { ApiError } from "@/lib/api/client";
-import { usePaymentStatus, usePublicInvoice, useQuote, useSubmitTx, useTokens } from "@/lib/api/queries";
+import {
+  usePaymentStatus,
+  usePublicInvoice,
+  useQuote,
+  useSubmitTx,
+  useTokens,
+} from "@/lib/api/queries";
 import type { AttemptView, QuoteView, StatusView } from "@/lib/api/types";
 import type { InvoiceStatus } from "@/lib/core/status";
 import { describeQuoteFailure } from "@/lib/ui/quote-failure";
@@ -83,7 +89,11 @@ export default function Page() {
   async function askAddress() {
     setFailure(null);
     try {
-      const result = await quote.mutateAsync({ originAsset, refundTo: refundTo.trim(), dry: false });
+      const result = await quote.mutateAsync({
+        originAsset,
+        refundTo: refundTo.trim(),
+        dry: false,
+      });
       setAddress(result);
       setPreview(null);
       if (result.reused) void invoice.refetch();
@@ -112,7 +122,9 @@ export default function Page() {
       <main id="main" className="mx-auto w-full max-w-lg px-5 py-10">
         <Alert tone="danger" title="This payment link does not open an invoice">
           <p>{invoice.error instanceof Error ? invoice.error.message : "Unknown error."}</p>
-          <p className="mt-2 text-ink-muted">Ask the person who sent it to check the link, or send you a new one.</p>
+          <p className="mt-2 text-ink-muted">
+            Ask the person who sent it to check the link, or send you a new one.
+          </p>
         </Alert>
       </main>
     );
@@ -125,7 +137,9 @@ export default function Page() {
     <main id="main" className="mx-auto flex w-full max-w-lg flex-col gap-5 px-5 py-8 pb-16">
       <header>
         <p className="text-sm text-ink-muted">{view.seller} sent you an invoice</p>
-        <h1 className="mt-1 text-2xl font-semibold">{view.total ? <Money money={view.total} /> : "Invoice"}</h1>
+        <h1 className="mt-1 text-2xl font-semibold">
+          {view.total ? <Money money={view.total} /> : "Invoice"}
+        </h1>
         <p className="mt-1 text-sm text-ink-muted">
           {view.number} · for {view.clientName}
           {view.dueDate ? ` · due ${dateText(view.dueDate)}` : ""}
@@ -178,7 +192,11 @@ export default function Page() {
             </Alert>
           ) : (
             <div className="flex flex-col gap-5">
-              <TokenPicker tokens={tokens.data.assets} value={originAsset} onChange={setOriginAsset} />
+              <TokenPicker
+                tokens={tokens.data.assets}
+                value={originAsset}
+                onChange={setOriginAsset}
+              />
               <RefundAddressInput
                 chain={chosen?.settleChain ?? null}
                 value={refundTo}
@@ -187,7 +205,11 @@ export default function Page() {
               />
 
               {preview ? <QuotePreview quote={preview} /> : null}
-              {failure ? <Alert tone="danger" title="Nothing was created"><p>{failure}</p></Alert> : null}
+              {failure ? (
+                <Alert tone="danger" title="Nothing was created">
+                  <p>{failure}</p>
+                </Alert>
+              ) : null}
 
               <div className="flex flex-col gap-2">
                 <Button
@@ -201,13 +223,18 @@ export default function Page() {
                   Show me the price
                 </Button>
                 {preview ? (
-                  <Button size="lg" full pending={quote.isPending && preview !== null} onClick={askAddress}>
+                  <Button
+                    size="lg"
+                    full
+                    pending={quote.isPending && preview !== null}
+                    onClick={askAddress}
+                  >
                     Get a payment address
                   </Button>
                 ) : null}
                 <p className="text-xs text-ink-faint">
-                  Showing the price starts no payment and creates no address. Settle holds it for a few
-                  minutes, then re-quotes — it never charges an old price.
+                  Showing the price starts no payment and creates no address. Settle holds it for a
+                  few minutes, then re-quotes — it never charges an old price.
                 </p>
               </div>
             </div>
@@ -254,8 +281,9 @@ export default function Page() {
           ]}
         />
         <p className="mt-3">
-          Settle converts your payment through 1Click Payment, and every step is a transaction you can look
-          up on the receipt. Settle itself is never given permission to spend from your wallet.
+          Settle converts your payment through 1Click Payment, and every step is a transaction you
+          can look up on the receipt. Settle itself is never given permission to spend from your
+          wallet.
         </p>
       </footer>
     </main>
@@ -288,13 +316,15 @@ function QuotePreview({ quote }: { quote: QuoteView }) {
         <div>
           <dt className="text-xs uppercase tracking-wide text-ink-faint">Takes</dt>
           <dd className="mt-0.5">
-            {quote.timeEstimateS === null ? "A few minutes" : `About ${Math.max(1, Math.round(quote.timeEstimateS / 60))} min`}
+            {quote.timeEstimateS === null
+              ? "A few minutes"
+              : `About ${Math.max(1, Math.round(quote.timeEstimateS / 60))} min`}
           </dd>
         </div>
       </dl>
       <p className="mt-3 flex flex-wrap items-center gap-1 text-xs text-ink-muted">
-        This price holds for <Countdown deadline={quote.deadline} /> — after that it is re-quoted, never
-        charged.
+        This price holds for <Countdown deadline={quote.deadline} /> — after that it is re-quoted,
+        never charged.
       </p>
     </div>
   );
@@ -310,8 +340,8 @@ function ReportPayment({ onSubmit }: { onSubmit: (txHash: string) => Promise<str
     <div className="mt-4 border-t border-line pt-4">
       <h3 className="text-sm font-medium">Already sent it?</h3>
       <p className="mt-1 text-xs text-ink-muted">
-        Pasting your transaction reference makes the check start now instead of on the next scan. Nothing
-        changes if you skip it.
+        Pasting your transaction reference makes the check start now instead of on the next scan.
+        Nothing changes if you skip it.
       </p>
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <TextField

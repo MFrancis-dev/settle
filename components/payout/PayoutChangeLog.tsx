@@ -33,7 +33,10 @@ export function PayoutChangeLog() {
       ) : (
         <ol className="flex flex-col gap-3">
           {log.data.map((entry, index) => (
-            <li key={index} className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3 last:border-0 last:pb-0">
+            <li
+              key={index}
+              className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3 last:border-0 last:pb-0"
+            >
               <div className="min-w-0">
                 <p className="text-sm font-medium">
                   {entry.assetSymbol ?? entry.assetId} on {chainLabel(entry.chain)}

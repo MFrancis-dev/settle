@@ -65,7 +65,12 @@ export function Button({
       aria-busy={pending || undefined}
       {...rest}
     >
-      {pending ? <span aria-hidden className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" /> : null}
+      {pending ? (
+        <span
+          aria-hidden
+          className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"
+        />
+      ) : null}
       {children}
     </button>
   );

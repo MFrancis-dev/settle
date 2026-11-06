@@ -66,7 +66,11 @@ function defaultCandidates(deps: ExpireDeps): () => Promise<readonly PaymentAtte
     listExpiredQuoteAttempts(deps.db, { now: new Date(deps.now()), limit: EXPIRE_BATCH });
 }
 
-async function expireOne(deps: ExpireDeps, attempt: PaymentAttemptRecord, tick: ExpireTick): Promise<void> {
+async function expireOne(
+  deps: ExpireDeps,
+  attempt: PaymentAttemptRecord,
+  tick: ExpireTick,
+): Promise<void> {
   try {
     const sync = await syncAttempt(deps, attempt);
 
@@ -82,7 +86,10 @@ async function expireOne(deps: ExpireDeps, attempt: PaymentAttemptRecord, tick: 
       return;
     }
 
-    const stored = await expireAttempt(deps.db, { attemptId: attempt.id, at: new Date(deps.now()) });
+    const stored = await expireAttempt(deps.db, {
+      attemptId: attempt.id,
+      at: new Date(deps.now()),
+    });
     const invoiceStatus = await refreshInvoiceStatus(deps, stored?.invoiceId ?? attempt.invoiceId);
     if (stored?.status === "expired") {
       tick.expired += 1;

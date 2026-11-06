@@ -131,7 +131,14 @@ export const demoActionInput = z.enum(["session", "simulate-payment", "reset"]);
  * time; the rest are the outcomes worth showing a judge that are not on it. The words live here
  * rather than in `lib/server/demo.ts` so the browser bundle can offer exactly the same choices.
  */
-export const demoOutcomeInput = z.enum(["next", "paid", "underpaid", "refunded", "failed", "expired"]);
+export const demoOutcomeInput = z.enum([
+  "next",
+  "paid",
+  "underpaid",
+  "refunded",
+  "failed",
+  "expired",
+]);
 
 export const demoSimulateInput = z.object({
   publicId: z.string().trim().min(1).max(64),

@@ -28,7 +28,11 @@ export function Receipt({ receipt }: { receipt: ReceiptView }) {
     <Card
       title={`Receipt · ${receipt.invoice.number}`}
       actions={
-        <button type="button" className={`${buttonClass({ variant: "secondary", size: "sm" })} no-print`} onClick={() => window.print()}>
+        <button
+          type="button"
+          className={`${buttonClass({ variant: "secondary", size: "sm" })} no-print`}
+          onClick={() => window.print()}
+        >
           Print or save as PDF
         </button>
       }
@@ -52,12 +56,16 @@ export function Receipt({ receipt }: { receipt: ReceiptView }) {
             <MoneyExact money={receipt.delivered} />
           </Field>
           <Field label="Conversion fee">{fee ?? "Included"}</Field>
-          <Field label="Paid at">{receipt.paidAt ? dateTimeText(receipt.paidAt) : "Not yet settled"}</Field>
+          <Field label="Paid at">
+            {receipt.paidAt ? dateTimeText(receipt.paidAt) : "Not yet settled"}
+          </Field>
           <Field label="Invoice for">{receipt.invoice.clientName}</Field>
           <Field label="Issued">{dateTimeText(receipt.invoice.issuedAt)}</Field>
           <Field label="Deposit address">
             <span className="break-all font-mono text-xs">{receipt.deposit.address}</span>
-            {receipt.deposit.memo ? <span className="ml-2 font-mono text-xs">memo {receipt.deposit.memo}</span> : null}
+            {receipt.deposit.memo ? (
+              <span className="ml-2 font-mono text-xs">memo {receipt.deposit.memo}</span>
+            ) : null}
           </Field>
           <Field label="Price was held until">{dateTimeText(receipt.quoteDeadline)}</Field>
         </dl>
@@ -101,11 +109,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function TxList({ caption, links }: { caption: string; links: ReceiptLink[] }) {
   if (links.length === 0) {
-    return (
-      <li className="text-ink-muted">
-        {caption}: no transaction reference recorded yet.
-      </li>
-    );
+    return <li className="text-ink-muted">{caption}: no transaction reference recorded yet.</li>;
   }
   return (
     <li className="flex flex-col gap-1">
@@ -114,7 +118,12 @@ function TxList({ caption, links }: { caption: string; links: ReceiptLink[] }) {
         <span key={link.hash} className="flex flex-wrap items-center gap-2">
           <span className="break-all font-mono text-xs">{link.hash}</span>
           {link.url ? (
-            <a href={link.url} target="_blank" rel="noreferrer" className="text-xs underline underline-offset-4">
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs underline underline-offset-4"
+            >
               View
             </a>
           ) : (

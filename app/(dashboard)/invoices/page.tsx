@@ -23,9 +23,17 @@ type Filter = "all" | "open" | "paid" | "attention";
 
 const FILTERS: { value: Filter; label: string; statuses: InvoiceStatus[] | null }[] = [
   { value: "all", label: "All", statuses: null },
-  { value: "open", label: "Awaiting payment", statuses: ["draft", "open", "payment_detected", "processing"] },
+  {
+    value: "open",
+    label: "Awaiting payment",
+    statuses: ["draft", "open", "payment_detected", "processing"],
+  },
   { value: "paid", label: "Paid", statuses: ["paid"] },
-  { value: "attention", label: "Needs attention", statuses: ["underpaid", "overpaid", "paid_after_cancel", "failed", "refunded"] },
+  {
+    value: "attention",
+    label: "Needs attention",
+    statuses: ["underpaid", "overpaid", "paid_after_cancel", "failed", "refunded"],
+  },
 ];
 
 export default function Page() {
@@ -39,7 +47,9 @@ export default function Page() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Invoices</h1>
-        <Link href="/invoices/new" className={buttonClass({})}>New invoice</Link>
+        <Link href="/invoices/new" className={buttonClass({})}>
+          New invoice
+        </Link>
       </div>
 
       <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-1">
@@ -63,7 +73,11 @@ export default function Page() {
       {invoices.isPending ? (
         <p className="text-sm text-ink-muted">Loading invoices…</p>
       ) : invoices.isError ? (
-        <ErrorCard title="The list could not be loaded" error={invoices.error} onRetry={() => invoices.refetch()} />
+        <ErrorCard
+          title="The list could not be loaded"
+          error={invoices.error}
+          onRetry={() => invoices.refetch()}
+        />
       ) : shown && shown.length === 0 ? (
         <Card title="No invoices here yet">
           <p className="text-sm text-ink-muted">

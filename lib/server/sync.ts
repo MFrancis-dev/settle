@@ -39,13 +39,20 @@ export interface AttemptSync {
 
 async function readUpstream(deps: SyncDeps, attempt: PaymentAttemptRecord) {
   try {
-    const upstream = await getExecutionStatus(deps.oneClick, attempt.depositAddress, attempt.depositMemo);
+    const upstream = await getExecutionStatus(
+      deps.oneClick,
+      attempt.depositAddress,
+      attempt.depositMemo,
+    );
     return { upstream, reason: null };
   } catch (error) {
     if (error instanceof OneClickError && error.kind === "not_found") {
       return { upstream: null, reason: "upstream_not_found" as const };
     }
-    if (error instanceof OneClickError && (error.kind === "unreachable" || error.kind === "server_error")) {
+    if (
+      error instanceof OneClickError &&
+      (error.kind === "unreachable" || error.kind === "server_error")
+    ) {
       return { upstream: null, reason: "upstream_unreachable" as const };
     }
     throw error;
@@ -81,7 +88,10 @@ async function storeUpstream(
  * is the meaning of a missing invoice: an attempt whose invoice is gone is a broken database, not a
  * status.
  */
-export async function refreshInvoiceStatus(deps: SyncDeps, invoiceId: string): Promise<InvoiceStatus> {
+export async function refreshInvoiceStatus(
+  deps: SyncDeps,
+  invoiceId: string,
+): Promise<InvoiceStatus> {
   const stored = await storeDerivedInvoiceStatus(deps.db, {
     invoiceId,
     at: new Date(deps.now()),
@@ -91,7 +101,10 @@ export async function refreshInvoiceStatus(deps: SyncDeps, invoiceId: string): P
 }
 
 /** One attempt, one upstream read, one forward-only write. */
-export async function syncAttempt(deps: SyncDeps, attempt: PaymentAttemptRecord): Promise<AttemptSync> {
+export async function syncAttempt(
+  deps: SyncDeps,
+  attempt: PaymentAttemptRecord,
+): Promise<AttemptSync> {
   const { upstream, reason } = await readUpstream(deps, attempt);
   const stored = upstream ? await storeUpstream(deps, attempt, upstream) : attempt;
   const invoiceStatus = await refreshInvoiceStatus(deps, stored.invoiceId);

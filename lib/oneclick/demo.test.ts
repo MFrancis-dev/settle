@@ -34,7 +34,9 @@ const USDC_ETH = "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.nea
 const WNEAR = "nep141:wrap.near";
 
 /** An upstream that records every call, so "never forwarded" is an assertion and not a hope. */
-function scriptedUpstream(handler: (url: string, init?: RequestInit) => Promise<Response> | Response) {
+function scriptedUpstream(
+  handler: (url: string, init?: RequestInit) => Promise<Response> | Response,
+) {
   const calls: string[] = [];
   const fetch: FetchLike = async (input, init) => {
     calls.push(new URL(input).pathname);
@@ -98,7 +100,10 @@ describe("the demo transport — quotes", () => {
   it("forwards a dry quote and re-signs the vendor's own numbers", async () => {
     // The recorded body stands in for a real answer; the amounts are made distinctive so the test can
     // tell "the vendor's figures survived" from "the demo recomputed them".
-    const vendorBody = demoQuoteBody({ ...QUOTE_REQUEST, dry: true }, { tokens: DEMO_TOKENS, now: () => NOW });
+    const vendorBody = demoQuoteBody(
+      { ...QUOTE_REQUEST, dry: true },
+      { tokens: DEMO_TOKENS, now: () => NOW },
+    );
     const vendorQuote = vendorBody.quote as Record<string, unknown>;
     vendorQuote.amountIn = "4999999";
     vendorQuote.minAmountIn = "4999999";
@@ -134,10 +139,21 @@ describe("the demo transport — quotes", () => {
 
   it("gives every non-dry quote its own deposit address, which is what makes two attempts two payments", async () => {
     const { fetch } = transport({ upstream: offlineUpstream().upstream });
-    const first = await (await fetch(`${BASE_URL}/v0/quote`, { method: "POST", body: JSON.stringify({ ...QUOTE_REQUEST, dry: false }) })).json();
-    const second = await (await fetch(`${BASE_URL}/v0/quote`, { method: "POST", body: JSON.stringify({ ...QUOTE_REQUEST, dry: false }) })).json();
+    const first = await (
+      await fetch(`${BASE_URL}/v0/quote`, {
+        method: "POST",
+        body: JSON.stringify({ ...QUOTE_REQUEST, dry: false }),
+      })
+    ).json();
+    const second = await (
+      await fetch(`${BASE_URL}/v0/quote`, {
+        method: "POST",
+        body: JSON.stringify({ ...QUOTE_REQUEST, dry: false }),
+      })
+    ).json();
 
-    const addressOf = (body: unknown) => (body as { quote: { depositAddress: string } }).quote.depositAddress;
+    const addressOf = (body: unknown) =>
+      (body as { quote: { depositAddress: string } }).quote.depositAddress;
     expect(addressOf(first)).not.toBe(addressOf(second));
   });
 
@@ -150,7 +166,9 @@ describe("the demo transport — quotes", () => {
       price: 2,
     };
     const scripted = scriptedUpstream((url) =>
-      url.endsWith("/v0/tokens") ? json([...DEMO_TOKENS, liveToken]) : json({ message: "unexpected" }),
+      url.endsWith("/v0/tokens")
+        ? json([...DEMO_TOKENS, liveToken])
+        : json({ message: "unexpected" }),
     );
     const { client } = transport({ upstream: scripted.upstream });
 
@@ -174,7 +192,9 @@ describe("the demo transport — quotes", () => {
       price: 0,
     };
     const scripted = scriptedUpstream((url) =>
-      url.endsWith("/v0/tokens") ? json([...DEMO_TOKENS, worthless]) : json({ message: "unexpected" }),
+      url.endsWith("/v0/tokens")
+        ? json([...DEMO_TOKENS, worthless])
+        : json({ message: "unexpected" }),
     );
     const { fetch } = transport({ upstream: scripted.upstream });
 
@@ -223,7 +243,9 @@ describe("the demo transport — status, submit and tokens", () => {
 
   it("answers 404 for a deposit address nobody knows, so 'no signal yet' is never 'not paid'", async () => {
     const { fetch } = transport({ stage: async () => null });
-    const response = await fetch(`${BASE_URL}/v0/status?depositAddress=settle-demo-unknown`, { method: "GET" });
+    const response = await fetch(`${BASE_URL}/v0/status?depositAddress=settle-demo-unknown`, {
+      method: "GET",
+    });
     expect(response.status).toBe(404);
   });
 
@@ -271,7 +293,7 @@ describe("the demo's money and hash helpers", () => {
 
     expect(amounts.amountOutUsd).toBe("100");
     expect(amounts.amountInUsd).toBe("101");
-    expect(amounts.amountIn).toBe((BigInt("10100000000") * 10n ** 24n / 385000000n).toString());
+    expect(amounts.amountIn).toBe(((BigInt("10100000000") * 10n ** 24n) / 385000000n).toString());
   });
 
   it("makes the same hash for the same seed, shaped like a transaction and visibly not one", () => {
@@ -282,7 +304,9 @@ describe("the demo's money and hash helpers", () => {
   });
 
   it("signs a quote body the vendor's verifier then accepts, and rejects one it altered", () => {
-    const signed = signDemoQuote(demoQuoteBody(QUOTE_REQUEST, { tokens: DEMO_TOKENS, now: () => NOW }));
+    const signed = signDemoQuote(
+      demoQuoteBody(QUOTE_REQUEST, { tokens: DEMO_TOKENS, now: () => NOW }),
+    );
     expect(verifyQuoteSignature(signed, DEMO_MANAGER_PUBLIC_KEY)).toBe(true);
 
     const tampered = { ...signed, quote: { ...signed.quote, amountOut: "1" } };

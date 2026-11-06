@@ -55,7 +55,10 @@ export function InvoiceForm() {
    * Every row converted to what the API accepts, or null when a price still cannot be read as a
    * number. `errors` names the rows so the field says which one, instead of the total just vanishing.
    */
-  const priced = useMemo<{ items: InvoiceLineInput[] | null; errors: Record<string, string> }>(() => {
+  const priced = useMemo<{
+    items: InvoiceLineInput[] | null;
+    errors: Record<string, string>;
+  }>(() => {
     if (decimals === null) return { items: null, errors: {} };
     const items: InvoiceLineInput[] = [];
     const errors: Record<string, string> = {};
@@ -131,8 +134,12 @@ export function InvoiceForm() {
         <p className="text-sm text-ink-muted">Loading your payout details…</p>
       ) : decimals === null ? (
         <Alert tone="warn" title="Choose where you want to be paid first">
-          An invoice is written in the asset you receive, so Settle needs a payout address before it can
-          show amounts. <Link href="/settings" className="underline underline-offset-4">Set it in settings</Link>.
+          An invoice is written in the asset you receive, so Settle needs a payout address before it
+          can show amounts.{" "}
+          <Link href="/settings" className="underline underline-offset-4">
+            Set it in settings
+          </Link>
+          .
         </Alert>
       ) : null}
 
@@ -251,7 +258,12 @@ export function InvoiceForm() {
         <Button type="submit" size="lg" pending={create.isPending} disabled={decimals === null}>
           Create invoice
         </Button>
-        <Button variant="secondary" size="lg" type="button" onClick={() => router.push("/invoices")}>
+        <Button
+          variant="secondary"
+          size="lg"
+          type="button"
+          onClick={() => router.push("/invoices")}
+        >
           Cancel
         </Button>
       </div>
@@ -270,8 +282,12 @@ function safeBase(display: string, decimals: number): BaseUnits | null {
 }
 
 /** `items.0.unitPrice` → a lookup the fields can read, first message per path wins. */
-function indexIssues(source: z.ZodError | { path: string; message: string }[]): Record<string, string> {
-  const list = Array.isArray(source) ? source : source.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message }));
+function indexIssues(
+  source: z.ZodError | { path: string; message: string }[],
+): Record<string, string> {
+  const list = Array.isArray(source)
+    ? source
+    : source.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message }));
   const map: Record<string, string> = {};
   for (const issue of list) {
     map[issue.path] ??= issue.message;

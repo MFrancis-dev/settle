@@ -3,7 +3,12 @@ import { NextRequest } from "next/server";
 
 // Roadmap: S3.1, S3.8 · the middleware is a convenience gate: it redirects, the routes authorise.
 import { middleware, config } from "./middleware";
-import { SESSION_COOKIE, createSessionCodec, serializeSessionCookie, sessionSecret } from "@/lib/server/session";
+import {
+  SESSION_COOKIE,
+  createSessionCodec,
+  serializeSessionCookie,
+  sessionSecret,
+} from "@/lib/server/session";
 
 const PAYLOAD = { userId: "user-1", nearAccountId: "seller.testnet", isDemo: false };
 
@@ -12,7 +17,9 @@ async function cookieFor(options: { ageMs?: number } = {}): Promise<string> {
     secret: sessionSecret(),
     now: () => Date.now() - (options.ageMs ?? 0),
   });
-  return serializeSessionCookie(await aged.issue(PAYLOAD), { secure: false }).split(";")[0] as string;
+  return serializeSessionCookie(await aged.issue(PAYLOAD), { secure: false }).split(
+    ";",
+  )[0] as string;
 }
 
 function request(path: string, cookie?: string): NextRequest {

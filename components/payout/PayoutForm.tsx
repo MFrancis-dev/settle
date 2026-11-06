@@ -43,14 +43,19 @@ export function PayoutForm({ current }: { current: PayoutView | null }) {
   } | null>(null);
 
   const payoutAssets = useMemo(() => tokens.data?.payoutAssets ?? [], [tokens.data]);
-  const chosen = useMemo(() => payoutAssets.find((asset) => asset.assetId === assetId) ?? null, [payoutAssets, assetId]);
+  const chosen = useMemo(
+    () => payoutAssets.find((asset) => asset.assetId === assetId) ?? null,
+    [payoutAssets, assetId],
+  );
   const chain = chosen?.settleChain ?? null;
 
   const options = useMemo(
     () =>
       payoutAssets.map((asset) => ({
         value: asset.assetId,
-        label: asset.settleChain ? `${asset.symbol} · ${chainLabel(asset.settleChain)}` : asset.symbol,
+        label: asset.settleChain
+          ? `${asset.symbol} · ${chainLabel(asset.settleChain)}`
+          : asset.symbol,
       })),
     [payoutAssets],
   );
@@ -100,7 +105,8 @@ export function PayoutForm({ current }: { current: PayoutView | null }) {
         <p className="text-sm text-ink-muted">Loading the list of assets…</p>
       ) : tokens.isError ? (
         <Alert tone="warn" title="The asset list could not be read">
-          {tokens.error instanceof Error ? tokens.error.message : "Unknown error."} Try again in a minute.
+          {tokens.error instanceof Error ? tokens.error.message : "Unknown error."} Try again in a
+          minute.
         </Alert>
       ) : (
         <form
@@ -129,8 +135,8 @@ export function PayoutForm({ current }: { current: PayoutView | null }) {
 
           {chosen && chosen.settleChain === null ? (
             <Alert tone="warn" title="Settle cannot check this network yet">
-              You can still save the address, but a typo cannot be caught before it is used. Copy it from
-              your wallet rather than typing it.
+              You can still save the address, but a typo cannot be caught before it is used. Copy it
+              from your wallet rather than typing it.
             </Alert>
           ) : null}
 
@@ -196,9 +202,13 @@ function Saved({
   previous: PayoutView | null;
 }) {
   const { payout, storage, openQuotes } = change;
-  const same = previous !== null && previous.address === payout.address && previous.assetId === payout.assetId;
+  const same =
+    previous !== null && previous.address === payout.address && previous.assetId === payout.assetId;
   return (
-    <Alert tone={storage && storage.checked && storage.registered === false ? "warn" : "success"} title={same ? "Nothing changed" : "Payout address saved"}>
+    <Alert
+      tone={storage && storage.checked && storage.registered === false ? "warn" : "success"}
+      title={same ? "Nothing changed" : "Payout address saved"}
+    >
       <p>
         {same
           ? "That is the address already on your account, so no new entry was added to the change log."
@@ -206,10 +216,10 @@ function Saved({
       </p>
       {!same && openQuotes > 0 ? (
         <p>
-          {openQuotes === 1 ? "One payment address is" : `${openQuotes} payment addresses are`} still open
-          and still pay the {previous ? mask(previous.address) : "previous"} address. A change never moves a
-          quote that was already given — if you want that money to come here instead, cancel the invoice
-          and send a new link.
+          {openQuotes === 1 ? "One payment address is" : `${openQuotes} payment addresses are`}{" "}
+          still open and still pay the {previous ? mask(previous.address) : "previous"} address. A
+          change never moves a quote that was already given — if you want that money to come here
+          instead, cancel the invoice and send a new link.
         </p>
       ) : null}
       {storage === null ? null : <p>{storageNote(storage)}</p>}
@@ -247,7 +257,8 @@ function mask(address: string): string {
 const REASONS: Record<string, string> = {
   replayed: "That signature was already used. Sign a new one.",
   message_mismatch: "The message your wallet signed does not quote this address exactly.",
-  signature_mismatch: "The key that signed is not one of your account's keys, or the signature is corrupt.",
+  signature_mismatch:
+    "The key that signed is not one of your account's keys, or the signature is corrupt.",
   bad_public_key: "Your wallet sent a public key Settle cannot read.",
   bad_signature_encoding: "Your wallet sent a signature Settle cannot read.",
   recipient_mismatch: "That signature was made for a different site, not this one.",

@@ -103,7 +103,10 @@ export function formatAmount(amount: BaseUnits, decimals: number): string {
  * can act on. Clamped at zero: a deposit above the ask is an overpayment, which 1Click refunds on
  * its own terms, not a negative shortfall.
  */
-export function shortfallBaseUnits(asked: BaseUnits, deposited: BaseUnits | null): BaseUnits | null {
+export function shortfallBaseUnits(
+  asked: BaseUnits,
+  deposited: BaseUnits | null,
+): BaseUnits | null {
   if (deposited === null) return null;
   const missing = BigInt(asked) - BigInt(deposited);
   return baseUnits((missing > 0n ? missing : 0n).toString());

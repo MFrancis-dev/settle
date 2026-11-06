@@ -94,7 +94,11 @@ describe("GET /api/receipts/:attemptId", () => {
     const malformed = await receipt("hello-world", token);
 
     // one reply for all three: the link cannot be used to find out which attempts exist (§6)
-    const bodies = await Promise.all([errorOf(wrongToken), errorOf(unknownAttempt), errorOf(malformed)]);
+    const bodies = await Promise.all([
+      errorOf(wrongToken),
+      errorOf(unknownAttempt),
+      errorOf(malformed),
+    ]);
     const messages = bodies.map((body) => body.message);
     expect(messages).toEqual(["No such receipt.", "No such receipt.", "No such receipt."]);
   });
@@ -150,7 +154,9 @@ describe("GET /api/receipts/:attemptId", () => {
       txs.map((tx) => ({ hash: tx.hash, url: tx.explorerUrl }));
 
     expect(body.depositTxs).toEqual(links(statusesFixture.SUCCESS.swapDetails.originChainTxHashes));
-    expect(body.deliveryTxs).toEqual(links(statusesFixture.SUCCESS.swapDetails.destinationChainTxHashes));
+    expect(body.deliveryTxs).toEqual(
+      links(statusesFixture.SUCCESS.swapDetails.destinationChainTxHashes),
+    );
   });
 
   it("does not turn the payer's refund address or the seller's payout into public data", async () => {

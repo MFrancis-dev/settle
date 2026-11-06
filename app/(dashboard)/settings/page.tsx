@@ -43,7 +43,8 @@ export default function Page() {
           ]}
         />
         <p className="mt-3 text-xs text-ink-faint">
-          Signing in proves you control this account; it does not give Settle permission to move funds.
+          Signing in proves you control this account; it does not give Settle permission to move
+          funds.
           {me.data.payout ? ` Payout address saved ${dateTimeText(me.data.payout.since)}.` : ""}
         </p>
       </Card>

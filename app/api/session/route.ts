@@ -43,4 +43,3 @@ export async function DELETE(): Promise<Response> {
     );
   });
 }
-

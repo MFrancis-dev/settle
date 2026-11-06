@@ -36,7 +36,10 @@ const LIVE_ATTEMPT_STATUSES: AttemptStatus[] = ATTEMPT_STATUSES.filter(
  * guessed and the route needs no session. Minted with the attempt so the pay page can offer the
  * receipt URL as soon as the status reaches `success`.
  */
-const newReceiptToken = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-", 24);
+const newReceiptToken = customAlphabet(
+  "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-",
+  24,
+);
 
 export interface PaymentAttemptRecord extends PaymentAttempt {
   amountIn: BaseUnits;

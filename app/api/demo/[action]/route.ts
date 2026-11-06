@@ -54,7 +54,8 @@ export async function GET(
 ): Promise<Response> {
   return route(async () => {
     const { action } = await params;
-    if (action !== "session") throw notFound(`Only "session" answers a GET; "${action}" is a POST.`);
+    if (action !== "session")
+      throw notFound(`Only "session" answers a GET; "${action}" is a POST.`);
     return handle(action, request);
   });
 }

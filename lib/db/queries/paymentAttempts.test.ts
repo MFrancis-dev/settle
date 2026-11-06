@@ -341,7 +341,10 @@ describe("expireAttempt", () => {
   it("marks an unpaid attempt expired", async () => {
     const { row } = await attempt();
 
-    const expired = await expireAttempt(db, { attemptId: row.id, at: new Date("2026-11-05T12:00:00Z") });
+    const expired = await expireAttempt(db, {
+      attemptId: row.id,
+      at: new Date("2026-11-05T12:00:00Z"),
+    });
 
     expect(expired).toMatchObject({ id: row.id, status: "expired" });
     expect(isAttemptSettled(expired?.status ?? "awaiting_deposit")).toBe(true);

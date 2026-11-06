@@ -240,11 +240,15 @@ export async function readSession(
 }
 
 /** `PUBLIC_APP_URL` is the app's own identity, so it also decides whether cookies are `Secure`. */
-export function isSecurePublicUrl(source: Record<string, string | undefined> = process.env): boolean {
+export function isSecurePublicUrl(
+  source: Record<string, string | undefined> = process.env,
+): boolean {
   return parseEnv(source).PUBLIC_APP_URL.startsWith("https://");
 }
 
 /** What a wallet signs for this app; `recipient` pins a message to one site (NEP-413 replay). */
-export function expectedRecipient(source: Record<string, string | undefined> = process.env): string {
+export function expectedRecipient(
+  source: Record<string, string | undefined> = process.env,
+): string {
   return new URL(parseEnv(source).PUBLIC_APP_URL).host;
 }

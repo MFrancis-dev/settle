@@ -156,9 +156,9 @@ describe("money: shortfallBaseUnits", () => {
   });
 
   it("stays exact past the range a double can hold", () => {
-    expect(shortfallBaseUnits(u("100000000000000000000000000"), u("99999999999999999999999999"))).toBe(
-      "1",
-    );
+    expect(
+      shortfallBaseUnits(u("100000000000000000000000000"), u("99999999999999999999999999")),
+    ).toBe("1");
   });
 });
 

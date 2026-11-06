@@ -150,7 +150,10 @@ export interface AttemptView {
  * the amounts, and §6 says the rest stays private. `refundTo` is the client's own address, so it is
  * returned by the routes that authenticated the client's request — never by a public read.
  */
-export async function attemptView(deps: ServerDeps, row: PaymentAttemptRecord): Promise<AttemptView> {
+export async function attemptView(
+  deps: ServerDeps,
+  row: PaymentAttemptRecord,
+): Promise<AttemptView> {
   const destination = await findDestinationById(deps.db, row.payoutDestinationId);
   const missing = shortfallBaseUnits(row.amountIn, row.depositedAmount);
 

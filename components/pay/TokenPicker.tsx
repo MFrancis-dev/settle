@@ -33,7 +33,14 @@ export function TokenPicker({
     const search = query.trim().toLowerCase();
     return tokens
       .filter((token) => token.refundSupported)
-      .filter((token) => search === "" || token.symbol.toLowerCase().includes(search) || chainLabel(token.settleChain ?? token.blockchain).toLowerCase().includes(search))
+      .filter(
+        (token) =>
+          search === "" ||
+          token.symbol.toLowerCase().includes(search) ||
+          chainLabel(token.settleChain ?? token.blockchain)
+            .toLowerCase()
+            .includes(search),
+      )
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
   }, [tokens, query]);
 
@@ -52,7 +59,8 @@ export function TokenPicker({
     <fieldset className="min-w-0">
       <legend className="text-sm font-medium">Pay with</legend>
       <p className="mt-1 text-xs text-ink-muted">
-        Pick a token your wallet already holds. Settle converts it; nothing is swapped inside Settle.
+        Pick a token your wallet already holds. Settle converts it; nothing is swapped inside
+        Settle.
       </p>
 
       <label className="sr-only" htmlFor="token-search">
@@ -76,7 +84,9 @@ export function TokenPicker({
               <label
                 htmlFor={id}
                 className={`flex cursor-pointer items-center justify-between gap-3 rounded-card border px-3 py-2.5 text-sm ${
-                  value === token.assetId ? "border-brand bg-brand-soft" : "border-line bg-surface hover:bg-surface-sunk"
+                  value === token.assetId
+                    ? "border-brand bg-brand-soft"
+                    : "border-line bg-surface hover:bg-surface-sunk"
                 }`}
               >
                 <span className="flex items-center gap-2">

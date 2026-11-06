@@ -59,13 +59,21 @@ export default function Page() {
         <StatusBadge status={view.status} />
       </div>
 
-      <Card title="Share the payment link" description="Anyone with this link can pay. It shows the invoice, not your account.">
+      <Card
+        title="Share the payment link"
+        description="Anyone with this link can pay. It shows the invoice, not your account."
+      >
         <div className="flex flex-wrap items-center gap-2">
           <p className="min-w-0 flex-1 basis-64 truncate rounded-control border border-line bg-surface-sunk px-3 py-2 font-mono text-xs">
             {view.payUrl}
           </p>
           <CopyButton value={view.payUrl} label="Copy link" />
-          <a href={view.payUrl} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary", size: "sm" })}>
+          <a
+            href={view.payUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
+          >
             Open
           </a>
         </div>
@@ -83,7 +91,10 @@ export default function Page() {
           ) : (
             <p className="text-sm text-ink-muted">
               No payout address is set, so the total cannot be shown yet.{" "}
-              <Link href="/settings" className="underline underline-offset-4">Set one</Link>.
+              <Link href="/settings" className="underline underline-offset-4">
+                Set one
+              </Link>
+              .
             </p>
           )}
           {canCancel(view.status) ? (
@@ -92,7 +103,11 @@ export default function Page() {
               size="sm"
               pending={cancel.isPending}
               onClick={() => {
-                if (window.confirm("Cancel this invoice? A payment that still arrives is kept and marked as paid after cancellation.")) {
+                if (
+                  window.confirm(
+                    "Cancel this invoice? A payment that still arrives is kept and marked as paid after cancellation.",
+                  )
+                ) {
                   cancel.mutate();
                 }
               }}
@@ -124,7 +139,10 @@ export default function Page() {
               { label: "Issued", value: dateText(view.createdAt) },
               { label: "Due", value: view.dueDate ? dateText(view.dueDate) : "No due date" },
               { label: "Paid", value: view.paidAt ? dateTimeText(view.paidAt) : "Not yet" },
-              { label: "Cancelled", value: view.cancelledAt ? dateTimeText(view.cancelledAt) : "—" },
+              {
+                label: "Cancelled",
+                value: view.cancelledAt ? dateTimeText(view.cancelledAt) : "—",
+              },
             ]}
           />
         </div>
@@ -135,7 +153,9 @@ export default function Page() {
         description="Each row is one address the client was given. A new quote is made whenever the old one runs out."
       >
         {view.attempts.length === 0 ? (
-          <p className="text-sm text-ink-muted">Your client has not asked for a payment address yet.</p>
+          <p className="text-sm text-ink-muted">
+            Your client has not asked for a payment address yet.
+          </p>
         ) : (
           <ul className="flex flex-col gap-4">
             {view.attempts.map((attempt) => (
@@ -156,7 +176,9 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
     <article className="rounded-card border border-line bg-surface-sunk/50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <AttemptStatusBadge status={attempt.status} />
-        <span className="text-xs text-ink-faint">Quoted until {dateTimeText(attempt.quoteDeadline)}</span>
+        <span className="text-xs text-ink-faint">
+          Quoted until {dateTimeText(attempt.quoteDeadline)}
+        </span>
       </div>
       <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
         <div>
@@ -183,7 +205,9 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
         ) : null}
         {attempt.refunded ? (
           <div>
-            <dt className="text-xs uppercase tracking-wide text-ink-faint">Sent back to the client</dt>
+            <dt className="text-xs uppercase tracking-wide text-ink-faint">
+              Sent back to the client
+            </dt>
             <dd className="mt-0.5">
               <Money money={attempt.refunded} />
               {attempt.refundReason ? (
@@ -195,7 +219,9 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
         <div className="sm:col-span-2">
           <dt className="text-xs uppercase tracking-wide text-ink-faint">Deposit address</dt>
           <dd className="mt-0.5 flex flex-wrap items-center gap-2">
-            <span className="min-w-0 max-w-full break-all font-mono text-xs">{attempt.depositAddress}</span>
+            <span className="min-w-0 max-w-full break-all font-mono text-xs">
+              {attempt.depositAddress}
+            </span>
             <CopyButton value={attempt.depositAddress} label="Copy" />
             {attempt.depositMemo ? (
               <span className="font-mono text-xs text-ink-muted">memo {attempt.depositMemo}</span>

@@ -35,29 +35,44 @@ export default async function Page({
             Invoice in dollars. Get paid from any token, on any chain.
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
-            Your client pays whatever they already hold — USDC, USDT, DAI, BTC, ETH, NEAR. Settle turns it
-            into the amount you asked for and sends it to the address you choose. You see one number: the
-            invoice, settled.
+            Your client pays whatever they already hold — USDC, USDT, DAI, BTC, ETH, NEAR. Settle
+            turns it into the amount you asked for and sends it to the address you choose. You see
+            one number: the invoice, settled.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <SignInButton redirectTo={requested ?? "/invoices/new"} size="lg" />
-            <Link href="/invoices/new" className={buttonClass({ variant: "secondary", size: "lg" })}>
+            <Link
+              href="/invoices/new"
+              className={buttonClass({ variant: "secondary", size: "lg" })}
+            >
               Write an invoice
             </Link>
           </div>
         </section>
 
         <section className="mt-16 grid gap-8 sm:grid-cols-3">
-          <Step n="1" title="Write the invoice" body="Client name, what you did, the total in dollars. No crypto knowledge needed by either side." />
-          <Step n="2" title="They pick a token" body="Your client opens one link and chooses from the tokens they already have. They see the exact amount, the fee, and how long it takes before they send." />
-          <Step n="3" title="You get paid" body="The money converts and lands at your address. Both sides get the same receipt, with every transaction on it." />
+          <Step
+            n="1"
+            title="Write the invoice"
+            body="Client name, what you did, the total in dollars. No crypto knowledge needed by either side."
+          />
+          <Step
+            n="2"
+            title="They pick a token"
+            body="Your client opens one link and chooses from the tokens they already have. They see the exact amount, the fee, and how long it takes before they send."
+          />
+          <Step
+            n="3"
+            title="You get paid"
+            body="The money converts and lands at your address. Both sides get the same receipt, with every transaction on it."
+          />
         </section>
 
         <section className="mt-16 rounded-card border border-line bg-surface p-6 shadow-card sm:p-8">
           <h2 className="text-xl font-semibold">What the client sees</h2>
           <p className="mt-2 max-w-2xl text-ink-muted">
-            One page, no account, no app. This is the whole payment flow — the amount is fixed for a few
-            minutes, then re-quoted, so nobody pays against an old price.
+            One page, no account, no app. This is the whole payment flow — the amount is fixed for a
+            few minutes, then re-quoted, so nobody pays against an old price.
           </p>
           <dl className="mt-6 grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-3">
             <Fact label="Invoice" value="#INV-0001" note="Design work, 3 days" />

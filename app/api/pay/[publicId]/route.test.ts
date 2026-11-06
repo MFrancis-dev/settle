@@ -31,7 +31,9 @@ function pay(publicId: string): Promise<Response> {
 
 describe("GET /api/pay/:publicId", () => {
   it("shows a client what they need and nothing else", async () => {
-    const { publicId, signer } = await harness.seededInvoice({ destinationAddress: "seller-payout.testnet" });
+    const { publicId, signer } = await harness.seededInvoice({
+      destinationAddress: "seller-payout.testnet",
+    });
     const response = await pay(publicId);
     const body = await jsonOf(response);
 
@@ -49,7 +51,9 @@ describe("GET /api/pay/:publicId", () => {
   });
 
   it("never reveals where the seller is paid out, or who they are", async () => {
-    const { publicId, userId } = await harness.seededInvoice({ destinationAddress: "seller-payout.testnet" });
+    const { publicId, userId } = await harness.seededInvoice({
+      destinationAddress: "seller-payout.testnet",
+    });
     const text = await (await pay(publicId)).text();
 
     // §6: the pay page is a public URL. A leaked payout address turns a shared link into a
@@ -99,7 +103,11 @@ describe("GET /api/pay/:publicId", () => {
       depositMemo: quoted.depositMemo,
       status: "awaiting_deposit",
     });
-    expect(attempt.originAsset).toMatchObject({ assetId: "nep141:wrap.near", symbol: "wNEAR", decimals: 24 });
+    expect(attempt.originAsset).toMatchObject({
+      assetId: "nep141:wrap.near",
+      symbol: "wNEAR",
+      decimals: 24,
+    });
     expect(attempt.payoutAsset).toMatchObject({ assetId: USDC_ON_NEAR, baseUnits: "5000003" });
   });
 });

@@ -39,7 +39,9 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
           ) : null}
         </div>
 
-        {sentence ? <p className={`mt-3 text-sm ${failed ? "text-danger" : ""}`}>{sentence}</p> : null}
+        {sentence ? (
+          <p className={`mt-3 text-sm ${failed ? "text-danger" : ""}`}>{sentence}</p>
+        ) : null}
 
         {attempt ? (
           <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
@@ -86,7 +88,9 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
             ) : null}
             {attempt.depositTxHash ? (
               <div className="sm:col-span-2">
-                <dt className="text-xs uppercase tracking-wide text-ink-faint">Your transaction reference</dt>
+                <dt className="text-xs uppercase tracking-wide text-ink-faint">
+                  Your transaction reference
+                </dt>
                 <dd className="mt-0.5 break-all font-mono text-xs">{attempt.depositTxHash}</dd>
               </div>
             ) : null}
@@ -107,7 +111,8 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
                   <AttemptStatusBadge status={payment.status} />
                   {payment.refunded ? (
                     <span className="text-ink-muted">
-                      <Money money={payment.refunded} /> sent back to the refund address given with it
+                      <Money money={payment.refunded} /> sent back to the refund address given with
+                      it
                     </span>
                   ) : null}
                 </li>

@@ -31,7 +31,14 @@ import { chainFromCode } from "../oneclick/tokens";
 import { badRequest, conflict, HttpError, notFound, rateLimited } from "./http";
 import { isDemoMode } from "./env-schema";
 import { syncAttempt, refreshInvoiceStatus } from "./sync";
-import { attemptView, invoiceView, moneyView, payUrlFor, type AttemptView, type MoneyView } from "./views";
+import {
+  attemptView,
+  invoiceView,
+  moneyView,
+  payUrlFor,
+  type AttemptView,
+  type MoneyView,
+} from "./views";
 import type { ServerDeps } from "./deps";
 
 /** A settled invoice takes no new money; `paid_after_cancel` is settled too (§3.3). */
@@ -55,7 +62,8 @@ const DEFAULT_DEADLINE_WINDOW_MINUTES = 30;
 
 /** The deadline a quote is built with — also the row `expireQuotes` (S5.2) reads. */
 export function deadlineForOriginChain(blockchain: string, nowMs: number): string {
-  const minutes = DEADLINE_WINDOW_MINUTES[blockchain.toLowerCase()] ?? DEFAULT_DEADLINE_WINDOW_MINUTES;
+  const minutes =
+    DEADLINE_WINDOW_MINUTES[blockchain.toLowerCase()] ?? DEFAULT_DEADLINE_WINDOW_MINUTES;
   return new Date(nowMs + minutes * 60_000).toISOString();
 }
 
@@ -139,7 +147,10 @@ export interface PublicInvoiceView {
  * and their own live deposit address — nothing that would help anybody else. `demo` is the one extra
  * field, and it exists so the page can tell a judge that nothing on it moves money.
  */
-export async function publicInvoice(deps: ServerDeps, publicId: string): Promise<PublicInvoiceView> {
+export async function publicInvoice(
+  deps: ServerDeps,
+  publicId: string,
+): Promise<PublicInvoiceView> {
   const invoice = await requireInvoice(deps, publicId);
   const seller = await findUserById(deps.db, invoice.userId);
   const destination = await getActiveDestination(deps.db, invoice.userId);
@@ -254,16 +265,22 @@ export async function quote(deps: ServerDeps, call: QuoteCall): Promise<QuoteVie
   }
 
   const origin = await deps.tokens.find(call.input.originAsset);
-  if (!origin) throw badRequest("That token is not on the 1Click list.", { originAsset: call.input.originAsset });
+  if (!origin)
+    throw badRequest("That token is not on the 1Click list.", {
+      originAsset: call.input.originAsset,
+    });
 
   const originChain = chainFromCode(origin.blockchain);
   if (originChain === null) {
     // #100: without a validator for that chain we cannot check where the client's refund goes,
     // and an uncheckable `refundTo` is how a short deposit becomes an unrecoverable one. S7.5 words
     // the memo chains differently, because there the missing piece is a tag and not a validator.
-    throw badRequest(unsupportedRefundReason(origin.blockchain) ?? `Settle cannot take ${origin.blockchain} yet.`, {
-      blockchain: origin.blockchain,
-    });
+    throw badRequest(
+      unsupportedRefundReason(origin.blockchain) ?? `Settle cannot take ${origin.blockchain} yet.`,
+      {
+        blockchain: origin.blockchain,
+      },
+    );
   }
 
   if (origin.assetId === destination.assetId) {
@@ -361,7 +378,8 @@ export async function submitTx(
   }
 
   const origin = await deps.tokens.find(attempt.originAsset);
-  const nearSenderAccount = chainFromCode(origin?.blockchain ?? "") === "near" ? attempt.refundTo : undefined;
+  const nearSenderAccount =
+    chainFromCode(origin?.blockchain ?? "") === "near" ? attempt.refundTo : undefined;
 
   try {
     const result = await submitDepositTx(deps.oneClick, {
@@ -389,7 +407,10 @@ export async function submitTx(
       oneclickStatus: result.status,
     };
   } catch (error) {
-    if (error instanceof OneClickError && (error.kind === "unreachable" || error.kind === "server_error")) {
+    if (
+      error instanceof OneClickError &&
+      (error.kind === "unreachable" || error.kind === "server_error")
+    ) {
       return { attempt: await attemptView(deps, attempt), forwarded: false, oneclickStatus: null };
     }
     throw error;
@@ -406,10 +427,7 @@ export interface OtherPayment {
   refunded: MoneyView | null;
 }
 
-async function otherPayment(
-  deps: ServerDeps,
-  row: PaymentAttemptRecord,
-): Promise<OtherPayment> {
+async function otherPayment(deps: ServerDeps, row: PaymentAttemptRecord): Promise<OtherPayment> {
   return {
     status: row.status,
     deposited: row.depositedAmount
@@ -421,7 +439,8 @@ async function otherPayment(
   };
 }
 
-export interface StatusView {  invoiceStatus: InvoiceStatus;
+export interface StatusView {
+  invoiceStatus: InvoiceStatus;
   /** Newest attempt, live or terminal — a paid invoice keeps showing the attempt that paid it. */
   attempt: AttemptView | null;
   /**

@@ -7,7 +7,13 @@
  * these components never reword a validation reason.
  */
 
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import {
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from "react";
 
 const CONTROL =
   "w-full rounded-control border bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint " +
@@ -62,10 +68,26 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   trailing?: ReactNode;
 }
 
-export function TextField({ label, error, hint, mono, required, className = "", trailing, ...rest }: TextFieldProps) {
+export function TextField({
+  label,
+  error,
+  hint,
+  mono,
+  required,
+  className = "",
+  trailing,
+  ...rest
+}: TextFieldProps) {
   const id = useId();
   return (
-    <FieldShell label={label} htmlFor={id} hint={hint} error={error} required={required} className={className}>
+    <FieldShell
+      label={label}
+      htmlFor={id}
+      hint={hint}
+      error={error}
+      required={required}
+      className={className}
+    >
       {trailing ? (
         <div className="flex items-stretch gap-2">
           <input
@@ -90,7 +112,19 @@ export function TextField({ label, error, hint, mono, required, className = "", 
   );
 }
 
-export function TextAreaField({ label, error, hint, required, rows = 3, ...rest }: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "id"> & { label: string; error?: string; hint?: string; required?: boolean }) {
+export function TextAreaField({
+  label,
+  error,
+  hint,
+  required,
+  rows = 3,
+  ...rest
+}: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "id"> & {
+  label: string;
+  error?: string;
+  hint?: string;
+  required?: boolean;
+}) {
   const id = useId();
   return (
     <FieldShell label={label} htmlFor={id} hint={hint} error={error} required={required}>

@@ -1,5 +1,10 @@
 import { Badge } from "@/components/ui/badge";
-import { attemptStatusLabel, attemptStatusTone, invoiceStatusLabel, invoiceStatusTone } from "@/lib/ui/status";
+import {
+  attemptStatusLabel,
+  attemptStatusTone,
+  invoiceStatusLabel,
+  invoiceStatusTone,
+} from "@/lib/ui/status";
 import type { AttemptStatus, InvoiceStatus } from "@/lib/core/status";
 
 /**

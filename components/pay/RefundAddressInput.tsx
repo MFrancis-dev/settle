@@ -32,7 +32,8 @@ export function RefundAddressInput({
 }) {
   const trimmed = value.trim();
   // A three-character string is somebody mid-typing, not an address worth calling wrong.
-  const problem = chain !== null && trimmed.length > 3 ? reason(validateAddress(chain, trimmed)) : null;
+  const problem =
+    chain !== null && trimmed.length > 3 ? reason(validateAddress(chain, trimmed)) : null;
 
   return (
     <TextField

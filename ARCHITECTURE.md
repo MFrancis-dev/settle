@@ -29,18 +29,18 @@
 
 ## 2. Tech stack
 
-| Layer | Choice |
-|---|---|
-| App | **Next.js 15** (App Router) + **TypeScript** (strict), Tailwind CSS v4, TanStack Query |
-| UI components | hand-rolled in `components/ui/*` on Tailwind **role tokens** (`@theme` in `app/globals.css`: `--color-ink`, `--color-brand`, `--color-warn`, `--radius-card`, …). No component library: the parts that carry money are ~8 small files, and a library would have put its own words, rounding and focus styles between us and §6. |
-| Validation | `zod` at every boundary (bodies, env, 1Click responses) |
-| 1Click | `@defuse-protocol/one-click-sdk-typescript` ≥ 0.1.24 (`verifyQuoteSignature`) |
-| NEAR | **wallet selector v10** for sign-in (`@near-wallet-selector/{core,modal-ui,my-near-wallet,hot-wallet}@10.1.4` — S0.14, see §11); NEP-413 verification; RPC views (`storage_balance_of`); one app-funded account to pay USDC storage for payout accounts |
-| DB | **Drizzle ORM**: **PGlite** for local + demo (zero config), **Postgres** when `DATABASE_URL` is set (hosted). Both drivers are listed in `next.config.ts` → `serverExternalPackages`: bundled by webpack they hand Node a `URL` where `fs` wants a path, and every API route answers 500 `ERR_INVALID_ARG_TYPE` — a fault no unit test can see, because it only exists in the server bundle. |
-| Worker | `worker/index.ts` run with `tsx`; interval loops; long-running host (not serverless) |
-| Address validation | per-chain validators (EVM checksum, NEAR account rules, others via a small, listed library) |
-| Tests | `vitest` (node by default; component tests opt into `jsdom` + `@testing-library/react` with a `@vitest-environment jsdom` docblock), Playwright (demo journey) |
-| Package manager | `pnpm` (single app, no workspaces) |
+| Layer              | Choice                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App                | **Next.js 15** (App Router) + **TypeScript** (strict), Tailwind CSS v4, TanStack Query                                                                                                                                                                                                                                                                                                       |
+| UI components      | hand-rolled in `components/ui/*` on Tailwind **role tokens** (`@theme` in `app/globals.css`: `--color-ink`, `--color-brand`, `--color-warn`, `--radius-card`, …). No component library: the parts that carry money are ~8 small files, and a library would have put its own words, rounding and focus styles between us and §6.                                                              |
+| Validation         | `zod` at every boundary (bodies, env, 1Click responses)                                                                                                                                                                                                                                                                                                                                      |
+| 1Click             | `@defuse-protocol/one-click-sdk-typescript` ≥ 0.1.24 (`verifyQuoteSignature`)                                                                                                                                                                                                                                                                                                                |
+| NEAR               | **wallet selector v10** for sign-in (`@near-wallet-selector/{core,modal-ui,my-near-wallet,hot-wallet}@10.1.4` — S0.14, see §11); NEP-413 verification; RPC views (`storage_balance_of`); one app-funded account to pay USDC storage for payout accounts                                                                                                                                      |
+| DB                 | **Drizzle ORM**: **PGlite** for local + demo (zero config), **Postgres** when `DATABASE_URL` is set (hosted). Both drivers are listed in `next.config.ts` → `serverExternalPackages`: bundled by webpack they hand Node a `URL` where `fs` wants a path, and every API route answers 500 `ERR_INVALID_ARG_TYPE` — a fault no unit test can see, because it only exists in the server bundle. |
+| Worker             | `worker/index.ts` run with `tsx`; interval loops; long-running host (not serverless)                                                                                                                                                                                                                                                                                                         |
+| Address validation | per-chain validators (EVM checksum, NEAR account rules, others via a small, listed library)                                                                                                                                                                                                                                                                                                  |
+| Tests              | `vitest` (node by default; component tests opt into `jsdom` + `@testing-library/react` with a `@vitest-environment jsdom` docblock), Playwright (demo journey)                                                                                                                                                                                                                               |
+| Package manager    | `pnpm` (single app, no workspaces)                                                                                                                                                                                                                                                                                                                                                           |
 
 No smart contract in the MVP (stretch: receipt registry, §10).
 
@@ -50,24 +50,25 @@ No smart contract in the MVP (stretch: receipt registry, §10).
 
 ### 3.1 API routes (`app/api`)
 
-| Route | Auth | Purpose |
-|---|---|---|
-| `POST /api/session` | NEP-413 message | Sign in; HTTP-only cookie |
-| `GET /api/me` | session | Profile + payout destination |
-| `GET /api/payout` | session | Current payout destination (what the settings page shows before it asks for a signature) |
-| `PUT /api/payout` | session + **fresh** NEP-413 | Set/change payout destination; logs change |
-| `POST /api/invoices` · `GET /api/invoices` | session | Create / list |
-| `GET /api/invoices/:id` · `POST /api/invoices/:id/cancel` | session | Detail / cancel |
-| `GET /api/pay/:publicId` | public | Public invoice view |
-| `GET /api/tokens` | public | Cached 1Click token list |
-| `POST /api/pay/:publicId/quote` | public, rate-limited | `{originAsset, refundTo, dry}` → preview or PaymentAttempt |
-| `POST /api/pay/:publicId/submit-tx` | public | Forward tx hash to `/v0/deposit/submit` |
-| `GET /api/pay/:publicId/status` | public | Current attempt status |
-| `GET /api/receipts/:attemptId` | public link w/ token | Receipt |
-| `GET /api/export.csv` | session | Ledger CSV |
-| `POST /api/demo/:action` | demo session | `simulate-payment`, `reset` |
+| Route                                                     | Auth                        | Purpose                                                                                  |
+| --------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| `POST /api/session`                                       | NEP-413 message             | Sign in; HTTP-only cookie                                                                |
+| `GET /api/me`                                             | session                     | Profile + payout destination                                                             |
+| `GET /api/payout`                                         | session                     | Current payout destination (what the settings page shows before it asks for a signature) |
+| `PUT /api/payout`                                         | session + **fresh** NEP-413 | Set/change payout destination; logs change                                               |
+| `POST /api/invoices` · `GET /api/invoices`                | session                     | Create / list                                                                            |
+| `GET /api/invoices/:id` · `POST /api/invoices/:id/cancel` | session                     | Detail / cancel                                                                          |
+| `GET /api/pay/:publicId`                                  | public                      | Public invoice view                                                                      |
+| `GET /api/tokens`                                         | public                      | Cached 1Click token list                                                                 |
+| `POST /api/pay/:publicId/quote`                           | public, rate-limited        | `{originAsset, refundTo, dry}` → preview or PaymentAttempt                               |
+| `POST /api/pay/:publicId/submit-tx`                       | public                      | Forward tx hash to `/v0/deposit/submit`                                                  |
+| `GET /api/pay/:publicId/status`                           | public                      | Current attempt status                                                                   |
+| `GET /api/receipts/:attemptId`                            | public link w/ token        | Receipt                                                                                  |
+| `GET /api/export.csv`                                     | session                     | Ledger CSV                                                                               |
+| `POST /api/demo/:action`                                  | demo session                | `simulate-payment`, `reset`                                                              |
 
 Conventions every route follows:
+
 - **Handlers stay thin.** `zod-validate → call `lib/server` → respond`. Status codes, error codes and
   what a client may see live in `lib/server/http.ts` and `lib/server/views.ts`, not in `route.ts`.
 - **One signature message.** A payout change signs `Settle payout change to <address> on <chain>`
@@ -88,6 +89,7 @@ Conventions every route follows:
 Base `https://1click.chaindefuser.com`; `ONECLICK_JWT` avoids the extra unauthenticated fee.
 
 Invoice quote:
+
 ```json
 {
   "dry": false,
@@ -107,15 +109,15 @@ Invoice quote:
 
 **MVP payout assets (SD-4, ids from live `/v0/tokens` on 2026-11-04 — still resolve at runtime and match on assetId):**
 
-| Payout | assetId | Decimals |
-|---|---|---|
-| USDC on NEAR (default) | `nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1` | 6 |
-| USDC on Base | `nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near` | 6 |
-| USDC on Arbitrum | `nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near` | 6 |
-| USDC on Solana | `nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near` | 6 |
-| USDC on Ethereum | `nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near` | 6 |
-| USDT on Ethereum | `nep141:eth-0xdac17f958d2ee523a2206206994597c13d831ec7.omft.near` | 6 |
-| USDT on Solana | `nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near` | 6 |
+| Payout                 | assetId                                                                   | Decimals |
+| ---------------------- | ------------------------------------------------------------------------- | -------- |
+| USDC on NEAR (default) | `nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1` | 6        |
+| USDC on Base           | `nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near`        | 6        |
+| USDC on Arbitrum       | `nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near`         | 6        |
+| USDC on Solana         | `nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near`           | 6        |
+| USDC on Ethereum       | `nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near`         | 6        |
+| USDT on Ethereum       | `nep141:eth-0xdac17f958d2ee523a2206206994597c13d831ec7.omft.near`         | 6        |
+| USDT on Solana         | `nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near`           | 6        |
 
 Rules: `verifyQuoteSignature()` before showing `depositAddress`; asset ids + decimals from `/v0/tokens` (in-memory cache, 10 min); store the raw quote + signature; after a deposit tx hash is known, `/v0/deposit/submit`.
 
@@ -127,16 +129,16 @@ Rules: `verifyQuoteSignature()` before showing `depositAddress`; asset ids + dec
 
 ### 3.3 Status mapping
 
-| 1Click | PaymentAttempt | Invoice |
-|---|---|---|
-| `PENDING_DEPOSIT` | `awaiting_deposit` | `open` |
-| `KNOWN_DEPOSIT_TX` | `payment_detected` | `payment_detected` |
-| `PROCESSING` | `processing` | `processing` |
-| `SUCCESS` | `success` | `paid` (or `overpaid` / `paid_after_cancel`) |
-| `INCOMPLETE_DEPOSIT` | `underpaid` | `underpaid` |
-| `REFUNDED` | `refunded` | back to `open` (client can retry) |
-| `FAILED` | `failed` | `open` + alert |
-| deadline passed, no deposit | `expired` | `open` |
+| 1Click                      | PaymentAttempt     | Invoice                                      |
+| --------------------------- | ------------------ | -------------------------------------------- |
+| `PENDING_DEPOSIT`           | `awaiting_deposit` | `open`                                       |
+| `KNOWN_DEPOSIT_TX`          | `payment_detected` | `payment_detected`                           |
+| `PROCESSING`                | `processing`       | `processing`                                 |
+| `SUCCESS`                   | `success`          | `paid` (or `overpaid` / `paid_after_cancel`) |
+| `INCOMPLETE_DEPOSIT`        | `underpaid`        | `underpaid`                                  |
+| `REFUNDED`                  | `refunded`         | back to `open` (client can retry)            |
+| `FAILED`                    | `failed`           | `open` + alert                               |
+| deadline passed, no deposit | `expired`          | `open`                                       |
 
 A second `success` on an already-paid invoice → `overpaid` with both attempts listed.
 
@@ -153,26 +155,27 @@ Callers pass **every** attempt for the invoice — a partial list derives a weak
 
 ### 3.4 Worker (`worker/`)
 
-| Loop | Every | Does |
-|---|---|---|
-| `pollPayments` | 5 s | Non-terminal attempts → `/v0/status` → update attempt + invoice |
-| `expireQuotes` | 60 s | Past deadline, no deposit → `expired` |
+| Loop           | Every | Does                                                            |
+| -------------- | ----- | --------------------------------------------------------------- |
+| `pollPayments` | 5 s   | Non-terminal attempts → `/v0/status` → update attempt + invoice |
+| `expireQuotes` | 60 s  | Past deadline, no deposit → `expired`                           |
 
 Idempotency: unique `deposit_address`; status updates are monotonic (never move backwards).
 
 As implemented (S5.1–S5.3):
 
-- **One write path.** `lib/server/sync.ts` (`syncAttempt`, `refreshInvoiceStatus`) is called by `pollPayments` *and* by `GET /api/pay/:publicId/status` *and* by `submit-tx`. The table above says the poll is the worker's write; sharing the module is what makes that true rather than aspirational. An invoice is always re-derived from **every** attempt it has, never from the one row that changed.
+- **One write path.** `lib/server/sync.ts` (`syncAttempt`, `refreshInvoiceStatus`) is called by `pollPayments` _and_ by `GET /api/pay/:publicId/status` _and_ by `submit-tx`. The table above says the poll is the worker's write; sharing the module is what makes that true rather than aspirational. An invoice is always re-derived from **every** attempt it has, never from the one row that changed.
 - **Bounded ticks.** `listLiveAttempts` / `listExpiredQuoteAttempts` cap a tick at 50 rows (`POLL_BATCH`, `EXPIRE_BATCH`), oldest first, so a backlog drains over several ticks instead of firing an unbounded burst at a partner service. Attempts are polled sequentially for the same reason.
 - **A tick never throws.** 1Click being unreachable is `silent` (nothing is written, so "no signal yet" is never stored as "not paid"); an illegal transition is `failed`, logged with the attempt id and the error kind only — no address, no client name, no upstream body — and the rest of the tick still runs. One bad row must not freeze every other payment behind it.
 - **Expiry is confirmed, not assumed.** `expired` is terminal and absorbs, so `expireQuotes` reads 1Click once more before writing: money that landed in the final seconds is recorded forward (`lateDeposit`), an unreachable service **defers** the decision to the next minute, and a 404 does expire — the service keeps no record of that deposit address, and leaving the row live would wedge the invoice under the one-live-attempt rule.
-- **Graceful shutdown.** `stop()` sets a flag *and* wakes the parked interval, then awaits the tick in flight. Killing a tick mid-write is how a payment ends up polled upstream and never recorded. A second signal exits immediately.
+- **Graceful shutdown.** `stop()` sets a flag _and_ wakes the parked interval, then awaits the tick in flight. Killing a tick mid-write is how a payment ends up polled upstream and never recorded. A second signal exits immediately.
 - **Nothing runs at import time.** `main()` is behind an entrypoint guard, so the Next.js app or a test can import this module without spawning a process; `sleep` is injected in tests, so scheduling is asserted without fake timers.
 
 ### 3.5 Payout storage registration
+
 On setting a USDC-on-NEAR payout: RPC `storage_balance_of(account)` on the USDC contract; if missing, the app's `STORAGE_PAYER` account calls `storage_deposit(account)`.
 
-**S0.9 answered from the docs (2026-11-05, still unconfirmed by the vendor):** there is no evidence that 1Click registers NEAR recipients — and its low-level `ft_withdraw` intent documents the opposite hazard: a withdrawal to an account with no storage balance is *not* refunded. So app-paid registration stays in scope (S-B1), and `lib/near/storage.ts` reads the contract's own `storage_balance_bounds.min` plus the account's balance instead of assuming a constant; an account that does not exist yet counts as unregistered, because a payout address is valid before it is funded. `checkStorageRequirement` is read-only — the transaction that spends payer funds is **S2.10**, which needs the funded `STORAGE_PAYER` (S0.10), the NEAR signing dependency (S0.14) and an explicit human "yes" (AGENTS.md §7).
+**S0.9 answered from the docs (2026-11-05, still unconfirmed by the vendor):** there is no evidence that 1Click registers NEAR recipients — and its low-level `ft_withdraw` intent documents the opposite hazard: a withdrawal to an account with no storage balance is _not_ refunded. So app-paid registration stays in scope (S-B1), and `lib/near/storage.ts` reads the contract's own `storage_balance_bounds.min` plus the account's balance instead of assuming a constant; an account that does not exist yet counts as unregistered, because a payout address is valid before it is funded. `checkStorageRequirement` is read-only — the transaction that spends payer funds is **S2.10**, which needs the funded `STORAGE_PAYER` (S0.10), the NEAR signing dependency (S0.14) and an explicit human "yes" (AGENTS.md §7).
 
 ---
 
@@ -216,6 +219,7 @@ payment_attempts (
   created_at timestamptz default now(), updated_at timestamptz default now()
 )
 ```
+
 Dry-run previews are not stored.
 
 ---
@@ -232,22 +236,23 @@ Dry-run previews are not stored.
 
 ## 6. Security
 
-| Threat | Control |
-|---|---|
-| Hijacked session changes payout address | Fresh NEP-413 signature required; change log; snapshot per attempt; dashboard banner |
-| Tampered 1Click response | `verifyQuoteSignature()` before display |
-| Fake "paid" | Status only from 1Click, never from the client |
-| Invoice enumeration | Unguessable `public_id`; minimal public data; a malformed id answers as an unknown one |
-| Quote spam | No quote on page load; rate limit per IP + invoice |
-| Write spam / credential stuffing | `AUTH_LIMIT` bucket on every signed-in route, consumed before any work |
-| Payout address leaked through a refusal | The `same_asset` answer names the asset, never the destination address |
-| Secrets | `.env` only; `.env.example` names only |
-| Upstream wording reaching the log | `OneClickError.message` is log-safe; `.detail` is answered to the client and never logged |
-| PII | Off-chain only |
+| Threat                                  | Control                                                                                   |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Hijacked session changes payout address | Fresh NEP-413 signature required; change log; snapshot per attempt; dashboard banner      |
+| Tampered 1Click response                | `verifyQuoteSignature()` before display                                                   |
+| Fake "paid"                             | Status only from 1Click, never from the client                                            |
+| Invoice enumeration                     | Unguessable `public_id`; minimal public data; a malformed id answers as an unknown one    |
+| Quote spam                              | No quote on page load; rate limit per IP + invoice                                        |
+| Write spam / credential stuffing        | `AUTH_LIMIT` bucket on every signed-in route, consumed before any work                    |
+| Payout address leaked through a refusal | The `same_asset` answer names the asset, never the destination address                    |
+| Secrets                                 | `.env` only; `.env.example` names only                                                    |
+| Upstream wording reaching the log       | `OneClickError.message` is log-safe; `.detail` is answered to the client and never logged |
+| PII                                     | Off-chain only                                                                            |
 
 ---
 
 ## 7. Demo and dry-run
+
 - `pnpm demo`: PGlite + seed (`demo-freelancer.near`, ten invoices — one per status the app can reach — and a payout-destination history), demo session, banner. `scripts/demo.ts` refuses to start if the environment would make "demo" a lie, seeds in a step that **closes** the connection first (PGlite hands its data directory to one process at a time), then spawns `next dev` with `DEMO_MODE=1`. `pnpm demo:seed --fresh` rewrites the story; without `--fresh` a story already in the database is left alone.
 - Adapters: `QuoteProvider`, `StatusProvider` interfaces in `lib/core/adapters.ts`; real (1Click) and demo implementations.
 - **As implemented (S6.1–S6.6, 2026-11-06), the choice is process-wide, not per session.** `DEMO_MODE` is read once by `createPaymentAdapters` in `lib/server/adapters.ts`, so a single process is either demo or real and cannot be both. This is deliberately stronger than the "chosen by session type" sketch above: a per-session choice would let one process serve a demo session and a real one at the same time, which is the exact confusion `demoModeConflict` exists to prevent. `demoModeConflict` refuses `DEMO_MODE` next to a `DATABASE_URL` or an `https://` `PUBLIC_APP_URL`, and `assertDemoModeAllowed` re-checks on every `/api/demo/*` request (403 in real mode).
@@ -259,6 +264,7 @@ Dry-run previews are not stored.
 ---
 
 ## 8. Configuration
+
 ```
 ONECLICK_BASE_URL=https://1click.chaindefuser.com
 ONECLICK_JWT=
@@ -272,6 +278,7 @@ PUBLIC_APP_URL=
 ONECLICK_MANAGER_PUBLIC_KEY=   # only to override the manager key (test fixture / rotation)
 DEMO_MODE=                     # 1 → this whole process is a demo (§7); `pnpm demo` sets it
 ```
+
 `NEAR_RPC_URL` is optional: without it the NEAR reads answer `not_configured` instead of guessing a
 node. `ONECLICK_MANAGER_PUBLIC_KEY` is what lets the route tests verify a quote signed by the fixture
 key; unset, the SDK's built-in production manager key is used — except in demo mode, where
@@ -282,6 +289,7 @@ verify. `DEMO_MODE` is refused next to `DATABASE_URL` or an `https://` `PUBLIC_A
 ---
 
 ## 9. Testing
+
 - Unit: money/rounding, status mapping (every value), monotonic transitions, overpaid/paid-after-cancel logic, address validators, quote verification (valid + tampered fixtures), NEP-413 verify.
 - Integration, still offline: every 1Click read and write runs against recorded fixtures in `lib/oneclick/__fixtures__/` through the same `fetch` the live client uses. `quote-real.json`, `quote-dry.json`, `statuses.json` and `tokens.json` are shaped from SDK 0.1.26 and re-signed in-test by a throwaway ed25519 key (`__fixtures__/signing.ts`), which gives both halves S2.4 asks for: a signature the vendor's own `verifyQuoteSignature()` accepts, and one that stops verifying when a signed field is edited. They are **not** live recordings — that needs the partner JWT (S0.8).
 - DB: `lib/db/queries/*` is tested against a real Postgres — PGlite in memory (`memory://`) with the real migration applied per test file. No mocks, no hosted database.
@@ -301,6 +309,7 @@ verify. `DEMO_MODE` is refused next to `DATABASE_URL` or an `https://` `PUBLIC_A
 ---
 
 ## 10. Stretch: on-chain receipt registry
+
 A tiny NEAR contract where the app records `{invoice_hash, attempt_id, amount, delivery_tx}` after `SUCCESS`, so a receipt can be checked on-chain. No funds involved. Only after MVP is demoable.
 
 ---
@@ -308,23 +317,27 @@ A tiny NEAR contract where the app records `{invoice_hash, attempt_id, amount, d
 ## 11. Design review: hard questions
 
 ### What would break?
-| # | Break | Fix |
-|---|---|---|
+
+| #    | Break                                                                    | Fix                                                                                                                                                     |
+| ---- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | S-B1 | Payout to a NEAR account not registered on USDC → delivery fails/refunds | Storage check + app-paid registration (3.5; read-only in S2.8, the spend is S2.10) 🔍 docs say nothing registers recipients — unconfirmed by the vendor |
-| S-B2 | Typo in payout address → permanent loss | Validation, typed twice, chain named, change log |
-| S-B3 | Exchange withdrawal fee → `INCOMPLETE_DEPOSIT` | Warning before sending; clear underpaid screen; top-up if 1Click allows 🔍 |
-| S-B4 | Client switches token, pays both | One active attempt; warning about live old address; `overpaid` |
-| S-B5 | AI screener can't run it | `pnpm demo` with zero secrets and PGlite |
-| S-B6 | BTC-origin payments miss the deadline | Deadline per origin chain from 1Click time estimate 🔍 |
-| S-B7 | 1Click down / no route | Clear message, retry later, never fake a status |
+| S-B2 | Typo in payout address → permanent loss                                  | Validation, typed twice, chain named, change log                                                                                                        |
+| S-B3 | Exchange withdrawal fee → `INCOMPLETE_DEPOSIT`                           | Warning before sending; clear underpaid screen; top-up if 1Click allows 🔍                                                                              |
+| S-B4 | Client switches token, pays both                                         | One active attempt; warning about live old address; `overpaid`                                                                                          |
+| S-B5 | AI screener can't run it                                                 | `pnpm demo` with zero secrets and PGlite                                                                                                                |
+| S-B6 | BTC-origin payments miss the deadline                                    | Deadline per origin chain from 1Click time estimate 🔍                                                                                                  |
+| S-B7 | 1Click down / no route                                                   | Clear message, retry later, never fake a status                                                                                                         |
 
 ### Edge cases
+
 Payment after cancel (`paid_after_cancel`, `lib/core/status.ts` + route tests) · overpayment: the excess above `amountIn` is refunded to `refundTo` after the swap (§3.2), so `overpaid` needs no manual step, and **both** attempts are reported — the newest in full, the earlier one as `otherPayments` with status and refunded amount only, never an address or an id belonging to the other payer (S7.2) · short payment: the pay page renders `deposited` and `shortfall` as numbers, because "send the difference" is not actionable without the difference (S7.1) · client already holds the payout asset on the payout chain: refused with `same_asset` **before** a quote is asked for, and — deliberate deviation from the "show direct-transfer instructions" sketch — the answer names the asset and chain, not the seller's destination address, because a pay link is public and handing the destination to anyone holding one is the loss FR-6 exists to prevent (S7.4) · refund address on a memo chain: `unsupportedRefundReason()` says why a refund there is not recoverable, and the token picker lists every excluded network with its reason (S7.5, list is 🔍 ours — 1Click does not publish which origins carry a memo requirement) · per-line rounding (`lib/core/money.ts`) · payout changed while a quote is live: the snapshot holds, and `PUT /api/payout` now answers `openQuotes` — the count of live attempts still pointed at the address just replaced — so the settings page can say so (S7.8) · region not served by 1Click: the upstream refusal is passed through as `invalid_request` with its own wording rather than matched against guessed strings 🔍 (S7.9) · invoice total below 1Click minimum (answered: a 400 carrying `try at least N`, surfaced as `minimumBaseUnits` and rendered by `describeQuoteFailure()` in the token the client picked, S7.6 — no test drives the vendor's real minimum, which needs the partner JWT of S0.8/#11).
 
 ### Overengineering avoided
+
 No contract in MVP · no custody · no relayer (receiving needs no gas) · single app, no monorepo · no queue, two simple loops · no reconcile job.
 
 ### Answered: wallet sign-in packages and NEP-413 (S0.14, 2026-11-05)
+
 Read off the installed packages (`@near-wallet-selector/*@10.1.4`, `near-api-js@7.4.0`) plus NEP-413,
 and confirmed in code by `lib/near/nep413.test.ts`, which compares our serialiser with the library's
 `serializeNep413` byte for byte and checks a signature from each against the other's verifier.
@@ -334,23 +347,22 @@ and confirmed in code by `lib/near/nep413.test.ts`, which compares our serialise
   HOT, Meteor, Ledger, WalletConnect, Nightly and Intear. **`ethereum-wallets` (MetaMask) throws** for it,
   so MetaMask is not a sign-in option for Settle.
 - **The digest is not `"near:" + JSON`.** NEP-413 Borsh-serialises `{tag u32 = 2**31+413, message,
-  nonce[u8;32], recipient, callbackUrl?}`, and the wallet signs `sha256` of those bytes — so the JSON shape
+nonce[u8;32], recipient, callbackUrl?}`, and the wallet signs `sha256` of those bytes — so the JSON shape
   `verifyNep413` was built on cannot come from a wallet-selector wallet. `lib/near/nep413.ts` now verifies
   both shapes: `verifyNep413SignedMessage` for the standard one, which is what `POST /api/session` and
   `PUT /api/payout` accept (the signed body is `{message, recipient, nonce, callbackUrl?, signature (base64),
-  publicKey}`), and `verifyNep413` for the JSON/RAAT convention that no wallet produces.
+publicKey}`), and `verifyNep413` for the JSON/RAAT convention that no wallet produces.
 - **A caller passes only the fields the signature covers.** `accountId` and the wallet's echoed `state` are
   not in the payload, so a handler strips them before verifying — otherwise an unsigned field could sit
   next to a signed one and read like part of the claim.
 - **`signIn({messagePayload})` is gone in v10**; the signing call above is the only way to prove account control.
 - **Deviation, deliberate:** NEP-413's reference check (`verifyFullKeyBelongsToUser`) insists the signing key
   is `FullAccess`. Settle checks the stronger thing instead — that the key is in the account's own access-key
-  list (`getAccessKeys`, S2.6) — and does not require FullAccess, because owning a key that *could* sign a
+  list (`getAccessKeys`, S2.6) — and does not require FullAccess, because owning a key that _could_ sign a
   message is the authorisation fact; whether the key is full-access only says what else it could do.
 - **Excluded deps:** `@near-wallet-selector/near-api-js` and `…/metamask` no longer exist in v10 (its
   migration note says to remove `near-api-js`), and `near-api-js@7` dropped `keyStores` while its
   `engines` ask for node ≥ 22.22.2 against our ≥ 20. We keep our own RPC client (`lib/near/rpc.ts`) and
   the noble/bs58 primitives, so the wallet packages stay browser-side only.
 - 🔍 still unverified: one real end-to-end login against a live wallet (the byte layout is the library's,
-  the *dialog* — what a wallet shows the human — is not testable offline).
-
+  the _dialog_ — what a wallet shows the human — is not testable offline).

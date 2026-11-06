@@ -80,7 +80,9 @@ export function SignInButton({
 /** A wallet rejection arrives as a bare string from the library; the person needs to know what to do. */
 function messageFor(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error);
-  if (/reject|denied|cancel/i.test(text)) return "Your wallet declined to sign. Try again when you are ready.";
-  if (/session|cookie/i.test(text)) return "Settle could not open a session with that signature. Try again.";
+  if (/reject|denied|cancel/i.test(text))
+    return "Your wallet declined to sign. Try again when you are ready.";
+  if (/session|cookie/i.test(text))
+    return "Settle could not open a session with that signature. Try again.";
   return "Sign-in did not complete. Check your wallet and try again.";
 }

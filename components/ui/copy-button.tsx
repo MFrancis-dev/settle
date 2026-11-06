@@ -25,7 +25,12 @@ export function CopyButton({
   const [outcome, setOutcome] = useState<CopyOutcome | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => { if (timer.current !== null) clearTimeout(timer.current); }, []);
+  useEffect(
+    () => () => {
+      if (timer.current !== null) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   async function onClick() {
     const result = await copyToClipboard(value);
@@ -40,7 +45,11 @@ export function CopyButton({
       onClick={onClick}
       className={`${buttonClass({ variant: "secondary", size })} whitespace-nowrap`}
     >
-      {outcome === "copied" ? "Copied" : outcome === "manual" ? "Select it and press Ctrl+C" : label}
+      {outcome === "copied"
+        ? "Copied"
+        : outcome === "manual"
+          ? "Select it and press Ctrl+C"
+          : label}
     </button>
   );
 }

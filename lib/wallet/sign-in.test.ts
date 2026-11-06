@@ -127,9 +127,13 @@ describe("signInBodyFromWallet", () => {
   });
 
   it("says so plainly when the wallet returns nothing", async () => {
-    const silent: MessageSigner = { async signMessage() { return undefined; } };
-    await expect(
-      signInBodyFromWallet({ signer: silent, recipient: RECIPIENT }),
-    ).rejects.toThrow("The wallet did not return a signed message.");
+    const silent: MessageSigner = {
+      async signMessage() {
+        return undefined;
+      },
+    };
+    await expect(signInBodyFromWallet({ signer: silent, recipient: RECIPIENT })).rejects.toThrow(
+      "The wallet did not return a signed message.",
+    );
   });
 });

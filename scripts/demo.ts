@@ -38,7 +38,9 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log("demo — starting the app in demo mode (no real quotes, no real money)");
-  console.log(`  open      http://localhost:${port}/demo   the story, and the button that pays an invoice`);
+  console.log(
+    `  open      http://localhost:${port}/demo   the story, and the button that pays an invoice`,
+  );
   console.log(`  also      http://localhost:${port}/       landing page, sign-in, pay flow`);
   console.log("  stop      Ctrl-C");
   console.log("");

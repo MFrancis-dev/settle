@@ -33,7 +33,12 @@ import type {
 /** Anything 2xx-shaped and text-bearing; a `Response` satisfies it in the browser and in Node. */
 export type FetchLike = (
   input: string,
-  init?: { method?: string; body?: string; headers?: Record<string, string>; credentials?: RequestCredentials },
+  init?: {
+    method?: string;
+    body?: string;
+    headers?: Record<string, string>;
+    credentials?: RequestCredentials;
+  },
 ) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
 
 /** A rejection that already carries a plain-language message for the screen the user is on. */
@@ -101,10 +106,7 @@ export interface Api {
 export const EXPORT_CSV_PATH = "/api/export.csv";
 
 export function createApi(fetchImpl: FetchLike): Api {
-  async function call<T>(
-    path: string,
-    init: { method?: string; body?: unknown } = {},
-  ): Promise<T> {
+  async function call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
     const response = await fetchImpl(path, {
       method: init.method ?? "GET",
       headers: init.body === undefined ? undefined : { "content-type": "application/json" },
@@ -118,11 +120,18 @@ export function createApi(fetchImpl: FetchLike): Api {
         data = JSON.parse(text);
       } catch {
         // A proxy or crash can answer HTML on a 500; the status is still the whole story.
-        if (response.ok) throw new ApiError(response.status, "internal_error", "The server replied with something we could not read.");
+        if (response.ok)
+          throw new ApiError(
+            response.status,
+            "internal_error",
+            "The server replied with something we could not read.",
+          );
       }
     }
     if (!response.ok) {
-      const envelope = (data as { error?: { code?: string; message?: string; details?: unknown } } | null)?.error;
+      const envelope = (
+        data as { error?: { code?: string; message?: string; details?: unknown } } | null
+      )?.error;
       throw new ApiError(
         response.status,
         (envelope?.code ?? "internal_error") as ApiErrorCode,
@@ -151,9 +160,13 @@ export function createApi(fetchImpl: FetchLike): Api {
       call<InvoiceView>(`/api/invoices/${encodeURIComponent(id)}/cancel`, { method: "POST" }),
     payoutLog: () => call<{ payouts: PayoutView[] }>("/api/payout"),
     setPayout: (body) => call<PayoutChange>("/api/payout", { method: "PUT", body }),
-    publicInvoice: (publicId) => call<PublicInvoiceView>(`/api/pay/${encodeURIComponent(publicId)}`),
+    publicInvoice: (publicId) =>
+      call<PublicInvoiceView>(`/api/pay/${encodeURIComponent(publicId)}`),
     quote: (publicId, input) =>
-      call<QuoteView>(`/api/pay/${encodeURIComponent(publicId)}/quote`, { method: "POST", body: input }),
+      call<QuoteView>(`/api/pay/${encodeURIComponent(publicId)}/quote`, {
+        method: "POST",
+        body: input,
+      }),
     status: (publicId) => call<StatusView>(`/api/pay/${encodeURIComponent(publicId)}/status`),
     submitTx: (publicId, txHash) =>
       call<SubmitResult>(`/api/pay/${encodeURIComponent(publicId)}/submit-tx`, {
@@ -176,5 +189,10 @@ export function createApi(fetchImpl: FetchLike): Api {
 
 /** The instance the hooks use. A page never builds its own, so there is one place to point at a stub. */
 export const api = createApi(
-  (input, init) => fetch(input, init) as unknown as Promise<{ ok: boolean; status: number; text(): Promise<string> }>,
+  (input, init) =>
+    fetch(input, init) as unknown as Promise<{
+      ok: boolean;
+      status: number;
+      text(): Promise<string>;
+    }>,
 );

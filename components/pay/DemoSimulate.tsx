@@ -32,7 +32,14 @@ const LABELS: Readonly<Record<DemoOutcome, string>> = {
   expired: "The quote lapsed",
 };
 
-const ORDER: readonly DemoOutcome[] = ["next", "paid", "underpaid", "refunded", "failed", "expired"];
+const ORDER: readonly DemoOutcome[] = [
+  "next",
+  "paid",
+  "underpaid",
+  "refunded",
+  "failed",
+  "expired",
+];
 
 export function DemoSimulate({ publicId }: { publicId: string }) {
   const simulate = useDemoSimulate();
@@ -68,8 +75,8 @@ export function DemoSimulate({ publicId }: { publicId: string }) {
 
       {offered.length === 0 ? (
         <p className="mt-3 text-sm text-ink-muted">
-          This payment has finished, so there is nothing left to simulate. Get a new payment address to
-          run it again.
+          This payment has finished, so there is nothing left to simulate. Get a new payment address
+          to run it again.
         </p>
       ) : (
         <div className="mt-3 flex flex-wrap gap-2">
