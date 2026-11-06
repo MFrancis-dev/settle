@@ -108,6 +108,6 @@ export async function receipt(
     depositTxs: links(swap?.originChainTxHashes ?? [], depositHashes),
     deliveryTxs: links(swap?.destinationChainTxHashes ?? [], deliveryHashes),
     quoteSignature: attempt.quoteSignature,
-    receiptUrl: receiptUrlFor(deps, attempt.receiptToken),
+    receiptUrl: receiptUrlFor(deps, attempt.receiptToken, attempt.id),
   };
 }

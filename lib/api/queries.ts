@@ -10,7 +10,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClientConfig } from "@tanstack/react-query";
 
 import { ApiError, api } from "./client";
-import type { CreateInvoiceInput, PayQuoteInput } from "@/lib/core/schemas";
+import type { CreateInvoiceInput, DemoOutcome, PayQuoteInput } from "@/lib/core/schemas";
 import type { InvoiceStatus } from "@/lib/core/status";
 import type { SignInBody } from "@/lib/wallet/sign-in";
 import type { PayoutBody } from "@/lib/wallet/payout-signature";
@@ -39,6 +39,7 @@ export const queryKeys = {
   publicInvoice: (publicId: string) => ["public-invoice", publicId] as const,
   status: (publicId: string) => ["pay-status", publicId] as const,
   receipt: (attemptId: string, token: string) => ["receipt", attemptId, token] as const,
+  demoSession: ["demo-session"] as const,
 };
 
 export function useMe() {
@@ -162,5 +163,42 @@ export function useSubmitTx(publicId: string) {
   return useMutation({
     mutationFn: (txHash: string) => api.submitTx(publicId, txHash),
     onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.status(publicId) }),
+  });
+}
+
+/**
+ * The demo's front door. The server seeds on the first read, so this is a query and not a mutation:
+ * opening `/demo` twice shows the same story rather than two copies of it.
+ */
+export function useDemoSession() {
+  return useQuery({ queryKey: queryKeys.demoSession, queryFn: () => api.demoSession() });
+}
+
+/**
+ * One press of "the client has paid". A simulated step moves the same rows a real poll moves, so the
+ * pay page, the dashboard and the receipt all have to be re-read after it.
+ */
+export function useDemoSimulate() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { publicId: string; outcome: DemoOutcome }) =>
+      api.demoSimulate(input.publicId, input.outcome),
+    onSuccess: (_result, input) => {
+      client.invalidateQueries({ queryKey: queryKeys.demoSession });
+      client.invalidateQueries({ queryKey: queryKeys.publicInvoice(input.publicId) });
+      client.invalidateQueries({ queryKey: queryKeys.status(input.publicId) });
+      client.invalidateQueries({ queryKey: queryKeys.invoicesRoot });
+    },
+  });
+}
+
+export function useDemoReset() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.demoReset(),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.demoSession });
+      client.invalidateQueries({ queryKey: queryKeys.invoicesRoot });
+    },
   });
 }

@@ -29,6 +29,7 @@ import { requestInvoiceQuote, type InvoiceQuoteParams } from "../oneclick/quote"
 import { submitDepositTx } from "../oneclick/status";
 import { chainFromCode } from "../oneclick/tokens";
 import { badRequest, conflict, HttpError, notFound, rateLimited } from "./http";
+import { isDemoMode } from "./env-schema";
 import { syncAttempt, refreshInvoiceStatus } from "./sync";
 import { attemptView, invoiceView, moneyView, payUrlFor, type AttemptView, type MoneyView } from "./views";
 import type { ServerDeps } from "./deps";
@@ -124,13 +125,19 @@ export interface PublicInvoiceView {
   payUrl: string;
   /** The quote the client is working from, while it is still live. */
   activeAttempt: AttemptView | null;
+  /**
+   * True in demo mode. The pay page swaps "paste your transaction reference" for a button that
+   * simulates the deposit, and says out loud that no money is moving (ARCHITECTURE.md §7).
+   */
+  demo: boolean;
 }
 
 /**
  * `GET /api/pay/:publicId`.
  *
  * Minimal by §6: the seller's payout address is not here. A client needs the amount, who is asking,
- * and their own live deposit address — nothing that would help anybody else.
+ * and their own live deposit address — nothing that would help anybody else. `demo` is the one extra
+ * field, and it exists so the page can tell a judge that nothing on it moves money.
  */
 export async function publicInvoice(deps: ServerDeps, publicId: string): Promise<PublicInvoiceView> {
   const invoice = await requireInvoice(deps, publicId);
@@ -152,6 +159,7 @@ export async function publicInvoice(deps: ServerDeps, publicId: string): Promise
     total: view.total,
     payUrl: payUrlFor(deps, invoice.publicId),
     activeAttempt: active ? await attemptView(deps, active) : null,
+    demo: isDemoMode(deps.env),
   };
 }
 

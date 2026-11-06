@@ -158,12 +158,21 @@ export async function attemptView(deps: ServerDeps, row: PaymentAttemptRecord): 
     deliveryTxHash: row.deliveryTxHash,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    receiptUrl: row.receiptToken ? receiptUrlFor(deps, row.receiptToken) : null,
+    receiptUrl: row.receiptToken ? receiptUrlFor(deps, row.receiptToken, row.id) : null,
   };
 }
 
-export function receiptUrlFor(deps: ServerDeps, receiptToken: string): string {
-  return `${deps.appUrl.replace(/\/+$/, "")}/receipt/${receiptToken}`;
+/**
+ * A receipt link, with both halves of its authorisation in it.
+ *
+ * The token is the secret and the attempt id is the row it opens: `GET /api/receipts/:attemptId`
+ * needs the id to find the attempt at all, so a URL without `?attempt=` renders a page that can only
+ * say "this link is incomplete". Every link the app hands out is built here, which is why the id is
+ * a required argument rather than an optional one.
+ */
+export function receiptUrlFor(deps: ServerDeps, receiptToken: string, attemptId: string): string {
+  const origin = deps.appUrl.replace(/\/+$/, "");
+  return `${origin}/receipt/${receiptToken}?attempt=${attemptId}`;
 }
 
 export function payUrlFor(deps: ServerDeps, publicId: string): string {

@@ -12,6 +12,8 @@
  * 3. One live address at a time. If the server says another quote is already open, this screen goes
  *    back to showing that one rather than starting a second — two live quotes is how a client pays
  *    twice.
+ * 4. In demo mode the page says so at the top and swaps the transaction-reference field for the
+ *    simulate panel (§7): a payment that was never sent must never look like one that was.
  */
 
 import { useMemo, useState } from "react";
@@ -23,12 +25,14 @@ import { Card, DefinitionList } from "@/components/ui/card";
 import { TextField } from "@/components/ui/field";
 import { Money } from "@/components/ui/money";
 import { Countdown } from "@/components/pay/Countdown";
+import { DemoSimulate } from "@/components/pay/DemoSimulate";
 import { DepositPanel } from "@/components/pay/DepositPanel";
 import { PayStatus } from "@/components/pay/PayStatus";
 import { RefundAddressInput } from "@/components/pay/RefundAddressInput";
 import { ShortPaymentWarning } from "@/components/pay/ShortPaymentWarning";
 import { TokenPicker } from "@/components/pay/TokenPicker";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
+import { DemoBanner } from "@/components/demo/DemoBanner";
 import { ApiError } from "@/lib/api/client";
 import { usePaymentStatus, usePublicInvoice, useQuote, useSubmitTx, useTokens } from "@/lib/api/queries";
 import type { AttemptView, QuoteView, StatusView } from "@/lib/api/types";
@@ -123,6 +127,8 @@ export default function Page() {
         </div>
       </header>
 
+      {view.demo ? <DemoBanner /> : null}
+
       {!payable && !settled ? (
         <Alert tone="neutral" title="This invoice is not open for payment">
           <p>
@@ -208,20 +214,24 @@ export default function Page() {
           status={live ?? emptyStatus(view.status, attempt)}
           actions={
             attempt ? (
-              <ReportPayment
-                onSubmit={async (txHash) => {
-                  try {
-                    const result = await submitTx.mutateAsync(txHash);
-                    return result.forwarded
-                      ? "We have asked the service to look for it now. Keep this page open."
-                      : "The service could not be reached just now. Your payment is still on its way, and this page keeps checking.";
-                  } catch (error) {
-                    return error instanceof ApiError
-                      ? error.message
-                      : "That reference could not be sent. Keep this page open instead — it checks on its own.";
-                  }
-                }}
-              />
+              view.demo ? (
+                <DemoSimulate publicId={publicId} />
+              ) : (
+                <ReportPayment
+                  onSubmit={async (txHash) => {
+                    try {
+                      const result = await submitTx.mutateAsync(txHash);
+                      return result.forwarded
+                        ? "We have asked the service to look for it now. Keep this page open."
+                        : "The service could not be reached just now. Your payment is still on its way, and this page keeps checking.";
+                    } catch (error) {
+                      return error instanceof ApiError
+                        ? error.message
+                        : "That reference could not be sent. Keep this page open instead — it checks on its own.";
+                    }
+                  }}
+                />
+              )
             ) : null
           }
         />

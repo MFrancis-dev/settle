@@ -72,7 +72,8 @@ Rules as implemented in `lib/core/status.ts`:
 - A malformed uuid id answers the same 404 as an unknown or foreign one (`lib/core/ids.ts`) — never a 500.
 - Payout changes sign `Settle payout change to <address> on <chain>` (`lib/core/payout-message.ts`); the settings page and `PUT /api/payout` must derive it identically.
 - Quotes: 6/min per `publicId`+IP; status polls: 60/min. Rejection carries `Retry-After`.
-- `POST /api/demo/:action` is Phase 6, not built yet.
+- `POST /api/demo/:action` answers 403 unless the whole process is a demo (`assertDemoModeAllowed`).
+- **Two runtimes, one secret:** `middleware.ts` runs on Edge and route handlers on Node, so any per-process module state is *two* values. `lib/server/session.ts` therefore takes the session secret from `sessionSecretFrom(env.SESSION_SECRET, isDemoMode(env))` — a fixed demo key in demo mode, a random fallback otherwise. Never add per-process randomness that a cookie has to survive across.
 
 ## UI (built in Phase 4)
 - Client pages read `lib/api/types.ts`, a hand-written mirror of the server's views — a client component must never reach `lib/server` (it would pull the DB and the secrets into the bundle).
@@ -92,11 +93,16 @@ Rules as implemented in `lib/core/status.ts`:
 - Expiry is **confirmed**: `expired` is terminal, so `expireQuotes` reads 1Click once more — late money is recorded forward, an unreachable service defers a minute, a 404 expires (no record exists, and a live row would wedge the invoice).
 - `stop()` wakes the parked interval and awaits the tick in flight; a second signal exits now. Nothing runs at import time (`main()` is entrypoint-guarded); `sleep` is injected in tests. Run for real: `pnpm worker` exits 0 on SIGTERM/SIGINT.
 
-## Demo & dry-run
-`pnpm demo` = zero secrets, PGlite, seeded invoices in every status, simulate payment. Dry-run = real `dry: true` quotes. Demo never moves funds.
+## Demo & dry-run (built in Phase 6)
+- `pnpm demo` = zero secrets, no network, PGlite, ten seeded invoices (one per status the app can reach), simulate payment. Dry-run = real `dry: true` quotes. Demo never moves funds.
+- `DEMO_MODE` is **process-wide**, read once by `createPaymentAdapters`: one process is either demo or real, never both. `demoModeConflict` refuses it next to a `DATABASE_URL` or an `https://` `PUBLIC_APP_URL`.
+- The demo substitutes the **transport** (`FetchLike` in `lib/oneclick/demo.ts`), never the implementation — schemas, quote verification and status transitions all run unchanged. A **non-dry** quote is never forwarded (a fake address that looks real is the one thing a demo must not hand out); a dry quote is re-signed with the published demo key that `managerKeyFor()` pins.
+- `GET /v0/status` is answered from the **database**. `simulatePayment` writes through `recordAttemptStatus` + `storeDerivedInvoiceStatus` — the worker's own path — so a simulated step and a real poll are one path, and there is no second state machine.
+- `scripts/seed-demo.ts` closes the connection before `next dev` starts (PGlite gives its data directory to one process at a time) and reuses a story already there; `--fresh` rewrites it. `clearDemoData` is scoped to the demo account, so a real user's rows survive.
+- Refusals that stay refusals: `/api/export.csv` is 403 for a demo account — seeded rows must not leave the app looking like a real ledger.
 
 ## Never
 Hold user funds · show unconfirmed statuses · use an unverified quote · put client data on-chain · commit secrets · send funds, deploy, post, push or submit without the human's explicit OK · finish a contribution without updating `ROADMAP.md`
 
 ## Env
-`ONECLICK_BASE_URL ONECLICK_JWT NEAR_RPC_URL USDC_CONTRACT_ID STORAGE_PAYER_ACCOUNT_ID STORAGE_PAYER_PRIVATE_KEY DATABASE_URL SESSION_SECRET PUBLIC_APP_URL`
+`ONECLICK_BASE_URL ONECLICK_JWT NEAR_RPC_URL USDC_CONTRACT_ID STORAGE_PAYER_ACCOUNT_ID STORAGE_PAYER_PRIVATE_KEY DATABASE_URL SESSION_SECRET PUBLIC_APP_URL DEMO_MODE`

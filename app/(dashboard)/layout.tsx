@@ -18,6 +18,7 @@ import { useMe, useSignOut } from "@/lib/api/queries";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { SignInButton } from "@/components/wallet/SignInButton";
 import { Alert } from "@/components/ui/alert";
+import { DemoBanner } from "@/components/demo/DemoBanner";
 import { buttonClass } from "@/components/ui/button";
 
 const NAV = [
@@ -85,6 +86,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <SignOut />
         </div>
       </header>
+
+      {me.data.isDemo ? (
+        <div className="mt-4">
+          <DemoBanner />
+        </div>
+      ) : null}
 
       {me.data.payout === null ? (
         <div className="mt-4">

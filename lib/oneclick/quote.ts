@@ -141,8 +141,12 @@ export function verifyQuoteSignature(
   return sdkVerifyQuoteSignature(response, managerPublicKey);
 }
 
-/** `amountInUsd − amountOutUsd`, the honest "what paying costs me" number, or `null` if negative. */
-function usdDifference(amountInUsd: string, amountOutUsd: string): string | null {
+/**
+ * `amountInUsd − amountOutUsd`, the honest "what paying costs me" number, or `null` if negative.
+ * Exported because the demo transport reports a fee the same way (`lib/oneclick/demo.ts`): one
+ * implementation of a money rule, whether the numbers came from the service or from the recording.
+ */
+export function usdDifference(amountInUsd: string, amountOutUsd: string): string | null {
   const difference =
     BigInt(toBaseUnits(amountInUsd, USD_SCALE)) - BigInt(toBaseUnits(amountOutUsd, USD_SCALE));
   if (difference <= 0n) return null;

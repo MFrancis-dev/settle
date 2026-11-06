@@ -35,6 +35,11 @@ afterAll(async () => {
 const WNEAR = "nep141:wrap.near";
 const NOT_AN_ATTEMPT = "00000000-0000-4000-8000-000000000000";
 
+/** The token half of a receipt link; the attempt id travels in its query. */
+function tokenOf(url: string): string {
+  return new URL(url).pathname.split("/").pop() ?? "";
+}
+
 function receipt(attemptId: string, token?: string): Promise<Response> {
   const query = token === undefined ? "" : `?token=${encodeURIComponent(token)}`;
   return GET(apiRequest(`/api/receipts/${attemptId}${query}`), {
@@ -110,7 +115,8 @@ describe("GET /api/receipts/:attemptId", () => {
       feeUsd: "0.01",
       quoteDeadline: new Date(TEST_NOW_MS + 30 * 60_000).toISOString(),
       paidAt: new Date(TEST_NOW_MS).toISOString(),
-      receiptUrl: `${APP_ORIGIN}/receipt/${token}`,
+      // Both halves of the link: the token is the secret, `?attempt=` is the row it opens.
+      receiptUrl: `${APP_ORIGIN}/receipt/${token}?attempt=${attemptId}`,
     });
     expect(body.deposit).toMatchObject({
       address: attempt.depositAddress,
@@ -118,6 +124,22 @@ describe("GET /api/receipts/:attemptId", () => {
     });
     // the attestation the quote was stored with, unchanged — a dispute starts from this number
     expect(body.quoteSignature).toBe(attempt.quoteSignature);
+  });
+
+  it("hands out a link that opens the receipt it describes", async () => {
+    const { attemptId, token } = await paidReceipt();
+    const body = await jsonOf(await receipt(attemptId, token));
+    const url = new URL(String(body.receiptUrl));
+
+    // The regression this pins down: a link without `?attempt=` renders a page that can only say
+    // "this link is incomplete", so every receipt in the app was unreachable by its own URL.
+    expect(url.pathname).toBe(`/receipt/${token}`);
+    const linked = url.searchParams.get("attempt");
+    expect(linked).toBe(attemptId);
+
+    const followed = await receipt(linked!, tokenOf(url.href));
+    expect(followed.status).toBe(200);
+    expect(await jsonOf(followed)).toMatchObject({ attemptId: linked, status: "success" });
   });
 
   it("carries the transaction links 1Click reported", async () => {
@@ -146,7 +168,7 @@ describe("GET /api/receipts/:attemptId", () => {
   it("is honest about an attempt nobody has paid yet", async () => {
     const seeded = await harness.seededInvoice();
     const attempt = await quoteAttempt(seeded.publicId);
-    const token = String(attempt.receiptUrl).split("/").pop() ?? "";
+    const token = tokenOf(String(attempt.receiptUrl));
 
     const body = await jsonOf(await receipt(String(attempt.id), token));
 

@@ -86,18 +86,25 @@ lib/
 │                   # invoice.ts (line math), address.ts (per-chain validators), ids.ts (uuid shape
 │                   # for URL params), payout-message.ts (the string signed to authorise a payout
 │                   # change), adapters.ts, schemas.ts
-├─ oneclick/        # client.ts, tokens.ts (cache), quote.ts (build + verify), status.ts, demo.ts, __fixtures__/
+├─ oneclick/        # client.ts, tokens.ts (cache), quote.ts (build + verify), status.ts, demo.ts (the demo
+│                   # `FetchLike`: answers /v0/tokens and /v0/quote from a recording, mirrors the DB for
+│                   # /v0/status, and never forwards a non-dry quote), __fixtures__/
 ├─ near/            # nep413.ts (verifyNep413SignedMessage = the Borsh/SHA-256 shape wallet-selector signs, and the only shape the routes accept; verifyNep413 = the JSON-payload convention, kept and tested with no caller), implicit.ts (64-hex implicit account ids), storage.ts (check + register USDC storage), rpc.ts
-├─ db/              # schema.ts, client.ts (driver only: picks PGlite or Postgres from a config it is given), queries/
+├─ db/              # schema.ts, client.ts (driver only: picks PGlite or Postgres from a config it is given),
+│                   # seed-demo.ts (the demo story, written through queries/; clearDemoData is scoped to the
+│                   # demo account), queries/
 ├─ server/          # env-schema.ts (zod names; no `server-only` marker so tsx scripts can import it),
                     # env.ts (parsed singleton, server-only), db.ts (env → one shared connection; a
                     # failed open is never cached, so the next request retries),
-                    # deps.ts (composition root + `installServerDeps`), adapters.ts (real vs demo),
+                    # deps.ts (composition root + `installServerDeps`), adapters.ts (real vs demo, chosen
+                    # process-wide by DEMO_MODE; `demoModeConflict` refuses demo next to real data),
                     # http.ts (errors → responses), session.ts, auth.ts (session → principal),
                     # signature.ts (NEP-413 + quote signature), nonces.ts (replay guard),
                     # rateLimit.ts, pay.ts, invoices.ts, payout.ts, receipts.ts, views.ts
+                    # demo.ts — the demo session view + `simulatePayment`, which writes through sync.ts
                     # sync.ts — the one attempt/invoice write, shared by the status route, submit-tx and the worker
                     # __fixtures__/routes.ts — PGlite + scripted 1Click + fake RPC for the route tests
+                    # (`{ demo: true }` instead cuts the network and lets adapters.ts compose the demo one)
 ├─ api/             # CLIENT side: client.ts (fetch + ApiError), queries.ts (React Query keys, polling,
 │                   # invalidation), types.ts (hand-written mirror of the server's views), receipt-link.ts
 ├─ ui/              # CLIENT side, no I/O: status.ts (every status → a sentence + a tone), money-text.ts,
@@ -127,8 +134,11 @@ and the status route call the same function.
 
 ## 6. `e2e/`, `scripts/`
 ```
-e2e/playwright.config.ts · e2e/demo-journey.spec.ts   # PRD §8
-scripts/seed-demo.ts · scripts/check-env.ts · scripts/setup-storage-payer.ts
+e2e/playwright.config.ts · e2e/demo-journey.spec.ts   # PRD §8, run in CI; Playwright starts `pnpm demo` itself
+scripts/demo.ts · scripts/seed-demo.ts · scripts/check-env.ts · scripts/setup-storage-payer.ts
+# demo.ts refuses an env that would make "demo" a lie, seeds, closes the connection (PGlite gives its data
+# directory to one process at a time), then spawns `next dev` with DEMO_MODE=1. seed-demo.ts reuses a story
+# already in the database unless --fresh.
 # check-env prints missing names, never values. setup-storage-payer writes a payer key into `.env` (0600)
 # and prints only the public half — it never signs and never sends (S0.10 is 👤 for exactly that reason).
 ```

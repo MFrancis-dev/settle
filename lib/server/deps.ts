@@ -10,12 +10,13 @@
  * three are wired together.
  */
 
-import { createOneClickClient, type FetchLike, type OneClickClient } from "../oneclick/client";
-import { createTokenRegistry, type TokenRegistry } from "../oneclick/tokens";
+import type { FetchLike, OneClickClient } from "../oneclick/client";
+import type { TokenRegistry } from "../oneclick/tokens";
 import { getAccessKeys, type NearRpcConfig, type RpcFetch } from "../near/rpc";
 import type { Database } from "../db/client";
+import { createPaymentAdapters, managerKeyFor } from "./adapters";
 import { getDatabase } from "./db";
-import { parseEnv, type Env } from "./env-schema";
+import { isDemoMode, parseEnv, type Env } from "./env-schema";
 import { createNonceStore, type NonceStore } from "./nonces";
 import { createRateLimiter, QUOTE_LIMIT, STATUS_LIMIT, type RateLimiter } from "./rateLimit";
 import {
@@ -42,6 +43,8 @@ export interface ServerDeps {
   /**
    * Key expected to sign a quote. Null uses the SDK's built-in production manager key; a value is
    * what lets a rotation (or a test fixture signed by a throwaway key) verify without a code change.
+   * Demo mode always pins the demo key, because the demo transport signs every quote it serves —
+   * including a dry quote whose numbers came from the real API.
    */
   readonly managerPublicKey: string | null;
   readonly appUrl: string;
@@ -69,13 +72,15 @@ export interface ServerDepsConfig {
 export function createServerDeps(config: ServerDepsConfig): ServerDeps {
   const env = config.env ?? parseEnv();
   const now = config.now ?? Date.now;
-  const oneClickFetch = config.oneClickFetch;
 
-  const oneClick = createOneClickClient({
-    baseUrl: env.ONECLICK_BASE_URL,
-    jwt: env.ONECLICK_JWT,
-    ...(oneClickFetch ? { fetchImpl: oneClickFetch } : {}),
+  // Real or demo, one place decides (`lib/server/adapters.ts`); a test's transport wins over both.
+  const adapters = createPaymentAdapters({
+    db: config.db,
+    env,
+    now,
+    ...(config.oneClickFetch ? { oneClickFetch: config.oneClickFetch } : {}),
   });
+  const oneClick = adapters.oneClick;
 
   const nearRpc: NearRpcConfig = {
     url: env.NEAR_RPC_URL ?? "",
@@ -93,9 +98,9 @@ export function createServerDeps(config: ServerDepsConfig): ServerDeps {
     db: config.db,
     env,
     oneClick,
-    tokens: createTokenRegistry({ client: oneClick, now }),
+    tokens: adapters.tokens,
     sessions: createSessionCodec({
-      secret: sessionSecretFrom(env.SESSION_SECRET),
+      secret: sessionSecretFrom(env.SESSION_SECRET, isDemoMode(env)),
       now,
     }),
     nonces: createNonceStore({ now }),
@@ -103,7 +108,7 @@ export function createServerDeps(config: ServerDepsConfig): ServerDeps {
     statusLimits: createRateLimiter({ ...STATUS_LIMIT, now }),
     nearRpc,
     usdcContractId: env.USDC_CONTRACT_ID ?? null,
-    managerPublicKey: env.ONECLICK_MANAGER_PUBLIC_KEY ?? null,
+    managerPublicKey: managerKeyFor(env),
     appUrl: env.PUBLIC_APP_URL,
     expectedRecipient: expectedRecipient({ PUBLIC_APP_URL: env.PUBLIC_APP_URL }),
     secureCookies: isSecurePublicUrl({ PUBLIC_APP_URL: env.PUBLIC_APP_URL }),

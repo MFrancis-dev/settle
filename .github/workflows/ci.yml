@@ -26,6 +26,29 @@ jobs:
       # `pnpm check-env` is the deploy-time gate for a real environment, not a CI gate:
       # demo mode is correct with no secrets at all, so CI must not fail on it.
 
+  # The demo journey (S6.6) drives the app a judge is told to run: `pnpm demo`, no `.env`, no
+  # wallet, no network. The Playwright config starts that command itself.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   secrets:
     runs-on: ubuntu-latest
     container:

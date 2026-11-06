@@ -12,14 +12,10 @@
  * "not paid" (§6).
  */
 
-import { deriveInvoiceStatus, type InvoiceStatus } from "../core/status";
+import type { InvoiceStatus } from "../core/status";
 import type { Database } from "../db/client";
-import { getInvoiceById, setInvoiceStatus } from "../db/queries/invoices";
-import {
-  listAttemptsForInvoice,
-  recordAttemptStatus,
-  type PaymentAttemptRecord,
-} from "../db/queries/paymentAttempts";
+import { storeDerivedInvoiceStatus } from "../db/queries/invoices";
+import { recordAttemptStatus, type PaymentAttemptRecord } from "../db/queries/paymentAttempts";
 import { OneClickError, type OneClickClient } from "../oneclick/client";
 import { getExecutionStatus, type ExecutionStatus } from "../oneclick/status";
 
@@ -76,27 +72,19 @@ async function storeUpstream(
 /**
  * Re-derive an invoice from every attempt it has and persist the result.
  *
- * Callers pass an attempt, not a list: `deriveInvoiceStatus` needs the whole history to tell
- * `paid` from `overpaid`, and reading it here is what stops a caller from deriving off one row.
+ * The read-modify-write itself lives in `storeDerivedInvoiceStatus` (`lib/db/queries/invoices.ts`),
+ * so the worker, this poll and the demo seed all derive an invoice the same way — `paid` vs
+ * `overpaid` needs the whole attempt history, and there is one place that reads it. What stays here
+ * is the meaning of a missing invoice: an attempt whose invoice is gone is a broken database, not a
+ * status.
  */
 export async function refreshInvoiceStatus(deps: SyncDeps, invoiceId: string): Promise<InvoiceStatus> {
-  const invoice = await getInvoiceById(deps.db, invoiceId);
-  if (!invoice) throw new Error(`invoice ${invoiceId} vanished under a payment attempt`);
-
-  const attempts = await listAttemptsForInvoice(deps.db, invoiceId);
-  const derived = deriveInvoiceStatus({
-    current: invoice.status,
-    cancelled: invoice.cancelledAt !== null,
-    attempts: attempts.map((row) => row.status),
-  });
-
-  if (derived === invoice.status) return invoice.status;
-  const stored = await setInvoiceStatus(deps.db, {
+  const stored = await storeDerivedInvoiceStatus(deps.db, {
     invoiceId,
-    status: derived,
     at: new Date(deps.now()),
   });
-  return stored?.status ?? derived;
+  if (stored === null) throw new Error(`invoice ${invoiceId} vanished under a payment attempt`);
+  return stored;
 }
 
 /** One attempt, one upstream read, one forward-only write. */

@@ -124,7 +124,19 @@ export const signInInput = signedMessage.extend({
   accountId: z.string().trim().min(2).max(64),
 });
 
-export const demoActionInput = z.enum(["simulate-payment", "reset"]);
+export const demoActionInput = z.enum(["session", "simulate-payment", "reset"]);
+
+/**
+ * What a demo press does to an open payment (PRD FR-22). `next` is the happy path one step at a
+ * time; the rest are the outcomes worth showing a judge that are not on it. The words live here
+ * rather than in `lib/server/demo.ts` so the browser bundle can offer exactly the same choices.
+ */
+export const demoOutcomeInput = z.enum(["next", "paid", "underpaid", "refunded", "failed", "expired"]);
+
+export const demoSimulateInput = z.object({
+  publicId: z.string().trim().min(1).max(64),
+  outcome: demoOutcomeInput.default("next"),
+});
 
 /** Receipt links are `{attemptId}?token=…`; the token is the only authorisation there is. */
 export const receiptQueryInput = z.object({
@@ -144,5 +156,7 @@ export type PayQuoteInput = z.infer<typeof payQuoteInput>;
 export type SubmitTxInput = z.infer<typeof submitTxInput>;
 export type SignInInput = z.infer<typeof signInInput>;
 export type DemoAction = z.infer<typeof demoActionInput>;
+export type DemoOutcome = z.infer<typeof demoOutcomeInput>;
+export type DemoSimulateInput = z.infer<typeof demoSimulateInput>;
 export type ReceiptQueryInput = z.infer<typeof receiptQueryInput>;
 export type InvoiceListQueryInput = z.infer<typeof invoiceListQueryInput>;
