@@ -71,7 +71,7 @@ Route handlers stay thin: zod-validate → call `lib/` → respond.
 ## 3. `components/`
 ```
 components/
-├─ ui/          # shadcn/ui primitives (generated)
+├─ ui/          # our own primitives: alert, badge, button, card (+ DefinitionList), field, money, copy-button, error-card
 ├─ invoice/     # InvoiceForm, LineItems, InvoiceTable, StatusBadge
 ├─ pay/         # TokenPicker, RefundAddressInput, DepositPanel (QR + copy), Countdown, PayStatus, ShortPaymentWarning
 ├─ payout/      # PayoutForm (typed twice, chain name), PayoutChangeLog
@@ -87,18 +87,29 @@ lib/
 │                   # for URL params), payout-message.ts (the string signed to authorise a payout
 │                   # change), adapters.ts, schemas.ts
 ├─ oneclick/        # client.ts, tokens.ts (cache), quote.ts (build + verify), status.ts, demo.ts, __fixtures__/
-├─ near/            # nep413.ts (verifyNep413 = the JSON-payload shape our routes accept, verifyNep413SignedMessage = the Borsh/SHA-256 shape wallet-selector signs), implicit.ts (64-hex implicit account ids), storage.ts (check + register USDC storage), rpc.ts
+├─ near/            # nep413.ts (verifyNep413SignedMessage = the Borsh/SHA-256 shape wallet-selector signs, and the only shape the routes accept; verifyNep413 = the JSON-payload convention, kept and tested with no caller), implicit.ts (64-hex implicit account ids), storage.ts (check + register USDC storage), rpc.ts
 ├─ db/              # schema.ts, client.ts (driver only: picks PGlite or Postgres from a config it is given), queries/
-└─ server/          # env-schema.ts (zod names; no `server-only` marker so tsx scripts can import it),
-                    # env.ts (parsed singleton, server-only), db.ts (env → one shared connection),
+├─ server/          # env-schema.ts (zod names; no `server-only` marker so tsx scripts can import it),
+                    # env.ts (parsed singleton, server-only), db.ts (env → one shared connection; a
+                    # failed open is never cached, so the next request retries),
                     # deps.ts (composition root + `installServerDeps`), adapters.ts (real vs demo),
                     # http.ts (errors → responses), session.ts, auth.ts (session → principal),
                     # signature.ts (NEP-413 + quote signature), nonces.ts (replay guard),
                     # rateLimit.ts, pay.ts, invoices.ts, payout.ts, receipts.ts, views.ts
                     # __fixtures__/routes.ts — PGlite + scripted 1Click + fake RPC for the route tests
+├─ api/             # CLIENT side: client.ts (fetch + ApiError), queries.ts (React Query keys, polling,
+│                   # invalidation), types.ts (hand-written mirror of the server's views), receipt-link.ts
+├─ ui/              # CLIENT side, no I/O: status.ts (every status → a sentence + a tone), money-text.ts,
+│                   # date-text.ts, chain.ts, clipboard.ts, config.ts, return-path.ts (`?next=` guard)
+└─ wallet/          # CLIENT side: selector.ts (one wallet-selector instance), sign-in.ts (NEP-413 body),
+                    # payout-signature.ts (the signed payout change), buffer-global.ts
 ```
-Tests sit next to source as `*.test.ts`. API route tests live beside their `route.ts` and call the
-exported handlers directly, so they exercise the deployed code path rather than a mock of it.
+`lib/api`, `lib/ui` and `lib/wallet` are the browser's half: they import `lib/core` and nothing from
+`lib/server`, so a client component cannot pull the database or a secret into the bundle.
+Tests sit next to source as `*.test.ts` (and `*.test.tsx` for components, which opt into jsdom with a
+`// @vitest-environment jsdom` docblock — the default environment stays `node`). API route tests live
+beside their `route.ts` and call the exported handlers directly, so they exercise the deployed code path
+rather than a mock of it.
 
 ## 5. `worker/`
 ```
