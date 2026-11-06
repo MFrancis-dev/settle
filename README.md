@@ -105,7 +105,7 @@ app/ (routes, pages)   worker/ (two interval loops)
 - **One write path.** The worker, the status poll and `submit-tx` all write through `lib/server/sync.ts`, so three callers cannot disagree about what a status means.
 - **Every boundary is validated.** zod on request bodies, on `process.env` and on every 1Click response; `server-only` markers keep server modules out of the client bundle.
 - **Two runtimes, one secret.** `middleware.ts` runs on Edge and route handlers on Node, so per-process module state is *two* values — the reason demo mode pins a fixed session secret and real mode requires `SESSION_SECRET`.
-- Full detail in `ARCHITECTURE.md` (short version: `ARCHITECTURE_ESSENTIALS.md`); file layout in `project_structure.md`; remaining work in `ROADMAP.md`.
+- Full detail in `ARCHITECTURE.md` (short version: `ARCHITECTURE_ESSENTIALS.md`); file layout in `project_structure.md`; remaining work in `ROADMAP.md`; launch drafts (video script, X post, submission payload) in `LAUNCH.md`.
 
 **No custody.** Settle holds no client funds, no key that can move a client's deposit, and no payout key. The quote's `recipient` is the freelancer's own address and refunds go to the client's own address. The one key the app *can* hold — `STORAGE_PAYER_PRIVATE_KEY`, which would pay USDC storage deposits on NEAR so delivery cannot fail on a registration technicality — is optional, app-funded, spends storage fees rather than anybody's payment, and is not wired to sign in the shipped MVP (S2.10 needs an explicit approval).
 

@@ -15,6 +15,7 @@ settle/
 ├─ ARCHITECTURE_ESSENTIALS.md    # short reference loaded every session
 ├─ project_structure.md          # this file
 ├─ README.md                     # judges + AI screeners; names sister project Stack
+├─ LAUNCH.md                     # Phase 10 drafts: live-rule diff, video script, X post options, submission payload skeleton
 ├─ LICENSE                       # MIT
 ├─ .github/                       # pull_request_template.md (ROADMAP + hackathon-rule checklist), ISSUE_TEMPLATE/roadmap-task.md,
 │                                 # workflows/ci.yml (typecheck, lint, test, build + gitleaks over full history)
