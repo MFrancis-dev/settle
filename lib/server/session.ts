@@ -13,7 +13,7 @@
  * Client components must still never import it — the secret would be a build error, not a leak.
  */
 
-import { parseEnv } from "./env-schema";
+import { isDemoMode, parseEnv } from "./env-schema";
 
 export const SESSION_COOKIE = "settle_session";
 
@@ -78,27 +78,45 @@ async function importKey(secret: string): Promise<CryptoKey> {
 }
 
 /**
- * `secret` comes from `SESSION_SECRET` in real mode. Demo mode has no `.env` at all, so a missing
- * secret falls back to a per-process random key: cookies still cannot be forged from outside the
- * process, they simply do not survive a restart — which is exactly right for a demo that is
- * re-seeded anyway. `check-env` (#8) is what forces the real value in real mode.
+ * Demo mode's fixed signing key, and the reason it is allowed to be fixed.
+ *
+ * The middleware that guards `/dashboard` runs on the Edge runtime and the route that issues the
+ * demo cookie runs on Node: two runtimes, two module instances. A *random* per-process fallback is
+ * therefore two different keys, and the cookie `/demo` hands out is rejected by the middleware on
+ * the next navigation — the judge is bounced back to the landing page. One published key is what
+ * makes the demo's sign-in hold across that boundary.
+ *
+ * Publishing it costs nothing because `demoModeConflict` (`lib/server/adapters.ts`) refuses to let
+ * demo mode run next to `DATABASE_URL` or a public `https://` URL, so every session this key can
+ * ever sign is for fictional rows on a local machine. Real mode is unaffected: `check-env` (#8)
+ * requires `SESSION_SECRET`, and a real process without one falls back to the random key below
+ * rather than to this one.
+ */
+export const DEMO_SESSION_SECRET = "settle-demo-session-secret-0123456789abcdef";
+
+/**
+ * A random key for a process that has no `SESSION_SECRET` and is not a demo: cookies cannot be
+ * forged from outside it, they simply do not survive a restart, which is a loud failure rather than
+ * a quiet one.
  */
 let processSecret: string | null = null;
 
-function demoSecret(): string {
+function randomProcessSecret(): string {
   if (processSecret === null) {
     processSecret = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
   }
   return processSecret;
 }
 
-/** The configured secret, or the per-process key that keeps demo mode working with no `.env`. */
-export function sessionSecretFrom(value: string | undefined): string {
-  return value ?? demoSecret();
+/** The configured secret, or the fallback for a process that has none: demo's fixed key, else random. */
+export function sessionSecretFrom(value: string | undefined, demo = false): string {
+  if (value !== undefined) return value;
+  return demo ? DEMO_SESSION_SECRET : randomProcessSecret();
 }
 
 export function sessionSecret(source: Record<string, string | undefined> = process.env): string {
-  return sessionSecretFrom(parseEnv(source).SESSION_SECRET);
+  const env = parseEnv(source);
+  return sessionSecretFrom(env.SESSION_SECRET, isDemoMode(env));
 }
 
 function parsePayload(json: unknown): SessionPayload | null {

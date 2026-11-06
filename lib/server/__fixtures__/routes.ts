@@ -36,12 +36,21 @@ export const TEST_NOW_MS = Date.parse("2026-11-05T09:00:00Z");
 export const APP_ORIGIN = "http://settle.test";
 export const APP_RECIPIENT = "settle.test";
 
-const TEST_ENV = parseEnv({
+const TEST_ENV_BASE = {
   SESSION_SECRET: "settle-test-session-secret-0123456789abcdef",
   PUBLIC_APP_URL: APP_ORIGIN,
   ONECLICK_MANAGER_PUBLIC_KEY: TEST_MANAGER_PUBLIC_KEY,
   ONECLICK_JWT: "test-partner-jwt",
-});
+};
+
+const TEST_ENV = parseEnv(TEST_ENV_BASE);
+
+/**
+ * The same env with `DEMO_MODE` on. `PUBLIC_APP_URL` stays an `http://` host and `DATABASE_URL` stays
+ * unset, which is exactly what `demoModeConflict` requires — a demo harness that tripped that guard
+ * would be testing a configuration the app refuses to start in.
+ */
+const TEST_DEMO_ENV = parseEnv({ ...TEST_ENV_BASE, DEMO_MODE: "1" });
 
 /** The USDC-on-NEAR asset the token fixture lists; `signIn` seeds it as the default destination. */
 export const USDC_ON_NEAR = "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1";
@@ -330,17 +339,32 @@ export function createOneClickStub(): OneClickStub {
  * Open the harness: install deps so `route.ts` handlers use this database and this stub, and forget
  * them again in `close()`.
  */
-export async function createRouteHarness(): Promise<RouteHarness> {
+export interface RouteHarnessOptions {
+  /**
+   * Build deps the way `pnpm demo` does: `DEMO_MODE` on, and *no* injected transport, so
+   * `createPaymentAdapters` composes the demo one. The network is cut instead of stubbed — the demo
+   * transport's upstream fails, which is the offline branch that falls back to the recording, and
+   * AGENTS.md §8's "no network" holds without a fake standing in for Settle's own code.
+   */
+  demo?: boolean;
+}
+
+export async function createRouteHarness(options: RouteHarnessOptions = {}): Promise<RouteHarness> {
   const connected: ConnectedDatabase<PgliteDb> = await openTestDatabase();
   const oneClick = createOneClickStub();
 
   const registered = new Map<string, string[]>();
   let clockMs = TEST_NOW_MS;
 
+  const realFetch = globalThis.fetch;
+  if (options.demo) {
+    globalThis.fetch = (() => Promise.reject(new Error("offline: the demo harness has no network"))) as typeof fetch;
+  }
+
   const deps = createServerDeps({
     db: connected.db,
-    env: TEST_ENV,
-    oneClickFetch: oneClick.fetch,
+    env: options.demo ? TEST_DEMO_ENV : TEST_ENV,
+    ...(options.demo ? {} : { oneClickFetch: oneClick.fetch }),
     now: () => clockMs,
     accessKeys: async (accountId) => registered.get(accountId) ?? [],
   });
@@ -411,6 +435,7 @@ export async function createRouteHarness(): Promise<RouteHarness> {
     },
 
     async close() {
+      globalThis.fetch = realFetch;
       clearServerDeps();
       await connected.close();
     },

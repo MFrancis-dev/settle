@@ -117,7 +117,7 @@ export function canTransition(from: AttemptStatus, to: AttemptStatus): boolean {
 }
 
 /** An invoice that has settled must not be walked back by a stale attempt read. */
-const SETTLED_INVOICE_STATUSES: ReadonlySet<InvoiceStatus> = new Set([
+export const SETTLED_INVOICE_STATUSES: ReadonlySet<InvoiceStatus> = new Set([
   "paid",
   "overpaid",
   "paid_after_cancel",

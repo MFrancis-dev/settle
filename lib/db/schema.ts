@@ -1,7 +1,7 @@
 /**
  * Database schema (Drizzle). Amounts are numeric(78,0) base units.
  * Roadmap: S2.7 · Spec: ARCHITECTURE.md §4
- * Status: scaffold — not implemented yet.
+ * The migration in `drizzle/` is generated from this file (`pnpm db:generate`); it is applied on connect.
  */
 
 import {

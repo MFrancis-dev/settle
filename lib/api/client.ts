@@ -7,12 +7,14 @@
  * implementation is injected because the tests (and the offline demo) hand in a scripted one.
  */
 
-import type { CreateInvoiceInput, PayQuoteInput } from "@/lib/core/schemas";
+import type { CreateInvoiceInput, DemoOutcome, PayQuoteInput } from "@/lib/core/schemas";
 import type { InvoiceStatus } from "@/lib/core/status";
 import type { SignInBody } from "@/lib/wallet/sign-in";
 import type { PayoutBody } from "@/lib/wallet/payout-signature";
 import type {
   ApiErrorCode,
+  DemoSessionView,
+  DemoSimulationView,
   InvoiceDetail,
   InvoiceView,
   MeView,
@@ -88,6 +90,11 @@ export interface Api {
   status(publicId: string): Promise<StatusView>;
   submitTx(publicId: string, txHash: string): Promise<SubmitResult>;
   receipt(attemptId: string, token: string): Promise<ReceiptView>;
+  /** The demo's front door: seeds the fictional freelancer on first call, reads afterwards. */
+  demoSession(): Promise<DemoSessionView>;
+  demoReset(): Promise<DemoSessionView>;
+  /** One press of the demo's "the client has paid" button. */
+  demoSimulate(publicId: string, outcome: DemoOutcome): Promise<DemoSimulationView>;
 }
 
 /** Download link for the accountant's CSV; the session cookie rides along with the navigation. */
@@ -157,6 +164,13 @@ export function createApi(fetchImpl: FetchLike): Api {
       call<ReceiptView>(
         `/api/receipts/${encodeURIComponent(attemptId)}?token=${encodeURIComponent(token)}`,
       ),
+    demoSession: () => call<DemoSessionView>("/api/demo/session"),
+    demoReset: () => call<DemoSessionView>("/api/demo/reset", { method: "POST" }),
+    demoSimulate: (publicId, outcome) =>
+      call<DemoSimulationView>("/api/demo/simulate-payment", {
+        method: "POST",
+        body: { publicId, outcome },
+      }),
   };
 }
 

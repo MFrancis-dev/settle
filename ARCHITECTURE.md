@@ -241,8 +241,13 @@ Dry-run previews are not stored.
 ---
 
 ## 7. Demo and dry-run
-- `pnpm demo`: PGlite + seed (`is_demo` user, invoices in every status, payout destinations), demo session, banner.
-- Adapters: `QuoteProvider`, `StatusProvider` interfaces in `lib/core/adapters.ts`; real (1Click) and demo implementations chosen by session type. Demo still fetches **real dry quotes** when the network is reachable, and falls back to recorded fixtures offline.
+- `pnpm demo`: PGlite + seed (`demo-freelancer.near`, ten invoices — one per status the app can reach — and a payout-destination history), demo session, banner. `scripts/demo.ts` refuses to start if the environment would make "demo" a lie, seeds in a step that **closes** the connection first (PGlite hands its data directory to one process at a time), then spawns `next dev` with `DEMO_MODE=1`. `pnpm demo:seed --fresh` rewrites the story; without `--fresh` a story already in the database is left alone.
+- Adapters: `QuoteProvider`, `StatusProvider` interfaces in `lib/core/adapters.ts`; real (1Click) and demo implementations.
+- **As implemented (S6.1–S6.6, 2026-11-06), the choice is process-wide, not per session.** `DEMO_MODE` is read once by `createPaymentAdapters` in `lib/server/adapters.ts`, so a single process is either demo or real and cannot be both. This is deliberately stronger than the "chosen by session type" sketch above: a per-session choice would let one process serve a demo session and a real one at the same time, which is the exact confusion `demoModeConflict` exists to prevent. `demoModeConflict` refuses `DEMO_MODE` next to a `DATABASE_URL` or an `https://` `PUBLIC_APP_URL`, and `assertDemoModeAllowed` re-checks on every `/api/demo/*` request (403 in real mode).
+- The demo substitutes the **transport**, not the implementation: `lib/oneclick/demo.ts` is a `FetchLike` that answers `/v0/tokens` and `/v0/quote` from a recording, so every zod schema, every quote signature check and every status transition in `lib/server` runs unchanged. Dry quotes are forwarded and re-signed with the published demo ed25519 key, which `managerKeyFor(env)` pins as `DEMO_MANAGER_PUBLIC_KEY`, so the vendor's own verifier accepts them. A **non-dry** quote is never forwarded: a fake deposit address that looks real is the one thing a demo must not hand a client.
+- `GET /v0/status` is answered from the **database**, not from a recording, because a recording cannot know what the demo just did. `simulatePayment` writes through `recordAttemptStatus` + `storeDerivedInvoiceStatus` — the same two functions the worker and the status poll use — and the transport mirrors the row back, so a simulated step and a real poll are one path. The route tests assert it (`polled: true`, same `invoiceStatus`); there is no second state machine.
+- Demo sessions: `lib/server/session.ts` uses a fixed `DEMO_SESSION_SECRET` **only** in demo mode. `middleware.ts` runs on the Edge runtime and the route that issues the cookie runs on Node — two runtimes, two module instances — so a random per-process fallback was two different keys and every demo request 401'd. Publishing the key costs nothing because `demoModeConflict` forbids real data or a public origin next to it; real mode still requires `SESSION_SECRET` (`check-env`) and falls back to a random key, never to this one.
+- Refusals that stay refusals in demo mode: `GET /api/export.csv` answers 403 for a demo account, because seeded rows must not leave the app looking like a real ledger.
 
 ---
 
@@ -258,10 +263,14 @@ DATABASE_URL=                # empty → PGlite
 SESSION_SECRET=
 PUBLIC_APP_URL=
 ONECLICK_MANAGER_PUBLIC_KEY=   # only to override the manager key (test fixture / rotation)
+DEMO_MODE=                     # 1 → this whole process is a demo (§7); `pnpm demo` sets it
 ```
 `NEAR_RPC_URL` is optional: without it the NEAR reads answer `not_configured` instead of guessing a
 node. `ONECLICK_MANAGER_PUBLIC_KEY` is what lets the route tests verify a quote signed by the fixture
-key; unset, the SDK's built-in production manager key is used.
+key; unset, the SDK's built-in production manager key is used — except in demo mode, where
+`managerKeyFor()` pins the published demo key from `lib/oneclick/demo.ts` so the recorded quotes
+verify. `DEMO_MODE` is refused next to `DATABASE_URL` or an `https://` `PUBLIC_APP_URL`
+(`demoModeConflict`), and it makes `SESSION_SECRET` optional (see §7).
 
 ---
 
@@ -273,10 +282,13 @@ key; unset, the SDK's built-in production manager key is used.
   installs a PGlite database, a scripted 1Click `fetch` (including tampered quotes and injected 5xx), a fake
   NEAR RPC read and a frozen clock, then the test calls the exported `GET`/`POST` of the real `route.ts` — so
   the handler, `lib/server`, the queries and the vendor's signature verifier all run together. Nothing of ours
-  is mocked.
+  is mocked. The same harness has a `demo: true` mode: it builds deps exactly the way `pnpm demo` does
+  (`DEMO_MODE` on, **no** injected transport, so `createPaymentAdapters` composes the demo one) and cuts the
+  network instead of stubbing it — `globalThis.fetch` rejects. Nothing in the demo suite can pass by accident
+  of a live upstream, and the demo transport is exercised as the deployment exercises it.
 - UI: component tests in `jsdom` (`// @vitest-environment jsdom` docblock; the default environment stays `node` so the server suite never pays for a DOM). They cover the parts where a wrong word or a wrong number is a money bug: `Money`/`MoneyExact` (exact base units, and the label that says the token could not be resolved — never an invented decimal), `CopyButton` (it reports "Select it and press Ctrl+C" when the browser refused the clipboard, which is what a demo over plain http gets), `Countdown` (the expiry sentence, the screen-reader sentence, and `onExpire` firing once), `DepositPanel` (memo warning only when the network needs one) and `StatusBadge` (walks both status unions, so a new status cannot render as a blank pill). `lib/wallet/api-contract.test.ts` is the pair-test: the bodies a browser builds must survive `signInInput`/`payoutInput` **and** `verifyNep413SignedMessage`, because those two halves were once green separately and incompatible together.
 - Worker: one tick per test, against the same harness — a real PGlite database, an attempt opened through the real quote route, a scripted 1Click and a frozen clock advanced past the quote's own deadline. `worker/index.test.ts` drives the loop runner with an injected `sleep`, so "did it poll again" and "did shutdown wait for the write" are assertions rather than timeouts. The process itself was also run: `pnpm worker` starts both loops and exits 0 on SIGTERM and SIGINT.
-- E2E: PRD §8 journey in demo mode.
+- E2E: PRD §8 journey in demo mode, in `e2e/demo-journey.spec.ts` and in CI (`e2e` job). Playwright starts `pnpm demo` itself as its web server, with no `.env` and a database that is never inherited from a previous run, and drives a real browser: the demo landing page, the demo cookie opening the dashboard **and** the CSV export refusing it, a full price → address → three-press payment ending on a receipt with its quote attestation, and a short payment plus a refund. This is the only test that can see two of the three defects Phase 6 found (§7): the Edge/Node session-secret split, and receipt links that opened "No such receipt". It cannot be replaced by a unit test, because the live poll depends on `refetchInterval`, which React Query pauses in an unfocused tab — so a scripted browser that is not the foreground window never polls at all. Known gap: PRD §8 step 2 asks for "ETH on Arbitrum", which the recording does not contain, so the journey pays in wNEAR.
 - Manual: one small real payment, recorded for the video (human approval required).
 
 ---

@@ -16,10 +16,11 @@ import { customAlphabet } from "nanoid";
 
 import type { BaseUnits, InvoiceLineInput } from "../../core/types";
 import { computeInvoice, nextInvoiceNumber } from "../../core/invoice";
-import type { InvoiceStatus } from "../../core/status";
+import { deriveInvoiceStatus, SETTLED_INVOICE_STATUSES, type InvoiceStatus } from "../../core/status";
 import { parseBaseUnits } from "../../core/money";
 import type { Database } from "../client";
 import { invoiceItems, invoices, type Invoice, type InvoiceItem } from "../schema";
+import { listAttemptsForInvoice } from "./paymentAttempts";
 
 /** URL-safe and short enough to read aloud in a support call. */
 const PUBLIC_ID_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -218,17 +219,48 @@ export async function setInvoiceStatus(
   db: Database,
   input: { invoiceId: string; status: InvoiceStatus; at?: Date },
 ): Promise<InvoiceRecord | null> {
-  const settled = input.status === "paid" || input.status === "overpaid";
+  const at = input.at ?? new Date();
   await db
     .update(invoices)
     .set({
       status: input.status,
-      updatedAt: input.at ?? new Date(),
-      ...(settled ? { paidAt: input.at ?? new Date() } : {}),
+      updatedAt: at,
+      ...(SETTLED_INVOICE_STATUSES.has(input.status) ? { paidAt: at } : {}),
     })
     .where(eq(invoices.id, input.invoiceId));
 
   return getInvoiceById(db, input.invoiceId);
+}
+
+/**
+ * Re-derive an invoice's status from every attempt it has, and store the result.
+ *
+ * One implementation of the rule, shared by the worker, the pay page's poll and the demo seed. A
+ * caller passes an invoice and never a list of attempts, because `paid` and `overpaid` differ only
+ * in how many attempts succeeded. Returns the status now stored, or `null` when there is no such
+ * invoice — which for a caller holding an attempt means the row vanished underneath it.
+ */
+export async function storeDerivedInvoiceStatus(
+  db: Database,
+  input: { invoiceId: string; at?: Date },
+): Promise<InvoiceStatus | null> {
+  const invoice = await getInvoiceById(db, input.invoiceId);
+  if (!invoice) return null;
+
+  const attempts = await listAttemptsForInvoice(db, input.invoiceId);
+  const derived = deriveInvoiceStatus({
+    current: invoice.status,
+    cancelled: invoice.cancelledAt !== null,
+    attempts: attempts.map((row) => row.status),
+  });
+  if (derived === invoice.status) return invoice.status;
+
+  const stored = await setInvoiceStatus(db, {
+    invoiceId: input.invoiceId,
+    status: derived,
+    ...(input.at ? { at: input.at } : {}),
+  });
+  return stored?.status ?? derived;
 }
 
 /**

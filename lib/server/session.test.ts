@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 // Roadmap: S3.8
 import {
+  DEMO_SESSION_SECRET,
   SESSION_COOKIE,
   SESSION_MAX_AGE_S,
   SessionRejection,
@@ -131,8 +132,28 @@ describe("session: secret and origin", () => {
   it("falls back to a per-process key when no secret is configured", () => {
     const first = sessionSecretFrom(undefined);
     expect(first.length).toBeGreaterThanOrEqual(32);
-    // Same process, same key: a demo session must survive a second request after the first.
+    // Same process, same key: a session must survive a second request after the first.
     expect(sessionSecretFrom(undefined)).toBe(first);
+    // A real process with no `SESSION_SECRET` must not get the published demo key (#8 forces the
+    // real value; until then the fallback stays unforgeable from outside the process).
+    expect(first).not.toBe(DEMO_SESSION_SECRET);
+  });
+
+  it("gives demo mode one fixed key, so the Edge middleware and a Node route agree", async () => {
+    expect(sessionSecretFrom(undefined, true)).toBe(DEMO_SESSION_SECRET);
+    expect(sessionSecret({ DEMO_MODE: "1", PUBLIC_APP_URL: "http://localhost:3000" })).toBe(
+      DEMO_SESSION_SECRET,
+    );
+
+    // The bug this pins down: two runtimes build their own codec. With a random fallback the cookie
+    // one of them signed was rejected by the other, and `/demo` could not reach `/dashboard`.
+    const edge = createSessionCodec({ secret: sessionSecret({ DEMO_MODE: "1" }) });
+    const node = createSessionCodec({ secret: sessionSecretFrom(undefined, true) });
+    const cookie = await edge.issue({ ...PAYLOAD, nearAccountId: "ada.demo.near", isDemo: true });
+    await expect(node.read(cookie)).resolves.toMatchObject({
+      nearAccountId: "ada.demo.near",
+      isDemo: true,
+    });
   });
 
   it("decides `Secure` from the public origin", () => {

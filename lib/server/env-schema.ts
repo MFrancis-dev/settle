@@ -25,6 +25,12 @@ export const envSchema = z.object({
   STORAGE_PAYER_PRIVATE_KEY: z.string().min(1).optional(),
   /** Absent → embedded PGlite. Present → hosted Postgres. */
   DATABASE_URL: z.string().min(1).optional(),
+  /**
+   * Set by `pnpm demo` and nothing else: the process serves fictional data and simulates payments.
+   * `lib/server/adapters.ts` refuses to honour it next to `DATABASE_URL` or a public `PUBLIC_APP_URL`,
+   * so a demo can never be a property of a deployment that takes real money.
+   */
+  DEMO_MODE: z.enum(["1", "true", "0", "false"]).optional(),
   SESSION_SECRET: z.string().min(32).optional(),
   PUBLIC_APP_URL: url("http://localhost:3000"),
 });
@@ -76,4 +82,9 @@ export function isPostgresConfigured(env: Env): boolean {
 
 export function isOneClickJwtConfigured(env: Env): boolean {
   return env.ONECLICK_JWT !== undefined;
+}
+
+/** Whether this process is a demo. `DEMO_MODE=0` is off, so an override in a shell profile is safe. */
+export function isDemoMode(env: Env): boolean {
+  return env.DEMO_MODE === "1" || env.DEMO_MODE === "true";
 }
