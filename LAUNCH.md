@@ -4,9 +4,11 @@ Drafts for the human to use. Nothing here is published, posted or submitted by t
 recording the video (S10.2), posting on X (S10.4) and sending the submission (S10.7) are
 the human's actions and need an explicit yes in chat first.
 
-The submission payload itself is **not** in this repository — it carries personal data
-(lead name, email, payout account), and the live rules say not to commit it. It is printed
-in chat, built field by field from the human's answers, and sent once.
+The **real** submission payload is not in this repository — it carries personal data (lead name,
+email, payout account), and the live rules say not to commit it. It is printed in chat, built field
+by field from the human's answers, and sent once. §4 also carries a **placeholder** version of the
+same eleven fields: every invented value is visibly fake, it contains no personal data, and its only
+job is to show the exact shape and escaping a real POST body needs.
 
 ---
 
@@ -135,7 +137,7 @@ none of it is guessed, generated or filled in with a placeholder before sending.
 agreed: _"I agree that the organizers may use these details to review our submission and
 contact us about this hackathon."_
 
-**Draft for `idea` (~1,050 characters, inside the 20–2000 limit):**
+**Draft for `idea` (1,270 characters as sent, measured; inside the 20–2000 limit):**
 
 > A freelancer invoices 1,800 USDC; her client holds wNEAR, or USDT on Solana, or ETH on Arbitrum. An ordinary invoice becomes a crypto problem — which bridge, which gas token, which address format — and every service that "handles it" does so by taking custody, so the freelancer becomes an unsecured creditor of a stranger.
 >
@@ -144,6 +146,47 @@ contact us about this hackathon."_
 > Money never touches Settle: no custodial address, no key that can move a deposit, no payout key. NEAR is also the identity layer — NEP-413 sign-in with no password held, and a fresh signature over the exact address and chain required to change where money lands.
 >
 > One Next.js app plus a worker, 630 offline tests, and `pnpm demo` runs the whole story with no keys and no network.
+
+**Worked example with placeholder values — shape only, do not POST this.**
+
+Every field below that a human decides is filled with an obviously fake value so the body is
+valid JSON and the escaping of `idea` (newlines as `\n`, the inner quotes around `"handles it"`
+escaped) can be checked without any personal data. It is **not** submittable: `demoUrl` points at
+a post that does not exist, `nearAddress` is not a real account, and `consent` is only true once
+the human has agreed to the notice above.
+
+```json
+{
+  "requestId": "00000000-0000-4000-8000-000000000000",
+  "projectName": "Settle",
+  "leadName": "PLACEHOLDER LEAD NAME",
+  "email": "placeholder@example.com",
+  "size": "1",
+  "tracks": ["realworld"],
+  "nearAddress": "placeholder.near",
+  "projectUrl": "https://github.com/MFrancis-dev/settle",
+  "demoUrl": "https://x.com/PLACEHOLDER/status/0000000000000000000",
+  "idea": "A freelancer invoices 1,800 USDC; her client holds wNEAR, or USDT on Solana, or ETH on Arbitrum. An ordinary invoice becomes a crypto problem — which bridge, which gas token, which address format — and every service that \"handles it\" does so by taking custody, so the freelancer becomes an unsecured creditor of a stranger.\n\nSettle is invoicing software with a cross-chain rail underneath. The freelancer writes a line-item invoice in dollars and gets a pay link. The client picks a token they hold and sends it. NEAR Intents does the rest: we quote 1Click with swapType EXACT_OUTPUT, so the intent states what must _arrive_ — the exact invoice amount, to the freelancer's own address — rather than what is being sent. verifyQuoteSignature() runs before any deposit address is shown, /v0/status is the only source of a status, and solvers refund an overpayment to the client's own address.\n\nMoney never touches Settle: no custodial address, no key that can move a deposit, no payout key. NEAR is also the identity layer — NEP-413 sign-in with no password held, and a fresh signature over the exact address and chain required to change where money lands.\n\nOne Next.js app plus a worker, 630 offline tests, and `pnpm demo` runs the whole story with no keys and no network.",
+  "consent": true
+}
+```
+
+Real value, placeholder, and why:
+
+| Field         | In the example                          | Replace with                                                                    |
+| ------------- | --------------------------------------- | ------------------------------------------------------------------------------- |
+| `requestId`   | all-zero UUID                           | `uuidgen \| tr A-Z a-z`, generated once, reused unchanged on any retry          |
+| `projectName` | `Settle`                                | nothing — this one is real                                                      |
+| `leadName`    | `PLACEHOLDER LEAD NAME`                 | the team lead's name, 2–80 chars                                                |
+| `email`       | `placeholder@example.com`               | the contact email, max 160 chars                                                |
+| `size`        | `1`                                     | the team's size, one of `1 \| 2 - 4 \| 4 - 6 \| 6 - 8 \| 8+` exactly as written |
+| `tracks`      | `["realworld"]`                         | nothing unless the track choice changes                                         |
+| `nearAddress` | `placeholder.near`                      | the mainnet account that should receive a prize, lowercase                      |
+| `projectUrl`  | the public repo                         | nothing — this one is real                                                      |
+| `demoUrl`     | `https://x.com/PLACEHOLDER/status/000…` | the URL of the public X demo post, once S10.4 is done                           |
+| `idea`        | the 1,270-character draft above         | nothing unless the draft is edited; it is inside the 20–2000 limit              |
+| `consent`     | `true`                                  | `true` only after the human agrees to the contact notice verbatim               |
+| `website`     | absent                                  | keep it absent — any non-empty value rejects the submission                     |
 
 Send once, with `curl -sS -X POST https://nearhackathon.com/api/applications`, only after the
 human has confirmed the exact printed payload, and only when the repository is public and the
