@@ -129,7 +129,7 @@ export default function Page() {
         <LineItems lines={view.lines} total={view.total} />
         {view.memo ? (
           <div className="mt-4 border-t border-line pt-3">
-            <h3 className="text-xs uppercase tracking-wide text-ink-faint">Note to client</h3>
+            <h3 className="text-xs text-ink-faint">Note to client</h3>
             <p className="mt-1 whitespace-pre-line text-sm">{view.memo}</p>
           </div>
         ) : null}
@@ -182,13 +182,13 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
       </div>
       <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs uppercase tracking-wide text-ink-faint">Client sent</dt>
+          <dt className="text-xs text-ink-faint">Client sent</dt>
           <dd className="mt-0.5">
             <Money money={attempt.originAsset} />
           </dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-ink-faint">You receive</dt>
+          <dt className="text-xs text-ink-faint">You receive</dt>
           <dd className="mt-0.5">
             <Money money={attempt.payoutAsset} />
           </dd>
@@ -197,7 +197,7 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
             and not only on the client's screen (S7.1). */}
         {attempt.shortfall ? (
           <div>
-            <dt className="text-xs uppercase tracking-wide text-warn">Still owed by the client</dt>
+            <dt className="text-xs text-warn">Still owed by the client</dt>
             <dd className="mt-0.5 text-warn">
               <Money money={attempt.shortfall} />
             </dd>
@@ -205,7 +205,7 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
         ) : null}
         {attempt.refunded ? (
           <div>
-            <dt className="text-xs uppercase tracking-wide text-ink-faint">
+            <dt className="text-xs text-ink-faint">
               Sent back to the client
             </dt>
             <dd className="mt-0.5">
@@ -217,7 +217,7 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
           </div>
         ) : null}
         <div className="sm:col-span-2">
-          <dt className="text-xs uppercase tracking-wide text-ink-faint">Deposit address</dt>
+          <dt className="text-xs text-ink-faint">Deposit address</dt>
           <dd className="mt-0.5 flex flex-wrap items-center gap-2">
             <span className="min-w-0 max-w-full break-all font-mono text-xs">
               {attempt.depositAddress}
@@ -230,13 +230,13 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
         </div>
         {fee ? (
           <div>
-            <dt className="text-xs uppercase tracking-wide text-ink-faint">Conversion fee</dt>
+            <dt className="text-xs text-ink-faint">Conversion fee</dt>
             <dd className="mt-0.5">{fee}</dd>
           </div>
         ) : null}
         {attempt.depositTxHash ? (
           <div>
-            <dt className="text-xs uppercase tracking-wide text-ink-faint">Payment reference</dt>
+            <dt className="text-xs text-ink-faint">Payment reference</dt>
             <dd className="mt-0.5 break-all font-mono text-xs">{attempt.depositTxHash}</dd>
           </div>
         ) : null}

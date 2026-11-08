@@ -71,7 +71,7 @@ export function Receipt({ receipt }: { receipt: ReceiptView }) {
         </dl>
 
         <section>
-          <h3 className="text-xs uppercase tracking-wide text-ink-faint">Transactions</h3>
+          <h3 className="text-xs text-ink-faint">Transactions</h3>
           <ul className="mt-2 flex flex-col gap-2 text-sm">
             <TxList caption="Into Settle" links={receipt.depositTxs} />
             <TxList caption="Out to the seller" links={receipt.deliveryTxs} />
@@ -79,7 +79,7 @@ export function Receipt({ receipt }: { receipt: ReceiptView }) {
         </section>
 
         <section className="border-t border-line pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-ink-faint">Quote attestation</h3>
+          <h3 className="text-xs text-ink-faint">Quote attestation</h3>
           <p className="mt-1 break-all font-mono text-xs">{receipt.quoteSignature}</p>
           <p className="mt-1 text-xs text-ink-muted">
             The exchange’s signature over these exact figures. It is what a dispute starts from.
@@ -101,7 +101,7 @@ export function Receipt({ receipt }: { receipt: ReceiptView }) {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-ink-faint">{label}</dt>
+      <dt className="text-xs text-ink-faint">{label}</dt>
       <dd className="mt-0.5">{children}</dd>
     </div>
   );

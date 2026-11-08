@@ -46,13 +46,13 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
         {attempt ? (
           <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-ink-faint">You sent</dt>
+              <dt className="text-xs text-ink-faint">You sent</dt>
               <dd className="mt-0.5">
                 <Money money={attempt.originAsset} />
               </dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-ink-faint">
+              <dt className="text-xs text-ink-faint">
                 {status.paid ? "The seller received" : "Settles as"}
               </dt>
               <dd className="mt-0.5">
@@ -61,7 +61,7 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
             </div>
             {attempt.deposited ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-ink-faint">Arrived</dt>
+                <dt className="text-xs text-ink-faint">Arrived</dt>
                 <dd className="mt-0.5">
                   <Money money={attempt.deposited} />
                 </dd>
@@ -69,7 +69,7 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
             ) : null}
             {attempt.shortfall ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-warn">Still owed</dt>
+                <dt className="text-xs text-warn">Still owed</dt>
                 <dd className="mt-0.5 text-warn">
                   <Money money={attempt.shortfall} />
                 </dd>
@@ -77,7 +77,7 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
             ) : null}
             {attempt.refunded ? (
               <div className="sm:col-span-2">
-                <dt className="text-xs uppercase tracking-wide text-ink-faint">Sent back to you</dt>
+                <dt className="text-xs text-ink-faint">Sent back to you</dt>
                 <dd className="mt-0.5">
                   <Money money={attempt.refunded} />
                   {attempt.refundReason ? (
@@ -88,7 +88,7 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
             ) : null}
             {attempt.depositTxHash ? (
               <div className="sm:col-span-2">
-                <dt className="text-xs uppercase tracking-wide text-ink-faint">
+                <dt className="text-xs text-ink-faint">
                   Your transaction reference
                 </dt>
                 <dd className="mt-0.5 break-all font-mono text-xs">{attempt.depositTxHash}</dd>
@@ -99,7 +99,7 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
 
         {status.otherPayments.length > 0 ? (
           <div className="mt-4 rounded-card border border-line bg-surface-sunk/50 p-3">
-            <p className="text-xs uppercase tracking-wide text-ink-faint">
+            <p className="text-xs text-ink-faint">
               {status.otherPayments.length === 1
                 ? "One other payment reached this invoice"
                 : `${status.otherPayments.length} other payments reached this invoice`}

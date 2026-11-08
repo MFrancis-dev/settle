@@ -22,7 +22,7 @@ export function InvoiceTable({ invoices }: { invoices: InvoiceView[] }) {
       <table className="w-full border-collapse text-left text-sm">
         <caption className="sr-only">Invoices</caption>
         <thead>
-          <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-faint">
+          <tr className="border-b border-line text-xs text-ink-faint">
             <th scope="col" className="py-2 pr-4 font-medium">
               Invoice
             </th>
@@ -68,7 +68,7 @@ export function InvoiceTable({ invoices }: { invoices: InvoiceView[] }) {
                 <div className="flex items-center justify-end gap-2">
                   <a
                     href={invoice.payUrl}
-                    className="text-sm text-brand underline underline-offset-4"
+                    className="text-sm text-ink underline underline-offset-4"
                     target="_blank"
                     rel="noreferrer"
                   >

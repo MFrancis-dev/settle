@@ -12,9 +12,11 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-brand text-ink-invert hover:bg-brand-strong border-transparent",
-  secondary: "bg-surface text-ink border-line-strong hover:bg-surface-sunk",
-  ghost: "bg-transparent text-ink-muted border-transparent hover:bg-surface-sunk hover:text-ink",
+  // The one primary action is near-black; the chrome carries no brand colour.
+  primary: "bg-ink text-ink-invert hover:bg-black border-transparent",
+  // A grey pill is the secondary, so the screen keeps a single hue on its data.
+  secondary: "bg-control text-ink border-transparent hover:bg-control-strong",
+  ghost: "bg-transparent text-ink-muted border-transparent hover:bg-control hover:text-ink",
   danger: "bg-danger text-ink-invert border-transparent hover:brightness-95",
 };
 

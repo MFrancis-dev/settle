@@ -105,7 +105,7 @@ function Summary({ invoices }: { invoices: InvoiceView[] }) {
           </p>
         </Card>
         <Card title="Settled">
-          <Amounts list={settled} empty="No invoice has been paid yet." />
+          <Amounts list={settled} empty="No invoice has been paid yet." hue />
           <p className="mt-2 text-xs text-ink-faint">
             {settled.length} {settled.length === 1 ? "invoice" : "invoices"} recorded as paid,
             including any that arrived over or after a cancel.
@@ -179,8 +179,11 @@ function Summary({ invoices }: { invoices: InvoiceView[] }) {
 /**
  * One line per token. Adding USDC on one chain to USDC on another would be a sum nobody can check, so
  * the groups stay apart and only the unresolved count is merged into a sentence.
+ *
+ * The headline sums sit at KPI size; money that arrived (`hue`) takes the product's one data colour,
+ * money still owed stays in ink.
  */
-function Amounts({ list, empty }: { list: InvoiceView[]; empty: string }) {
+function Amounts({ list, empty, hue = false }: { list: InvoiceView[]; empty: string; hue?: boolean }) {
   const totals = sumByAsset(list);
   const unresolved = list.filter((invoice) => invoice.total === null).length;
 
@@ -200,7 +203,10 @@ function Amounts({ list, empty }: { list: InvoiceView[]; empty: string }) {
       <ul className="flex flex-col gap-1">
         {totals.map((money) => (
           <li key={money.assetId}>
-            <Money money={money} className="text-xl font-semibold" />
+            <Money
+              money={money}
+              className={`text-3xl font-bold ${hue ? "text-brand" : "text-ink"}`}
+            />
           </li>
         ))}
       </ul>

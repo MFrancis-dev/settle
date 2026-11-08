@@ -11,6 +11,7 @@ import Link from "next/link";
 
 import { SignInButton } from "@/components/wallet/SignInButton";
 import { buttonClass } from "@/components/ui/button";
+import { Mark } from "@/components/ui/mark";
 import { returnPath } from "@/lib/ui/return-path";
 
 export default async function Page({
@@ -25,7 +26,10 @@ export default async function Page({
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 pb-16 sm:px-8">
       <header className="flex items-center justify-between gap-4 py-5">
-        <span className="text-lg font-semibold tracking-tight">Settle</span>
+        <span className="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink">
+          <Mark />
+          Settle
+        </span>
         <SignInButton redirectTo={requested ?? "/dashboard"} size="sm" />
       </header>
 
@@ -68,7 +72,7 @@ export default async function Page({
           />
         </section>
 
-        <section className="mt-16 rounded-card border border-line bg-surface p-6 shadow-card sm:p-8">
+        <section className="mt-16 rounded-card border border-line bg-surface p-6 sm:p-8">
           <h2 className="text-xl font-semibold">What the client sees</h2>
           <p className="mt-2 max-w-2xl text-ink-muted">
             One page, no account, no app. This is the whole payment flow — the amount is fixed for a
@@ -129,7 +133,7 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
 function Fact({ label, value, note }: { label: string; value: string; note: string }) {
   return (
     <div className="bg-surface p-4">
-      <dt className="text-xs uppercase tracking-wide text-ink-faint">{label}</dt>
+      <dt className="text-xs text-ink-faint">{label}</dt>
       <dd className="money mt-1 font-semibold">{value}</dd>
       <dd className="mt-0.5 text-xs text-ink-muted">{note}</dd>
     </div>

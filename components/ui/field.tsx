@@ -17,7 +17,7 @@ import {
 
 const CONTROL =
   "w-full rounded-control border bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint " +
-  "border-line-strong focus:border-brand disabled:bg-surface-sunk disabled:text-ink-faint";
+  "border-line-strong focus:border-ink disabled:bg-surface-sunk disabled:text-ink-faint";
 
 const INVALID = "border-danger focus:border-danger";
 
@@ -201,7 +201,7 @@ export function CheckboxField({
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
+        className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
       />
       <div className="flex flex-col gap-0.5">
         <label htmlFor={id} className="text-sm font-medium">
