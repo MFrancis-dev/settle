@@ -66,7 +66,7 @@ export function DepositPanel({
 
           <dl className="mt-4 flex flex-col gap-3 text-sm">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-ink-faint">Payment address</dt>
+              <dt className="text-xs text-ink-faint">Payment address</dt>
               <dd className="mt-1 flex flex-wrap items-center gap-2">
                 <span className="min-w-0 flex-1 basis-full break-all rounded-control border border-line bg-surface-sunk px-3 py-2 font-mono text-xs sm:basis-0">
                   {address}
@@ -77,7 +77,7 @@ export function DepositPanel({
 
             {memo ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-ink-faint">Memo / tag</dt>
+                <dt className="text-xs text-ink-faint">Memo / tag</dt>
                 <dd className="mt-1 flex flex-wrap items-center gap-2">
                   <span className="rounded-control border border-line bg-surface-sunk px-3 py-2 font-mono text-xs">
                     {memo}
@@ -93,11 +93,11 @@ export function DepositPanel({
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-ink-faint">Conversion fee</dt>
+                <dt className="text-xs text-ink-faint">Conversion fee</dt>
                 <dd className="mt-0.5">{fee ?? "Not quoted"}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-ink-faint">How long</dt>
+                <dt className="text-xs text-ink-faint">How long</dt>
                 <dd className="mt-0.5">
                   {timeEstimateS === null
                     ? "A few minutes"

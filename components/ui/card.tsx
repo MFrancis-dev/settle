@@ -21,7 +21,7 @@ export function Card({
   as?: "section" | "div" | "article";
 }) {
   return (
-    <Tag className={`rounded-card border border-line bg-surface shadow-card ${className}`}>
+    <Tag className={`rounded-card border border-line bg-surface ${className}`}>
       {title || actions ? (
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
@@ -42,7 +42,7 @@ export function DefinitionList({ items }: { items: { label: ReactNode; value: Re
     <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
       {items.map((item, index) => (
         <div key={index} className="flex min-w-0 flex-col">
-          <dt className="text-xs uppercase tracking-wide text-ink-faint">{item.label}</dt>
+          <dt className="text-xs text-ink-faint">{item.label}</dt>
           <dd className="min-w-0 text-sm">{item.value}</dd>
         </div>
       ))}

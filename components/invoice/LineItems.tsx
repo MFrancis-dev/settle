@@ -20,7 +20,7 @@ export function LineItems({ lines, total }: { lines: InvoiceLineView[]; total: M
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">Invoice line items</caption>
         <thead>
-          <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-ink-faint">
+          <tr className="border-b border-line text-left text-xs text-ink-faint">
             <th scope="col" className="py-2 pr-4 font-medium">
               Description
             </th>

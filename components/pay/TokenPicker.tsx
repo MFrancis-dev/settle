@@ -85,7 +85,7 @@ export function TokenPicker({
                 htmlFor={id}
                 className={`flex cursor-pointer items-center justify-between gap-3 rounded-card border px-3 py-2.5 text-sm ${
                   value === token.assetId
-                    ? "border-brand bg-brand-soft"
+                    ? "border-ink bg-surface-sunk"
                     : "border-line bg-surface hover:bg-surface-sunk"
                 }`}
               >
@@ -96,7 +96,7 @@ export function TokenPicker({
                     name="origin-asset"
                     checked={value === token.assetId}
                     onChange={() => onChange(token.assetId)}
-                    className="h-4 w-4 accent-brand"
+                    className="h-4 w-4 accent-ink"
                   />
                   <span className="font-medium">{token.symbol}</span>
                 </span>

@@ -224,7 +224,7 @@ function DemoInvoice({
   onSimulate(outcome: DemoOutcome): void;
 }) {
   return (
-    <article className="rounded-card border border-line bg-surface p-4 shadow-card">
+    <article className="rounded-card border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{invoice.clientName}</p>

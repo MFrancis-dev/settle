@@ -1,34 +1,43 @@
 @import "tailwindcss";
 
 /*
- * Design tokens (S4.1).
+ * Design tokens (S4.1) — the "achromatic ledger" identity pass.
  *
- * Hand-rolled Tailwind v4 tokens rather than shadcn/ui (ARCHITECTURE.md §2 names shadcn/ui): the
- * generator needs a network install and Radix dependencies, and Settle's surface is six screens.
+ * The chrome holds no colour: buttons, nav, borders and the focus ring are ink or grey. The brand
+ * green is the product's one data hue and appears only on money that arrived and on the reached
+ * steps of a payment's walk. Surfaces are flat — a 1px line separates a card from the ground, never
+ * a shadow. The ground is a cool, low-chroma stone (a ledger), not a warm cream.
+ *
  * Every colour below is a *role*, not a raw value, so a state can be re-tinted without touching a
- * component. Amounts use `tabular-nums` through `--font-feature-settings` on `.money`.
+ * component. Amounts use `tabular-nums` through `.money`.
  */
 @theme {
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  /* The dealt faces, self-hosted by next/font (app/layout.tsx). Referenced by the family names the
+     @font-face rules register, not by next/font's body-scoped variable: a `var()` here would point
+     at a variable that is undefined on :root and make the whole stack guaranteed-invalid. */
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-canvas: #f5f4ef;
+  /* A cool stone ground, one level off white — a ledger, not a cream. */
+  --color-canvas: #f4f5f7;
   --color-surface: #ffffff;
-  --color-surface-sunk: #eeebe3;
-  --color-line: #ddd8cc;
-  --color-line-strong: #b9b2a1;
+  --color-surface-sunk: #eceef1;
+  --color-line: #e3e5e9;
+  --color-line-strong: #c6cad1;
 
-  --color-ink: #15181e;
-  --color-ink-muted: #5a616e;
-  --color-ink-faint: #878e9b;
+  --color-ink: #16181d;
+  --color-ink-muted: #4b515c;
+  --color-ink-faint: #646b78;
   --color-ink-invert: #ffffff;
 
-  /* Settled money. */
+  /* The one data hue: money that arrived, and the reached steps of a payment. */
   --color-brand: #0b6e4f;
   --color-brand-strong: #07543b;
-  --color-brand-soft: #e2eee8;
+  --color-brand-soft: #e3efe9;
+
+  /* A neutral control fill — the secondary button is a grey pill, never a brand colour. */
+  --color-control: #e6e7ea;
+  --color-control-strong: #d9dbe0;
 
   --color-info: #1d4e79;
   --color-info-soft: #e6eef6;
@@ -41,11 +50,13 @@
   --color-danger: #98201d;
   --color-danger-soft: #fbe9e7;
 
-  --radius-card: 0.875rem;
-  --radius-control: 0.5rem;
+  /* The tight radius pair: 8 on cards, 6 on controls. */
+  --radius-card: 0.5rem;
+  --radius-control: 0.375rem;
 
-  --shadow-card: 0 1px 2px rgb(21 24 30 / 0.06), 0 8px 24px -12px rgb(21 24 30 / 0.12);
-  --shadow-raised: 0 2px 4px rgb(21 24 30 / 0.08), 0 16px 40px -16px rgb(21 24 30 / 0.2);
+  /* Flat by default; a quiet lift is reserved for real overlays (the mobile nav sheet, modals). */
+  --shadow-card: none;
+  --shadow-raised: 0 2px 4px rgb(22 24 29 / 0.06), 0 16px 40px -16px rgb(22 24 29 / 0.18);
 }
 
 @layer base {
@@ -60,9 +71,10 @@
     line-height: 1.5;
   }
 
-  /* One visible focus ring for every interactive element; keyboard users are the demo audience. */
+  /* One visible focus ring for every interactive element; keyboard users are the demo audience.
+     Ink, not the brand: the chrome carries no colour. */
   :focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--color-ink);
     outline-offset: 2px;
   }
 

@@ -8,10 +8,19 @@
 
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
 import "@near-wallet-selector/modal-ui/styles.css";
 import { Providers } from "./providers";
+
+/*
+ * The dealt faces, self-hosted by next/font so the first byte of HTML already carries them and the
+ * build never falls back to a system face. `--font-geist-sans` / `--font-geist-mono` are picked up
+ * by the `--font-sans` / `--font-mono` tokens in globals.css.
+ */
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
   title: { default: "Settle — invoice in dollars, paid in any token", template: "%s · Settle" },
@@ -26,7 +35,9 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-canvas text-ink antialiased">
+      <body
+        className={`${geist.variable} ${geistMono.variable} min-h-screen bg-canvas text-ink antialiased`}
+      >
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-surface focus:px-3 focus:py-2 focus:text-sm"

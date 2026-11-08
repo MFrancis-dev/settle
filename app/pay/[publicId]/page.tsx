@@ -134,145 +134,158 @@ export default function Page() {
   const payable = PAYABLE.includes(view.status);
 
   return (
-    <main id="main" className="mx-auto flex w-full max-w-lg flex-col gap-5 px-5 py-8 pb-16">
-      <header>
-        <p className="text-sm text-ink-muted">{view.seller} sent you an invoice</p>
-        <h1 className="mt-1 text-2xl font-semibold">
-          {view.total ? <Money money={view.total} /> : "Invoice"}
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {view.number} · for {view.clientName}
-          {view.dueDate ? ` · due ${dateText(view.dueDate)}` : ""}
-        </p>
-        <div className="mt-2">
-          <StatusBadge status={view.status} />
+    <main id="main" className="mx-auto w-full max-w-5xl px-5 py-8 pb-16 sm:px-8">
+      {view.demo ? (
+        <div className="mb-6">
+          <DemoBanner />
         </div>
-      </header>
-
-      {view.demo ? <DemoBanner /> : null}
-
-      {!payable && !settled ? (
-        <Alert tone="neutral" title="This invoice is not open for payment">
-          <p>
-            {view.status === "cancelled"
-              ? "The person who sent it cancelled this invoice, so nothing is owed. A payment that arrived anyway is reported to them and returned to your refund address."
-              : "This invoice has not been sent yet, so there is nothing to pay."}
-          </p>
-        </Alert>
       ) : null}
 
-      {view.memo ? (
-        <Card title="Note from the seller">
-          <p className="whitespace-pre-line text-sm">{view.memo}</p>
-        </Card>
-      ) : null}
-
-      {attempt ? (
-        <DepositPanel
-          deposit={attempt.originAsset}
-          feeUsd={attempt.feeUsd}
-          timeEstimateS={address?.timeEstimateS ?? null}
-          deadline={attempt.quoteDeadline}
-          address={attempt.depositAddress}
-          memo={attempt.depositMemo}
-          reused={address === null}
-          onExpire={() => {
-            setAddress(null);
-            void invoice.refetch();
-          }}
-        />
-      ) : payable ? (
-        <Card title="Choose how you want to pay">
-          {tokens.isPending ? (
-            <p className="text-sm text-ink-muted">Loading the list of tokens…</p>
-          ) : tokens.isError ? (
-            <Alert tone="warn" title="The token list could not be read">
-              <p>{tokens.error instanceof Error ? tokens.error.message : "Unknown error."}</p>
-              <p className="mt-1">Try again in a minute.</p>
-            </Alert>
-          ) : (
-            <div className="flex flex-col gap-5">
-              <TokenPicker
-                tokens={tokens.data.assets}
-                value={originAsset}
-                onChange={setOriginAsset}
-              />
-              <RefundAddressInput
-                chain={chosen?.settleChain ?? null}
-                value={refundTo}
-                onChange={setRefundTo}
-                onSubmitAttempt={askPreview}
-              />
-
-              {preview ? <QuotePreview quote={preview} /> : null}
-              {failure ? (
-                <Alert tone="danger" title="Nothing was created">
-                  <p>{failure}</p>
-                </Alert>
-              ) : null}
-
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant={preview ? "secondary" : "primary"}
-                  size="lg"
-                  full
-                  pending={quote.isPending && preview === null}
-                  disabled={originAsset === "" || refundTo.trim() === ""}
-                  onClick={askPreview}
-                >
-                  Show me the price
-                </Button>
-                {preview ? (
-                  <Button
-                    size="lg"
-                    full
-                    pending={quote.isPending && preview !== null}
-                    onClick={askAddress}
-                  >
-                    Get a payment address
-                  </Button>
-                ) : null}
-                <p className="text-xs text-ink-faint">
-                  Showing the price starts no payment and creates no address. Settle holds it for a
-                  few minutes, then re-quotes — it never charges an old price.
-                </p>
-              </div>
+      {/* Two columns on a wide screen — the invoice on the left, the payment on the right — so the
+          canvas is filled instead of a narrow column floating in a void. On a phone they stack in
+          reading order: who and how much, then how to pay. */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-10">
+        <div className="flex min-w-0 flex-col gap-5">
+          <header>
+            <p className="text-sm text-ink-muted">{view.seller} sent you an invoice</p>
+            <h1 className="mt-1 text-2xl font-bold sm:text-3xl">
+              {view.total ? <Money money={view.total} /> : "Invoice"}
+            </h1>
+            <p className="mt-1.5 text-sm text-ink-muted">
+              {view.number} · for {view.clientName}
+              {view.dueDate ? ` · due ${dateText(view.dueDate)}` : ""}
+            </p>
+            <div className="mt-3">
+              <StatusBadge status={view.status} />
             </div>
-          )}
-        </Card>
-      ) : null}
+          </header>
 
-      {attempt ? <ShortPaymentWarning deposit={attempt.originAsset} /> : null}
+          {view.memo ? (
+            <Card title="Note from the seller">
+              <p className="whitespace-pre-line text-sm">{view.memo}</p>
+            </Card>
+          ) : null}
+        </div>
 
-      {live || attempt ? (
-        <PayStatus
-          status={live ?? emptyStatus(view.status, attempt)}
-          actions={
-            attempt ? (
-              view.demo ? (
-                <DemoSimulate publicId={publicId} />
+        <div className="flex min-w-0 flex-col gap-5">
+          {!payable && !settled ? (
+            <Alert tone="neutral" title="This invoice is not open for payment">
+              <p>
+                {view.status === "cancelled"
+                  ? "The person who sent it cancelled this invoice, so nothing is owed. A payment that arrived anyway is reported to them and returned to your refund address."
+                  : "This invoice has not been sent yet, so there is nothing to pay."}
+              </p>
+            </Alert>
+          ) : null}
+
+          {attempt ? (
+            <DepositPanel
+              deposit={attempt.originAsset}
+              feeUsd={attempt.feeUsd}
+              timeEstimateS={address?.timeEstimateS ?? null}
+              deadline={attempt.quoteDeadline}
+              address={attempt.depositAddress}
+              memo={attempt.depositMemo}
+              reused={address === null}
+              onExpire={() => {
+                setAddress(null);
+                void invoice.refetch();
+              }}
+            />
+          ) : payable ? (
+            <Card title="Choose how you want to pay">
+              {tokens.isPending ? (
+                <p className="text-sm text-ink-muted">Loading the list of tokens…</p>
+              ) : tokens.isError ? (
+                <Alert tone="warn" title="The token list could not be read">
+                  <p>{tokens.error instanceof Error ? tokens.error.message : "Unknown error."}</p>
+                  <p className="mt-1">Try again in a minute.</p>
+                </Alert>
               ) : (
-                <ReportPayment
-                  onSubmit={async (txHash) => {
-                    try {
-                      const result = await submitTx.mutateAsync(txHash);
-                      return result.forwarded
-                        ? "We have asked the service to look for it now. Keep this page open."
-                        : "The service could not be reached just now. Your payment is still on its way, and this page keeps checking.";
-                    } catch (error) {
-                      return error instanceof ApiError
-                        ? error.message
-                        : "That reference could not be sent. Keep this page open instead — it checks on its own.";
-                    }
-                  }}
-                />
-              )
-            ) : null
-          }
-        />
-      ) : null}
+                <div className="flex flex-col gap-5">
+                  <TokenPicker
+                    tokens={tokens.data.assets}
+                    value={originAsset}
+                    onChange={setOriginAsset}
+                  />
+                  <RefundAddressInput
+                    chain={chosen?.settleChain ?? null}
+                    value={refundTo}
+                    onChange={setRefundTo}
+                    onSubmitAttempt={askPreview}
+                  />
 
-      <footer className="text-xs text-ink-faint">
+                  {preview ? <QuotePreview quote={preview} /> : null}
+                  {failure ? (
+                    <Alert tone="danger" title="Nothing was created">
+                      <p>{failure}</p>
+                    </Alert>
+                  ) : null}
+
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant={preview ? "secondary" : "primary"}
+                      size="lg"
+                      full
+                      pending={quote.isPending && preview === null}
+                      disabled={originAsset === "" || refundTo.trim() === ""}
+                      onClick={askPreview}
+                    >
+                      Show me the price
+                    </Button>
+                    {preview ? (
+                      <Button
+                        size="lg"
+                        full
+                        pending={quote.isPending && preview !== null}
+                        onClick={askAddress}
+                      >
+                        Get a payment address
+                      </Button>
+                    ) : null}
+                    <p className="text-xs text-ink-faint">
+                      Showing the price starts no payment and creates no address. Settle holds it for
+                      a few minutes, then re-quotes — it never charges an old price.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Card>
+          ) : null}
+
+          {attempt ? <ShortPaymentWarning deposit={attempt.originAsset} /> : null}
+
+          {live || attempt ? (
+            <PayStatus
+              status={live ?? emptyStatus(view.status, attempt)}
+              actions={
+                attempt ? (
+                  view.demo ? (
+                    <DemoSimulate publicId={publicId} />
+                  ) : (
+                    <ReportPayment
+                      onSubmit={async (txHash) => {
+                        try {
+                          const result = await submitTx.mutateAsync(txHash);
+                          return result.forwarded
+                            ? "We have asked the service to look for it now. Keep this page open."
+                            : "The service could not be reached just now. Your payment is still on its way, and this page keeps checking.";
+                        } catch (error) {
+                          return error instanceof ApiError
+                            ? error.message
+                            : "That reference could not be sent. Keep this page open instead — it checks on its own.";
+                        }
+                      }}
+                    />
+                  )
+                ) : null
+              }
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <footer className="mt-8 text-xs text-ink-faint">
         <DefinitionList
           items={[
             { label: "Seller", value: view.seller },
@@ -294,27 +307,27 @@ export default function Page() {
 function QuotePreview({ quote }: { quote: QuoteView }) {
   const fee = usdText(quote.feeUsd);
   return (
-    <div className="rounded-card border border-brand/30 bg-brand-soft p-4">
-      <h2 className="text-sm font-semibold text-brand">This is what the payment would be</h2>
+    <div className="rounded-card border border-line bg-surface-sunk p-4">
+      <h2 className="text-sm font-semibold text-ink">This is what the payment would be</h2>
       <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs uppercase tracking-wide text-ink-faint">You send</dt>
+          <dt className="text-xs text-ink-faint">You send</dt>
           <dd className="mt-0.5 font-medium">
             <Money money={quote.deposit} />
           </dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-ink-faint">Seller receives</dt>
+          <dt className="text-xs text-ink-faint">Seller receives</dt>
           <dd className="mt-0.5">
             <Money money={quote.payout} />
           </dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-ink-faint">Conversion fee</dt>
+          <dt className="text-xs text-ink-faint">Conversion fee</dt>
           <dd className="mt-0.5">{fee ?? "Included in the amount above"}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-ink-faint">Takes</dt>
+          <dt className="text-xs text-ink-faint">Takes</dt>
           <dd className="mt-0.5">
             {quote.timeEstimateS === null
               ? "A few minutes"
