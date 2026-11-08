@@ -22,7 +22,7 @@ settle/
 │                                 # workflows/ci.yml (typecheck, lint, test, build + gitleaks over full history)
 ├─ .env.example                  # names only
 ├─ .gitignore · .prettierignore   # generated output (drizzle/, next-env.d.ts, .next/) is never hand-formatted
-├─ package.json                  # scripts: dev, worker, demo, test, e2e, lint, typecheck, db:* (exact versions, ESM)
+├─ package.json                  # scripts: dev, worker, demo, demo:prod, test, e2e, lint, typecheck, db:* (exact versions, ESM)
 ├─ pnpm-workspace.yaml · pnpm-lock.yaml   # pnpm 11 settings (allowBuilds) + lockfile — commit both
 ├─ tsconfig.json · next.config.ts · postcss.config.mjs (Tailwind v4) · eslint.config.mjs · .prettierrc · vitest.config.ts
 ├─ drizzle.config.ts
@@ -148,11 +148,14 @@ and the status route call the same function.
 ## 6. `e2e/`, `scripts/`
 
 ```
-e2e/playwright.config.ts · e2e/demo-journey.spec.ts   # PRD §8, run in CI; Playwright starts `pnpm demo` itself
-scripts/demo.ts · scripts/seed-demo.ts · scripts/check-env.ts · scripts/setup-storage-payer.ts
+e2e/playwright.config.ts · e2e/demo-journey.spec.ts   # PRD §8, run in CI; Playwright starts `pnpm demo:prod` itself
+scripts/demo.ts · scripts/demo-prod.ts · scripts/seed-demo.ts · scripts/check-env.ts · scripts/setup-storage-payer.ts
 # demo.ts refuses an env that would make "demo" a lie, seeds, closes the connection (PGlite gives its data
 # directory to one process at a time), then spawns `next dev` with DEMO_MODE=1. seed-demo.ts reuses a story
 # already in the database unless --fresh.
+# demo-prod.ts is the sibling the e2e suite runs: same guard and seed, but `next build` then `next start`
+# with DEMO_MODE=1, so CI drives the production artifact a host deploys. demo.ts (the judge's command) is
+# untouched.
 # check-env prints missing names, never values. setup-storage-payer writes a payer key into `.env` (0600)
 # and prints only the public half — it never signs and never sends (S0.10 is 👤 for exactly that reason).
 ```

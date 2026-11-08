@@ -62,34 +62,6 @@ async function freshPayUrl(
   return new URL(match[0]!.payUrl).pathname;
 }
 
-/**
- * Pay for the quote route's first compile outside any assertion window.
- *
- * `webServer` runs `next dev`, CI caches the pnpm store but not `.next`, and the first request to a
- * route compiles it. Measured locally against a cold `.next`: the pay page 3,989 ms, a dry quote
- * 3,415 ms, the same quote once warm 298 ms — on a machine faster than a shared runner. Inside this
- * suite's 15 s `expect` budget that is a coin toss, and it lost: run 42470416742 failed
- * "Get a payment address" on a commit whose pull_request run passed, with the page snapshot showing
- * "Show me the price" still `[disabled]`, which is how `Button` renders `pending`. The request was
- * still in flight, not refused.
- *
- * The warm-up is the free `dry: true` preview, which stores nothing, so it changes no state the
- * journey asserts on. It runs against the 120 s test timeout the config already grants for exactly
- * this reason. Nothing is loosened: a quote that never arrives still fails the test.
- */
-async function warmQuoteRoute(context: BrowserContext, payUrl: string): Promise<void> {
-  const publicId = payUrl.split("/pay/").pop()!;
-  const tokens = await context.request.get("/api/tokens");
-  expect(tokens.ok()).toBeTruthy();
-  const list = (await tokens.json()) as { assets: { assetId: string; symbol: string }[] };
-  const asset = list.assets.find((candidate) => candidate.symbol === "wNEAR");
-  expect(asset, "the recorded token list has no wNEAR").toBeDefined();
-  const warm = await context.request.post(`/api/pay/${publicId}/quote`, {
-    data: { originAsset: asset!.assetId, refundTo: "client.demo.near", dry: true },
-  });
-  expect(warm.ok(), `the dry preview answered ${warm.status()}`).toBeTruthy();
-}
-
 test("the demo page says what it is, and shows one invoice per status", async ({ page }) => {
   // Restart first: the seed's statuses are the ones being asserted, and a previous run — or a judge
   // mid-talk — may have walked some of them to Paid.
@@ -156,7 +128,6 @@ test("a client prices a payment, gets one address, and watches it reach Paid", a
   context,
 }) => {
   const payUrl = await freshPayUrl(context, "INV-0002", "open");
-  await warmQuoteRoute(context, payUrl);
   await page.goto(payUrl);
 
   await expect(page.getByText(BANNER)).toBeVisible();
@@ -203,10 +174,8 @@ test("a client prices a payment, gets one address, and watches it reach Paid", a
 });
 
 test("the outcomes off the happy path explain themselves", async ({ page, context }) => {
-  // A short deposit: the invoice is still owed, and the walk is not over. Warmed here too, so this
-  // test does not depend on the one before it having compiled the route.
+  // A short deposit: the invoice is still owed, and the walk is not over.
   const shortUrl = await freshPayUrl(context, "INV-0002", "open");
-  await warmQuoteRoute(context, shortUrl);
   await page.goto(shortUrl);
   await page.getByPlaceholder("Search USDC, USDT, DAI…").fill("wNEAR");
   await page.getByText("wNEAR", { exact: false }).first().click();
