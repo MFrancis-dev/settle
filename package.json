@@ -14,6 +14,7 @@
     "start": "next start",
     "worker": "tsx worker/index.ts",
     "demo": "tsx scripts/demo.ts",
+    "demo:prod": "tsx scripts/demo-prod.ts",
     "demo:seed": "tsx scripts/seed-demo.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

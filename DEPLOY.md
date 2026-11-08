@@ -30,6 +30,13 @@ Migrations need no separate step in production. `createDatabase()` applies every
 on open (`lib/db/client.ts`) using `postgres` and `drizzle-orm`, both runtime dependencies.
 `drizzle-kit` is a development tool for _generating_ migration SQL and is never needed on a host.
 
+**CI drives this exact path.** The Playwright journey runs `pnpm demo:prod` (`scripts/demo-prod.ts`),
+which is `next build` then `next start` in demo mode — the two commands in the table above, not
+`next dev`. So the artifact a host deploys is the artifact the e2e suite proves, on every push. The
+one difference from a real deploy is the database: `demo:prod` uses embedded PGlite because it is one
+process, whereas a host runs web + worker and must set `DATABASE_URL` (§2). `pnpm demo` (`next dev`)
+is untouched and stays the command the README tells a judge to run.
+
 ## 2. Measured: PGlite is single-process, so a hosted Settle needs Postgres
 
 PGlite is the embedded database Settle uses when `DATABASE_URL` is empty — locally, in the 635-test
