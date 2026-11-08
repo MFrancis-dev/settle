@@ -5,9 +5,11 @@ What a host has to provide, the one decision that was blocking it, and the evide
 👤 the human's, and an untested `render.yaml` or `Dockerfile` in the repo would read as a claim that
 it works.
 
-Everything below was measured on 2026-11-08 against the installed dependencies and a throwaway
-PostgreSQL 16.15, not taken from documentation. §2 is the constraint that decides the database; §3 is
-the decision the human made about demo mode, and what was verified locally once it was made.
+Everything in §2–§5 was measured on 2026-11-08 against the installed dependencies and a throwaway
+PostgreSQL 16.15, not taken from documentation. §6 is the exception: it is quoted from the vendors'
+own pages on the same date, is cited line by line, and is not a measurement. §2 is the constraint
+that decides the database; §3 is the decision the human made about demo mode, and what was verified
+locally once it was made.
 
 ---
 
@@ -144,9 +146,44 @@ Point the host's health check at it, and use it to confirm S8.3 from the outside
 
 `pnpm check-env` prints what is set and what is missing without echoing a secret.
 
-## 6. What is still the human's, in order
+## 6. Host options, read on 2026-11-08
 
-1. **S8.1** — pick a host that runs a web service _and_ a worker service, plus managed Postgres.
+S8.1 has to buy the shape proven in §3: **two long-lived processes and one Postgres, all reachable
+for the judging window.** Judging starts 2026-11-16 and results are due by 2026-11-18, so the
+deployment has to stay up at least until the 18th (Nov 25 is the safer target, per S11.1).
+
+What the vendors' own pages say, as of 2026-11-08. 🔍 marks anything I could not confirm on an
+official page.
+
+| Fact                                                                                                                                                | Source                       | Effect on Settle                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| "spins down a Free web service that goes 15 minutes without receiving any inbound traffic"                                                          | [Render — Free plan][r-free] | a judge's first click after a quiet spell hits a cold start                                                                                |
+| Free plan **does not** support background workers                                                                                                   | [Render — Free plan][r-free] | rules the free plan out outright: `pnpm worker` has nowhere to run                                                                         |
+| "750 Free instance hours to each workspace per calendar month"                                                                                      | [Render — Free plan][r-free] | two always-on processes burn 750 h in ~15 days of a 30-day month                                                                           |
+| "Free Render Postgres databases expire 30 days after creation"                                                                                      | [Render — Free plan][r-free] | survivable for the judging window, but the invoice rows go with it                                                                         |
+| Hobby $0 / Pro $25 / Scale $499 per month; web services from $7; Postgres from $6                                                                   | [Render — Pricing][r-price]  | a paid tier is what buys the worker. 🔍 whether a $7 starter web service needs the $25 plan on top is not stated on the page               |
+| Free $0 with $1 credit / Hobby $5 with $5 / Pro $20 with $20; "Railway charges per-second for the CPU, memory, and disk your services actually use" | [Railway — Pricing][rw]      | usage-based fits a worker, but a worker never idles: ~730 h/month of accrual against a small credit. 🔍 Postgres-plugin rate not confirmed |
+
+[r-free]: https://render.com/docs/free
+[r-price]: https://render.com/pricing
+[rw]: https://railway.com/pricing
+
+Fly.io was checked and dropped from the table: I could not get a readable plan/price statement from
+its pages, and a number I cannot cite is a number I will not publish.
+
+**The conclusion for S8.1.** Every free tier fails on one of the two hard requirements — no worker,
+or a web service that sleeps — so hosting Settle is a paid decision, however small. The cheapest
+credible shape is one small web service, one small worker service and one managed Postgres on the
+same host, so the two processes can reach the database over a private network. A zero-spend
+alternative exists and is already covered by §1: one small machine running both processes under a
+supervisor, with Postgres on the same box. That trades a managed database for a `pg_dump` habit.
+
+No account was created and nothing was deployed while writing this. Both are 👤.
+
+## 7. What is still the human's, in order
+
+1. **S8.1** — pick a host that runs a web service _and_ a worker service, plus managed Postgres; §6
+   is the shortlist and the two facts that disqualify a free tier.
 2. **S8.2** — set the variables in §5. Generate `SESSION_SECRET` yourself; it is a secret and must
    not pass through chat or a commit.
 3. **S8.3** — deploy, then confirm from the outside: `curl -sS https://<host>/api/health` should

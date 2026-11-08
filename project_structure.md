@@ -16,7 +16,7 @@ settle/
 ├─ project_structure.md          # this file
 ├─ README.md                     # judges + AI screeners; names sister project Stack
 ├─ LAUNCH.md                     # Phase 10 drafts: live-rule diff, video script, X post options, submission payload skeleton + a placeholder worked example
-├─ DEPLOY.md                     # Phase 8 prep: what a host must run, the two measured constraints, health check, env table
+├─ DEPLOY.md                     # Phase 8 prep: what a host must run, the two measured constraints, health check, env table, cited host shortlist (§6)
 ├─ LICENSE                       # MIT
 ├─ .github/                       # pull_request_template.md (ROADMAP + hackathon-rule checklist), ISSUE_TEMPLATE/roadmap-task.md,
 │                                 # workflows/ci.yml (typecheck, lint, test, build + gitleaks over full history)
