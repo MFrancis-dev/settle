@@ -159,6 +159,8 @@ Sign-in posts the fields the wallet actually signed — `{message, recipient, no
 
 **Visual identity.** The screens follow one deliberate system rather than a framework default: an achromatic ledger palette where the chrome (borders, buttons, nav) carries no colour and a single brand green is reserved for the one number that matters — money that has actually arrived. Type is Geist (Geist Mono for amounts and addresses, weight 700 for money only), surfaces are flat with a 1px rule instead of shadows, labels are sentence case, and the dashboard sits in an open-plane sidebar shell that folds to a top bar on a phone. The mark (an arrow descending onto a rule) is `components/ui/mark.tsx`. Tokens live in `app/globals.css` as Tailwind `@theme` roles, so every screen references the role, never a raw colour.
 
+The landing page is designed as a page in that same system: the mark is the one motif, running from the header through the hero's receipt to a large construction in the footer, and the page's pictures are the product's own screens — the receipt, a working token picker (pick a token, watch the deposit amount follow), the pay page and the deposit panel with a live QR.
+
 **Written during the hackathon window.** All of this code was written between 2026-11-03 and the submission deadline (2026-11-14 23:59 UTC), in this repository's public commit history, phase by phase against the tasks in `ROADMAP.md`. No pre-existing project was renamed or re-submitted. The team's other entry, **Stack**, is a separate repository with its own history (rule Q-015).
 
 ## Our other project
