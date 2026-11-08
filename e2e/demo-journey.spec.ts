@@ -27,11 +27,24 @@ async function openDemo(page: Page) {
   return page;
 }
 
-/** Press "Restart the story" so a test starts from the seed's own statuses, whatever ran before. */
+/**
+ * Press "Restart the story" so a test starts from the seed's own statuses, whatever ran before.
+ *
+ * Wait on the reset's own confirmation, not on the invoice heading: that heading is static page
+ * structure, visible before the reset begins, so waiting on it returns while `POST /api/demo/reset`
+ * is still in flight. The reset deletes the demo user and re-issues her session cookie; a test that
+ * navigates away before that response lands aborts the request, keeps the old cookie — which now
+ * names a deleted row — and the dashboard answers 401. The confirmation is set only after the
+ * mutation resolves, so by the time it is visible the new cookie is stored. This race is invisible
+ * under `next dev` (the dashboard compiles slowly, giving the reset time to finish) and only shows
+ * against the production build, where navigation is instant.
+ */
 async function restart(page: Page) {
   await openDemo(page);
   await page.getByRole("button", { name: "Restart the story" }).click();
-  await expect(page.getByRole("heading", { name: "Ten invoices, one per status" })).toBeVisible();
+  await expect(page.getByText("The story was reset: ten invoices, one per status")).toBeVisible({
+    timeout: 15_000,
+  });
 }
 
 interface DemoInvoice {
