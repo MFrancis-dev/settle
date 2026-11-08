@@ -187,13 +187,44 @@ supervisor, with Postgres on the same box. That trades a managed database for a 
 
 No account was created and nothing was deployed while writing this. Both are 👤.
 
-## 7. What is still the human's, in order
+## 7. What is done, and what is still the human's
 
-1. **S8.1** — pick a host that runs a web service _and_ a worker service, plus managed Postgres; §6
-   is the shortlist and the two facts that disqualify a free tier.
-2. **S8.2** — set the variables in §5. Generate `SESSION_SECRET` yourself; it is a secret and must
-   not pass through chat or a commit.
-3. **S8.3** — deploy, then confirm from the outside: `curl -sS https://<host>/api/health` should
-   answer `200 {"status":"ok","demo":false,"database":"ok"}`.
-4. **S8.4** — one small real payment end-to-end, with the tx links recorded. Needs funded accounts
-   and an explicit yes; nothing signs or sends without it (AGENTS.md §7).
+1. **S8.1 ✅ (2026-11-08)** — the human chose **Vercel** after reviewing localhost; see §8 for the
+   exact shape and the one thing Vercel cannot do.
+2. **S8.2 ✅** — the §5 variables are set on the Vercel project. `SESSION_SECRET` was generated with
+   `openssl rand -hex 32` and stored as a Vercel secret (never echoed to chat or committed); it is
+   mandatory on a serverless host because `randomProcessSecret()` differs per function.
+3. **S8.3 ✅** — deployed and confirmed from the outside: `curl -sS https://settle-wine-alpha.vercel.app/api/health`
+   answers `200 {"status":"ok","demo":false,"database":"ok"}` from the running deployment.
+4. **S8.4 — still the human's** — one small real payment end-to-end, with the tx links recorded.
+   Needs the partner JWT (S0.8), a funded payer, a host that also runs the worker, and an explicit
+   yes; nothing signs or sends without it (AGENTS.md §7).
+
+## 8. Deployed 2026-11-08 — Vercel (real-mode web, Neon Postgres)
+
+The live URL is **https://settle-wine-alpha.vercel.app** (project `accensa/settle`), serving the
+Next.js app in **real mode** against a dedicated Neon Postgres (`settle-hackathon`, `aws-us-east-1`).
+Landing, NEAR-wallet sign-in, invoice create/list/dashboard/receipt and `GET /api/health` all answer
+from the running deployment.
+
+Two limits of this host, stated so nobody is surprised by them:
+
+- **The background worker does not run here.** Vercel is serverless and cannot keep the long-lived
+  `pnpm worker` process (the 5 s poll / 60 s expire loops). So the pay page fails closed before a
+  live quote, and even with the JWT a deposit would not be driven to `paid` without a worker. Live
+  payments need a §1 two-process host (Render/Railway/Fly or one machine under a supervisor). This
+  is why the full walkthrough stays `pnpm demo` — offline, no JWT, no worker, all statuses reachable.
+- **No `ONECLICK_JWT`** (S0.8, the partner credential), so quotes are refused by design. The rest of
+  the app is exercisable; payment pricing is not.
+
+What was found by deploying and not by testing: the app returned `503 database:unreachable` on a cold
+serverless boot with `Error: Can't find meta/_journal.json`. Drizzle's migrator reads `./drizzle` from
+the filesystem inside `createDatabase()` and that folder is never `import`ed, so Next's output-file
+tracing left it out of the lambda. The fix is `outputFileTracingIncludes: { "/*": ["./drizzle/**/*"] }`
+in `next.config.ts` — it puts the migrations beside every route so a fresh deployment can migrate on
+open, which §3 relies on. It is inert for `pnpm demo`/CI (local `next start` has the folder in cwd).
+Provisioning note: Vercel's `vercel storage create` only makes blob/global-config stores, so the Neon
+database was created with the authenticated `neon` CLI and its **pooled** (`-pooler`) URL set as
+`DATABASE_URL`; the two pre-existing Neon stores were left alone rather than shared, to keep schemas
+apart. Deployment protection was switched off with `vercel project protection disable --sso settle` —
+it defaults to a login wall, which would fail the "reachable by a judge" bar.
