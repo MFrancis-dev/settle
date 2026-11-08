@@ -15,7 +15,8 @@ settle/
 ├─ ARCHITECTURE_ESSENTIALS.md    # short reference loaded every session
 ├─ project_structure.md          # this file
 ├─ README.md                     # judges + AI screeners; names sister project Stack
-├─ LAUNCH.md                     # Phase 10 drafts: live-rule diff, video script, X post options, submission payload skeleton
+├─ LAUNCH.md                     # Phase 10 drafts: live-rule diff, video script, X post options, submission payload skeleton + a placeholder worked example
+├─ DEPLOY.md                     # Phase 8 prep: what a host must run, the two measured constraints, health check, env table
 ├─ LICENSE                       # MIT
 ├─ .github/                       # pull_request_template.md (ROADMAP + hackathon-rule checklist), ISSUE_TEMPLATE/roadmap-task.md,
 │                                 # workflows/ci.yml (typecheck, lint, test, build + gitleaks over full history)
@@ -67,6 +68,7 @@ app/
    ├─ pay/[publicId]/submit-tx/route.ts · pay/[publicId]/status/route.ts
    ├─ receipts/[attemptId]/route.ts
    ├─ export.csv/route.ts
+   ├─ health/route.ts                      # liveness probe: 200 ok / 503 degraded (DEPLOY.md §4)
    └─ demo/[action]/route.ts                # simulate-payment, reset
 ```
 

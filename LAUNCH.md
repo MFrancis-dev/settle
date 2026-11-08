@@ -145,7 +145,7 @@ contact us about this hackathon."_
 >
 > Money never touches Settle: no custodial address, no key that can move a deposit, no payout key. NEAR is also the identity layer — NEP-413 sign-in with no password held, and a fresh signature over the exact address and chain required to change where money lands.
 >
-> One Next.js app plus a worker, 630 offline tests, and `pnpm demo` runs the whole story with no keys and no network.
+> One Next.js app plus a worker, 635 offline tests, and `pnpm demo` runs the whole story with no keys and no network.
 
 **Worked example with placeholder values — shape only, do not POST this.**
 
@@ -166,7 +166,7 @@ the human has agreed to the notice above.
   "nearAddress": "placeholder.near",
   "projectUrl": "https://github.com/MFrancis-dev/settle",
   "demoUrl": "https://x.com/PLACEHOLDER/status/0000000000000000000",
-  "idea": "A freelancer invoices 1,800 USDC; her client holds wNEAR, or USDT on Solana, or ETH on Arbitrum. An ordinary invoice becomes a crypto problem — which bridge, which gas token, which address format — and every service that \"handles it\" does so by taking custody, so the freelancer becomes an unsecured creditor of a stranger.\n\nSettle is invoicing software with a cross-chain rail underneath. The freelancer writes a line-item invoice in dollars and gets a pay link. The client picks a token they hold and sends it. NEAR Intents does the rest: we quote 1Click with swapType EXACT_OUTPUT, so the intent states what must _arrive_ — the exact invoice amount, to the freelancer's own address — rather than what is being sent. verifyQuoteSignature() runs before any deposit address is shown, /v0/status is the only source of a status, and solvers refund an overpayment to the client's own address.\n\nMoney never touches Settle: no custodial address, no key that can move a deposit, no payout key. NEAR is also the identity layer — NEP-413 sign-in with no password held, and a fresh signature over the exact address and chain required to change where money lands.\n\nOne Next.js app plus a worker, 630 offline tests, and `pnpm demo` runs the whole story with no keys and no network.",
+  "idea": "A freelancer invoices 1,800 USDC; her client holds wNEAR, or USDT on Solana, or ETH on Arbitrum. An ordinary invoice becomes a crypto problem — which bridge, which gas token, which address format — and every service that \"handles it\" does so by taking custody, so the freelancer becomes an unsecured creditor of a stranger.\n\nSettle is invoicing software with a cross-chain rail underneath. The freelancer writes a line-item invoice in dollars and gets a pay link. The client picks a token they hold and sends it. NEAR Intents does the rest: we quote 1Click with swapType EXACT_OUTPUT, so the intent states what must _arrive_ — the exact invoice amount, to the freelancer's own address — rather than what is being sent. verifyQuoteSignature() runs before any deposit address is shown, /v0/status is the only source of a status, and solvers refund an overpayment to the client's own address.\n\nMoney never touches Settle: no custodial address, no key that can move a deposit, no payout key. NEAR is also the identity layer — NEP-413 sign-in with no password held, and a fresh signature over the exact address and chain required to change where money lands.\n\nOne Next.js app plus a worker, 635 offline tests, and `pnpm demo` runs the whole story with no keys and no network.",
   "consent": true
 }
 ```

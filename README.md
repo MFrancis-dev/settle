@@ -96,7 +96,7 @@ The cases where a payment goes wrong are written down, not left to a generic err
 ### The tests
 
 ```bash
-pnpm test     # 630 unit + route + component tests (plus 1 skipped), offline, against PGlite in memory
+pnpm test     # 635 unit + route + component tests (plus 1 skipped), offline, against PGlite in memory
 pnpm e2e      # 4 Playwright tests that start `pnpm demo` themselves and drive a real browser
 ```
 
@@ -121,13 +121,13 @@ app/ (routes, pages)   worker/ (two interval loops)
 - **One write path.** The worker, the status poll and `submit-tx` all write through `lib/server/sync.ts`, so three callers cannot disagree about what a status means.
 - **Every boundary is validated.** zod on request bodies, on `process.env` and on every 1Click response; `server-only` markers keep server modules out of the client bundle.
 - **Two runtimes, one secret.** `middleware.ts` runs on Edge and route handlers on Node, so per-process module state is _two_ values — the reason demo mode pins a fixed session secret and real mode requires `SESSION_SECRET`.
-- Full detail in `ARCHITECTURE.md` (short version: `ARCHITECTURE_ESSENTIALS.md`); file layout in `project_structure.md`; remaining work in `ROADMAP.md`; launch drafts (video script, X post, and the submission payload — a field skeleton plus a placeholder worked example, neither of them the real thing) in `LAUNCH.md`.
+- Full detail in `ARCHITECTURE.md` (short version: `ARCHITECTURE_ESSENTIALS.md`); file layout in `project_structure.md`; remaining work in `ROADMAP.md`; what a host has to provide in `DEPLOY.md`; launch drafts (video script, X post, and the submission payload — a field skeleton plus a placeholder worked example, neither of them the real thing) in `LAUNCH.md`.
 
 **No custody.** Settle holds no client funds, no key that can move a client's deposit, and no payout key. The quote's `recipient` is the freelancer's own address and refunds go to the client's own address. The one key the app _can_ hold — `STORAGE_PAYER_PRIVATE_KEY`, which would pay USDC storage deposits on NEAR so delivery cannot fail on a registration technicality — is optional, app-funded, spends storage fees rather than anybody's payment, and is not wired to sign in the shipped MVP (S2.10 needs an explicit approval).
 
 ## Limitations, honestly
 
-- **Not deployed yet.** Hosting, production env vars and one real end-to-end payment are S8.1–S8.5; they need accounts and an approval only the team can give. Until then the evidence is `pnpm demo`, the E2E browser journey and 630 offline tests.
+- **Not deployed yet.** Hosting, production env vars and one real end-to-end payment are S8.1–S8.5; they need accounts and an approval only the team can give. Until then the evidence is `pnpm demo`, the E2E browser journey and 635 offline tests. `DEPLOY.md` records what a host must provide and two constraints that were measured rather than assumed: PGlite is single-process, so a hosted Settle needs Postgres, and demo mode deliberately refuses to run behind an `https://` URL — which is why the hosted app will be real mode and the demo story lives in `pnpm demo` and the video. `GET /api/health` is the probe to confirm a deployment from the outside.
 - **No test drives 1Click's real minimum.** The 400-with-`try at least N` shape is coded and tested against fixtures; provoking it live needs the partner JWT (S0.8, #11).
 - **The memo-chain list is ours.** 1Click does not publish which origins carry a memo requirement, so `MEMO_CHAIN_CODES` is flagged 🔍 unverified in `lib/core/address.ts`. Refusing those chains errs safe: an address Settle cannot check is not one it will send money back to.
 - **A region block is passed through, not recognised.** The vendor's own wording reaches the client; Settle does not match it against strings it guessed.

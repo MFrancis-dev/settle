@@ -66,6 +66,7 @@ No smart contract in the MVP (stretch: receipt registry, §10).
 | `GET /api/receipts/:attemptId`                            | public link w/ token        | Receipt                                                                                  |
 | `GET /api/export.csv`                                     | session                     | Ledger CSV                                                                               |
 | `POST /api/demo/:action`                                  | demo session                | `simulate-payment`, `reset`                                                              |
+| `GET /api/health`                                         | public, not rate-limited    | Liveness probe: 200 `ok` / 503 `degraded` when the database cannot be read               |
 
 Conventions every route follows:
 
@@ -366,3 +367,24 @@ publicKey}`), and `verifyNep413` for the JSON/RAAT convention that no wallet pro
   the noble/bs58 primitives, so the wallet packages stay browser-side only.
 - 🔍 still unverified: one real end-to-end login against a live wallet (the byte layout is the library's,
   the _dialog_ — what a wallet shows the human — is not testable offline).
+
+### Answered: can the web process and the worker share one PGlite directory? (Phase 8 prep, 2026-11-08)
+
+**No, and the failure is silent.** Measured on `@electric-sql/pglite` 0.2.17 with two separate Node
+processes opening the same data directory and each running 120 concurrent inserts:
+
+- one process **died** with `ExitStatus { message: 'Program terminated with exit(1)' }` — the WASM
+  Postgres aborts the process rather than throwing something a caller can catch;
+- the other finished reporting **0 errors**, so its own log gives no sign anything went wrong;
+- reopening the directory afterwards showed **only the survivor's 120 rows**. The dead process's
+  writes were gone.
+
+There is no cross-process lock. PGlite is an in-process database, which is exactly why it is the
+right choice for local development, the test suite and `pnpm demo` — all single-process — and the
+wrong choice for a deployment that runs `pnpm start` and `pnpm worker` side by side. **Any hosted
+Settle must set `DATABASE_URL`.** Full deployment consequences, including the measured conflict
+between demo mode and an `https://` `PUBLIC_APP_URL`, are in `DEPLOY.md`.
+
+Migrations need no host-side step: `createDatabase()` applies every pending migration on open
+(`lib/db/client.ts`) through `postgres` and `drizzle-orm`, both runtime dependencies, so
+`drizzle-kit` is a development tool only.
