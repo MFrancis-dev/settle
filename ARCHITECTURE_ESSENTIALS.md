@@ -128,4 +128,4 @@ Hold user funds · show unconfirmed statuses · use an unverified quote · put c
 
 `ONECLICK_BASE_URL ONECLICK_JWT NEAR_RPC_URL USDC_CONTRACT_ID STORAGE_PAYER_ACCOUNT_ID STORAGE_PAYER_PRIVATE_KEY DATABASE_URL SESSION_SECRET PUBLIC_APP_URL DEMO_MODE`
 
-`DATABASE_URL` is **mandatory for any hosted deployment**: PGlite is single-process, and a web process plus a worker sharing one data directory silently loses one process's writes (measured — `ARCHITECTURE.md` §11). `DEMO_MODE` must stay unset on a host, because demo mode refuses an `https://` `PUBLIC_APP_URL`. Both in `DEPLOY.md`.
+`DATABASE_URL` is **mandatory for any hosted deployment**: PGlite is single-process, and a web process plus a worker sharing one data directory silently loses one process's writes (measured — `ARCHITECTURE.md` §11). `DEMO_MODE` must stay unset on a host, because demo mode refuses an `https://` `PUBLIC_APP_URL`. Both in `DEPLOY.md`. The hosted app therefore runs **real mode** (SD-8, decided 2026-11-08) — verified locally against PostgreSQL 16 with the web process and the worker running at the same time.

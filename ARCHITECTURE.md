@@ -388,3 +388,11 @@ between demo mode and an `https://` `PUBLIC_APP_URL`, are in `DEPLOY.md`.
 Migrations need no host-side step: `createDatabase()` applies every pending migration on open
 (`lib/db/client.ts`) through `postgres` and `drizzle-orm`, both runtime dependencies, so
 `drizzle-kit` is a development tool only.
+
+**The contrast, measured the same day on PostgreSQL 16.15:** the identical two-process,
+120-inserts-each race finished with **0 errors in both processes and all 240 rows persisted**, and
+`pnpm start` plus `pnpm worker` booted together against one database with `/api/health` answering
+`200 {"status":"ok","demo":false,"database":"ok"}` and every migration applied (five tables, 15
+constraints, 12 indexes). Two processes migrating at once left `drizzle.__drizzle_migrations` with
+2 rows and 2 distinct hashes for 2 files, so a host that starts both simultaneously is safe. That is
+the topology **SD-8** buys: real mode, one Postgres, two long-lived processes (`DEPLOY.md` §3).
