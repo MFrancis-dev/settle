@@ -1,11 +1,13 @@
 # Deploying Settle (Phase 8 preparation)
 
-What a host has to provide, and the two constraints that decide the choice. **Nothing has been
-deployed and no vendor manifest is committed**: picking the host is S8.1 and is 👤 the human's, and
-an untested `render.yaml` or `Dockerfile` in the repo would read as a claim that it works.
+What a host has to provide, the one decision that was blocking it, and the evidence behind both.
+**Nothing has been deployed and no vendor manifest is committed**: picking the host is S8.1 and is
+👤 the human's, and an untested `render.yaml` or `Dockerfile` in the repo would read as a claim that
+it works.
 
-Two findings below were measured on 2026-11-08 against the installed dependencies, not taken from
-documentation. Both change what S8.1 can choose.
+Everything below was measured on 2026-11-08 against the installed dependencies and a throwaway
+PostgreSQL 16.15, not taken from documentation. §2 is the constraint that decides the database; §3 is
+the decision the human made about demo mode, and what was verified locally once it was made.
 
 ---
 
@@ -47,27 +49,66 @@ write path rather than a deployment mistake. **Set `DATABASE_URL` for any hosted
 PGlite stays exactly right for local development, tests and demo mode, and nothing about them
 changes.
 
-## 3. Measured: demo mode cannot be hosted behind TLS
+**The same race on Postgres, for contrast.** The identical two-process, 120-inserts-each run against
+a throwaway PostgreSQL 16.15 instance: both processes finished with **0 errors** and **all 240 rows
+persisted** (120 from each). Web and worker started together also ran their migrations concurrently
+and `drizzle.__drizzle_migrations` ended with **2 rows and 2 distinct hashes** for the 2 migration
+files — no duplicates, so a host that starts both processes at once is safe.
 
-`demoModeConflict()` (`lib/server/adapters.ts`) refuses to honour `DEMO_MODE` when
-`PUBLIC_APP_URL` starts with `https://`, on the reasoning that a deployment which could take a real
-payment must never simulate one. Nearly every host terminates TLS and hands back an `https://` URL.
+One log line to expect on a first deploy, which is **not** an error:
 
-So **S8.3 as written — "Deploy; hosted demo mode reachable" — is not achievable on a normal host.**
-That is the guard working, not a bug. The honest choices:
+```
+NOTICE: identifier "payment_attempts_payout_destination_id_payout_destinations_id_fk"
+        will be truncated to "payment_attempts_payout_destination_id_payout_destinations_id_f"
+```
 
-- **(a) Host real mode.** No `DEMO_MODE`, `DATABASE_URL` set, `SESSION_SECRET` and
-  `PUBLIC_APP_URL` set. The hosted app is then a real deployment: sign-in works, invoices are real
-  rows, and quotes come from 1Click. `ONECLICK_JWT` is optional (rule Q-006: without it a 0.2% fee
-  applies), and a real _payment_ still needs funded accounts, which is S8.4 and 👤.
-  **This is the recommendation** — it is what a judge can actually click, and the demo-mode story is
-  already covered by `pnpm demo` in the video (S10.2).
-- **(b) Weaken the guard** so demo mode is allowed on `https://`. This removes a safety invariant
-  that exists to stop a simulated payment being mistaken for a real one. Not recommended, and not
-  something to do without an explicit decision.
+Postgres caps identifiers at 63 bytes and Drizzle generates that foreign-key name at 64. It is the
+only identifier in the schema over the limit, and no two names collide once truncated, so the
+constraint is intact under a shortened name (verified against the live catalog: 15 constraints, 12
+indexes). The `postgres` driver prints server `NOTICE`s to stdout as objects, which is why it looks
+like a crash.
 
-Whichever is chosen, `ROADMAP.md` S8.3 should be reworded, because the current wording asks for
-something the code deliberately refuses.
+## 3. Decided 2026-11-08: the hosted app runs real mode
+
+`demoModeConflict()` (`lib/server/adapters.ts`) refuses to honour `DEMO_MODE` when `PUBLIC_APP_URL`
+starts with `https://`, on the reasoning that a deployment which could take a real payment must never
+simulate one. Nearly every host terminates TLS and hands back an `https://` URL, so **S8.3 as
+originally written — "Deploy; hosted demo mode reachable" — was not achievable on a normal host.**
+That was the guard working, not a bug.
+
+Two options were put to the human:
+
+- **(a) Host real mode.** No `DEMO_MODE`, `DATABASE_URL` set, `SESSION_SECRET` and `PUBLIC_APP_URL`
+  set. Sign-in works, invoices are real rows, quotes come from 1Click. `ONECLICK_JWT` is optional
+  (rule Q-006: without it a 0.2% fee applies), and a real _payment_ still needs funded accounts,
+  which is S8.4 and 👤.
+- **(b) Weaken the guard** so demo mode is allowed on `https://`, which would remove the invariant
+  that stops a simulated payment being mistaken for a real one.
+
+**The human chose (a)** — "follow your recommendation", 2026-11-08. Recorded as `SD-8` in
+`ROADMAP.md`, and S8.3 is reworded to "Deploy real mode; the hosted app is reachable and
+`/api/health` is green". The demo-mode story stays where it already works: `pnpm demo` locally, the
+E2E browser journey in CI, and the video (S10.2). Nothing about the guard changes.
+
+### Verified against a throwaway Postgres before writing this down
+
+Real mode was booted locally against PostgreSQL 16.15 with `DATABASE_URL` set, a generated 64-character
+`SESSION_SECRET`, `PUBLIC_APP_URL=http://localhost:3100`, no `DEMO_MODE`, and **no** `ONECLICK_JWT`
+or `NEAR_RPC_URL` — the shape a first deploy is most likely to be in:
+
+- `pnpm build` succeeded, and `pnpm start` plus `pnpm worker` ran **at the same time** against the
+  one database; neither process died.
+- `GET /api/health` answered `200 {"status":"ok","demo":false,"database":"ok"}` — `demo:false`
+  confirms real mode, `database:"ok"` confirms the Postgres connection.
+- Migrations applied on open with no host-side step: the five tables (`users`, `invoices`,
+  `invoice_items`, `payment_attempts`, `payout_destinations`), 15 constraints and 12 indexes.
+- The worker logged exactly the documented fail-closed behaviour and kept running:
+  `env is missing ONECLICK_JWT, NEAR_RPC_URL — upstream reads will fail until it is set`, then
+  `pollPayments every 5s, expireQuotes every 60s`. So a deploy missing those two still serves; it
+  just cannot verify a signed action or read a status until they are set.
+
+This proves the topology S8.1 has to buy: two long-lived processes and one Postgres. It is **not** a
+deployment — no host, no `https://`, no accounts, nothing reachable from the internet.
 
 ## 4. Health check
 
