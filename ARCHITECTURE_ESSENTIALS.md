@@ -78,7 +78,7 @@ Rules as implemented in `lib/core/status.ts`:
 - Validators (`lib/core/address.ts`): NEAR account-id rules · EVM `0x`+40 hex with EIP-55 when mixed case (all-lower/all-upper pass unchecked) · Solana base58 decoding to exactly 32 bytes
 - Origin-chain refunds (BTC, TON, …) have no validator yet → S1.7 / #100
 
-## Routes (built in Phase 3)
+## Routes (built in Phase 3; `/api/health` added in Phase 8)
 
 - `route.ts` stays thin: zod-validate → `lib/server/<area>.ts` → respond. Codes and payloads come from `lib/server/http.ts` + `views.ts`.
 - Every handler is given `ServerDeps` (`lib/server/deps.ts`); tests install PGlite + a scripted 1Click `fetch` and call the same exports the app calls.
@@ -86,6 +86,7 @@ Rules as implemented in `lib/core/status.ts`:
 - Payout changes sign `Settle payout change to <address> on <chain>` (`lib/core/payout-message.ts`); the settings page and `PUT /api/payout` must derive it identically.
 - Quotes: 6/min per `publicId`+IP; status polls: 60/min. Rejection carries `Retry-After`.
 - `POST /api/demo/:action` answers 403 unless the whole process is a demo (`assertDemoModeAllowed`).
+- `GET /api/health` answers 200 `ok` / 503 `degraded` when the database cannot be read. Unauthenticated (a load balancer has no cookie), `no-store`, and the one route not rate limited: it calls no upstream and writes nothing, so throttling it would only make a host mark a healthy container down.
 - **Two runtimes, one secret:** `middleware.ts` runs on Edge and route handlers on Node, so any per-process module state is _two_ values. `lib/server/session.ts` therefore takes the session secret from `sessionSecretFrom(env.SESSION_SECRET, isDemoMode(env))` — a fixed demo key in demo mode, a random fallback otherwise. Never add per-process randomness that a cookie has to survive across.
 
 ## UI (built in Phase 4)
@@ -126,3 +127,5 @@ Hold user funds · show unconfirmed statuses · use an unverified quote · put c
 ## Env
 
 `ONECLICK_BASE_URL ONECLICK_JWT NEAR_RPC_URL USDC_CONTRACT_ID STORAGE_PAYER_ACCOUNT_ID STORAGE_PAYER_PRIVATE_KEY DATABASE_URL SESSION_SECRET PUBLIC_APP_URL DEMO_MODE`
+
+`DATABASE_URL` is **mandatory for any hosted deployment**: PGlite is single-process, and a web process plus a worker sharing one data directory silently loses one process's writes (measured — `ARCHITECTURE.md` §11). `DEMO_MODE` must stay unset on a host, because demo mode refuses an `https://` `PUBLIC_APP_URL`. Both in `DEPLOY.md`.
