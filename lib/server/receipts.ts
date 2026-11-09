@@ -13,7 +13,11 @@
 
 import { executionStatusSchema } from "../oneclick/status";
 import { isUuid } from "../core/ids";
-import { findAttemptById } from "../db/queries/paymentAttempts";
+import {
+  findAttemptById,
+  findAttemptByReceiptToken,
+  type PaymentAttemptRecord,
+} from "../db/queries/paymentAttempts";
 import { getInvoiceById } from "../db/queries/invoices";
 import { findDestinationById } from "../db/queries/payoutDestinations";
 import { findUserById } from "../db/queries/users";
@@ -58,7 +62,7 @@ function links(
 }
 
 /**
- * The receipt for one attempt.
+ * The receipt for one attempt, addressed by its id (the link the app hands out).
  *
  * `refundTo` is deliberately absent: a receipt is shared, and the payer's own address is not
  * information the document needs.
@@ -74,7 +78,30 @@ export async function receipt(
   if (!attempt || attempt.receiptToken === null || attempt.receiptToken !== token) {
     throw notFound("No such receipt.");
   }
+  return buildReceipt(deps, attempt, token);
+}
 
+/**
+ * The receipt a bare `/receipt/<token>` link points at — the freelancer's copy, the link an email
+ * client trimmed of its query string.
+ *
+ * The token alone authorises it: `receipt_token` is unique and unguessable (§6), so it names its own
+ * attempt and cannot reach across into another invoice. There is nothing to resolve "latest"
+ * between — a re-quoted invoice is minted a new token, so this returns the one attempt that carries
+ * the link and the receipt states whatever status that attempt actually reached.
+ */
+export async function receiptByToken(deps: ServerDeps, token: string): Promise<ReceiptView> {
+  const attempt = await findAttemptByReceiptToken(deps.db, token);
+  if (!attempt || attempt.receiptToken === null) throw notFound("No such receipt.");
+  return buildReceipt(deps, attempt, attempt.receiptToken);
+}
+
+/** The shared read every receipt is built from, once its attempt has been authorised. */
+async function buildReceipt(
+  deps: ServerDeps,
+  attempt: PaymentAttemptRecord,
+  receiptToken: string,
+): Promise<ReceiptView> {
   const invoice = await getInvoiceById(deps.db, attempt.invoiceId);
   if (!invoice) throw notFound("No such receipt.");
 
@@ -113,6 +140,6 @@ export async function receipt(
     depositTxs: links(swap?.originChainTxHashes ?? [], depositHashes),
     deliveryTxs: links(swap?.destinationChainTxHashes ?? [], deliveryHashes),
     quoteSignature: attempt.quoteSignature,
-    receiptUrl: receiptUrlFor(deps, attempt.receiptToken, attempt.id),
+    receiptUrl: receiptUrlFor(deps, receiptToken, attempt.id),
   };
 }

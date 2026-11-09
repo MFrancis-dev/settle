@@ -95,6 +95,8 @@ export interface Api {
   status(publicId: string): Promise<StatusView>;
   submitTx(publicId: string, txHash: string): Promise<SubmitResult>;
   receipt(attemptId: string, token: string): Promise<ReceiptView>;
+  /** The bare `/receipt/<token>` fallback: the token names its own attempt, so no id is needed. */
+  receiptByToken(token: string): Promise<ReceiptView>;
   /** The demo's front door: seeds the fictional freelancer on first call, reads afterwards. */
   demoSession(): Promise<DemoSessionView>;
   demoReset(): Promise<DemoSessionView>;
@@ -177,6 +179,8 @@ export function createApi(fetchImpl: FetchLike): Api {
       call<ReceiptView>(
         `/api/receipts/${encodeURIComponent(attemptId)}?token=${encodeURIComponent(token)}`,
       ),
+    receiptByToken: (token) =>
+      call<ReceiptView>(`/api/receipts?token=${encodeURIComponent(token)}`),
     demoSession: () => call<DemoSessionView>("/api/demo/session"),
     demoReset: () => call<DemoSessionView>("/api/demo/reset", { method: "POST" }),
     demoSimulate: (publicId, outcome) =>

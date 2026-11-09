@@ -99,13 +99,18 @@ export function usePaymentStatus(publicId: string, enabled: boolean) {
 
 /**
  * A receipt is a record of something that already happened, so it is read once and never polled.
- * Both halves of the pair are needed: the attempt id picks the row, the token proves the link.
+ *
+ * Two links reach the same page: the one the app hands out carries `?attempt=`, so the id picks the
+ * row and the token proves the link; a bare `/receipt/<token>` — copied short, trimmed by an email
+ * client — carries only the token, and because it is unique the server resolves its own attempt. The
+ * query key distinguishes the two, and the token is required either way.
  */
 export function useReceipt(attemptId: string | null, token: string) {
+  const withId = attemptId !== null && attemptId !== "";
   return useQuery({
-    queryKey: queryKeys.receipt(attemptId ?? "", token),
-    queryFn: () => api.receipt(attemptId ?? "", token),
-    enabled: attemptId !== null && attemptId !== "" && token !== "",
+    queryKey: queryKeys.receipt(withId ? attemptId : "", token),
+    queryFn: () => (withId ? api.receipt(attemptId, token) : api.receiptByToken(token)),
+    enabled: token !== "",
   });
 }
 

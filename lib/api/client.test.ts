@@ -47,6 +47,7 @@ describe("createApi — requests", () => {
     });
     await api.submitTx("abc123", "7".repeat(44));
     await api.receipt("attempt-id", "tok");
+    await api.receiptByToken("tok");
     await api.setPayout({
       message: "m",
       recipient: "r",
@@ -67,6 +68,8 @@ describe("createApi — requests", () => {
       "POST /api/pay/abc123/quote",
       "POST /api/pay/abc123/submit-tx",
       "GET /api/receipts/attempt-id?token=tok",
+      // The bare-link fallback: the token alone is the path, with no attempt id.
+      "GET /api/receipts?token=tok",
       "PUT /api/payout",
     ]);
     // A path segment is escaped, so an id from a URL cannot reach another route.

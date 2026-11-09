@@ -126,6 +126,23 @@ export async function findAttemptById(
   return rows[0] ? toRecord(rows[0]) : null;
 }
 
+/**
+ * The attempt a bare `/receipt/<token>` link names. `receipt_token` is `unique`, so this is a
+ * one-row read: the token cannot resolve into a second invoice, which is why a pasted link with no
+ * `?attempt=` is as un-enumerable as the id-keyed one.
+ */
+export async function findAttemptByReceiptToken(
+  db: Database,
+  token: string,
+): Promise<PaymentAttemptRecord | null> {
+  const rows = await db
+    .select()
+    .from(paymentAttempts)
+    .where(eq(paymentAttempts.receiptToken, token))
+    .limit(1);
+  return rows[0] ? toRecord(rows[0]) : null;
+}
+
 export async function listAttemptsForInvoice(
   db: Database,
   invoiceId: string,
