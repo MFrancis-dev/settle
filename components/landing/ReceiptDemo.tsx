@@ -8,7 +8,9 @@ import { Mark } from "@/components/ui/mark";
 
 export function ReceiptDemo() {
   return (
-    <div data-ui className="rounded-card bg-surface p-6 sm:p-7">
+    // `text-ink` is required: the card sits on the brand field, whose `text-ink-invert` would
+    // otherwise inherit into every amount that does not set its own colour (white on paper).
+    <div data-ui className="rounded-card bg-surface p-6 text-ink sm:p-7">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Mark />

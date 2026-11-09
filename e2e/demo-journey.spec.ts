@@ -248,4 +248,20 @@ test("the landing page offers sign-in in its HTML and hydrates without a mismatc
     page.getByRole("button", { name: "Sign in with your wallet" }).first(),
   ).toBeEnabled();
   expect(thrown, "hydration must not throw the server's markup away").toEqual([]);
+
+  // The receipt is a paper card on the brand field. An amount that inherits the field's white text
+  // is invisible on it — the exact regression the redesign introduced and a screenshot caught, which
+  // no string or hydration assertion can see. Sum of RGB is ~83 for ink and 765 for white.
+  const amount = page
+    .locator("[data-ui]")
+    .filter({ hasText: "You received" })
+    .first()
+    .getByText("1,500.00 USDC")
+    .first();
+  const channels = (await amount.evaluate((el) => getComputedStyle(el).color))
+    .match(/\d+/g)!
+    .map(Number);
+  expect(channels.length, "the computed colour parses to three channels").toBe(3);
+  const sum = channels[0]! + channels[1]! + channels[2]!;
+  expect(sum, "the receipt amount must not be white on its own card").toBeLessThan(600);
 });
