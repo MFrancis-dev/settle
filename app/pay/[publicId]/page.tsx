@@ -309,7 +309,7 @@ function QuotePreview({ quote }: { quote: QuoteView }) {
   return (
     <div className="rounded-card border border-line bg-surface-sunk p-4">
       <h2 className="text-sm font-semibold text-ink">This is what the payment would be</h2>
-      <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+      <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 [&>div]:min-w-0">
         <div>
           <dt className="text-xs text-ink-faint">You send</dt>
           <dd className="mt-0.5 font-medium">
