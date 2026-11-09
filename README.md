@@ -116,7 +116,7 @@ app/ (routes, pages)   worker/ (two interval loops)
    lib/core/      pure: money, status, invoice math, address validators, ids
 ```
 
-- **One direction of dependency.** `app/` and `worker/` call `lib/server`; `lib/server` calls `lib/db`, `lib/oneclick` and `lib/near`; all of them call `lib/core`, which calls nothing. `lib/api`, `lib/ui` and `lib/wallet` are the browser's half and import `lib/core` only, so a client component cannot pull the database or a secret into the bundle.
+- **One direction of dependency.** `app/` and `worker/` call `lib/server`; `lib/server` calls `lib/db`, `lib/oneclick` and `lib/near`; all of them call `lib/core`, which calls nothing. `lib/api`, `lib/ui` and `lib/wallet` are the browser's half and import `lib/core` only, so a client component cannot pull the database or a secret into the bundle. The wallet library (`@near-wallet-selector/*`) is imported lazily by the shared provider rather than at module scope, so a page that only links to sign-in loads without it — landing First Load JS 414 kB → 150 kB, `/settings` 419 kB → 146 kB in the production build (#110).
 - **Statuses move forward or not at all.** `canTransition` is a forward-only table with `success`, `refunded`, `failed` and `expired` absorbing, and an invoice is always re-derived from _every_ attempt it has. An invoice never un-pays.
 - **One write path.** The worker, the status poll and `submit-tx` all write through `lib/server/sync.ts`, so three callers cannot disagree about what a status means.
 - **Every boundary is validated.** zod on request bodies, on `process.env` and on every 1Click response; `server-only` markers keep server modules out of the client bundle.

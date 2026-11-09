@@ -27,15 +27,18 @@ import {
 } from "react";
 import type { WalletSelector } from "@near-wallet-selector/core";
 
-import {
-  activeAccountOf,
-  activeWallet,
-  getWalletSelector,
-  showSignInModal,
-} from "@/lib/wallet/selector";
 import { signInBodyFromWallet, type MessageSigner, type SignInBody } from "@/lib/wallet/sign-in";
 import { payoutBodyFromWallet, type PayoutBody } from "@/lib/wallet/payout-signature";
 import { recipientFromLocation, WALLET_SUPPORTED } from "@/lib/ui/config";
+
+/**
+ * The single runtime edge into `@near-wallet-selector/*`. It is a dynamic import, not a static one,
+ * so a page that only *links* to sign-in (the landing hero, the header) keeps the whole wallet stack
+ * out of its first bundle — it is fetched as its own async chunk instead. `import type` above is
+ * erased at build, so nothing here pulls the package into the graph. #110
+ */
+const loadSelector = () => import("@/lib/wallet/selector");
+type SelectorModule = Awaited<ReturnType<typeof loadSelector>>;
 
 export type WalletPhase = "unsupported" | "loading" | "signed-out" | "signed-in";
 
@@ -77,8 +80,8 @@ export class WalletCancelled extends Error {
  * The store, not the modal's `onHide`, is the success signal — a wallet that signs in through a popup
  * or a redirect closes the modal itself, so "the modal closed" says nothing on its own.
  */
-function waitForAccount(selector: WalletSelector): Promise<string> {
-  const already = activeAccountOf(selector);
+function waitForAccount(selector: WalletSelector, selectorModule: SelectorModule): Promise<string> {
+  const already = selectorModule.activeAccountOf(selector);
   if (already) return Promise.resolve(already);
 
   return new Promise<string>((resolve, reject) => {
@@ -95,10 +98,12 @@ function waitForAccount(selector: WalletSelector): Promise<string> {
       if (active) settle(() => resolve(active.accountId));
     });
 
-    showSignInModal((reason) => {
-      // "wallet-navigation" means the user is mid-flow in their own wallet; keep waiting.
-      if (reason === "user-triggered") settle(() => reject(new WalletCancelled()));
-    }).catch(() => settle(() => reject(new Error("Could not open the wallet chooser."))));
+    selectorModule
+      .showSignInModal((reason) => {
+        // "wallet-navigation" means the user is mid-flow in their own wallet; keep waiting.
+        if (reason === "user-triggered") settle(() => reject(new WalletCancelled()));
+      })
+      .catch(() => settle(() => reject(new Error("Could not open the wallet chooser."))));
   });
 }
 
@@ -111,16 +116,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (!WALLET_SUPPORTED) return;
     let cancelled = false;
 
-    getWalletSelector().then((selector) => {
+    loadSelector().then(async (selectorModule) => {
+      const selector = await selectorModule.getWalletSelector();
       if (cancelled) return;
       selectorRef.current = selector;
       const restore = (id: string | null) => {
         setAccountId(id);
         setPhase(id ? "signed-in" : "signed-out");
       };
-      restore(activeAccountOf(selector));
+      restore(selectorModule.activeAccountOf(selector));
 
-      const signedIn = () => restore(activeAccountOf(selector));
+      const signedIn = () => restore(selectorModule.activeAccountOf(selector));
       const signedOut = () => restore(null);
       selector.on("signedIn", signedIn);
       selector.on("signedOut", signedOut);
@@ -136,9 +142,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const withSigner = useCallback(
     async <T,>(use: (signer: MessageSigner, account: string) => Promise<T>): Promise<T> => {
       if (!WALLET_SUPPORTED) throw new Error("This browser cannot sign in with a wallet.");
-      const selector = selectorRef.current ?? (await getWalletSelector());
-      const account = await waitForAccount(selector);
-      const wallet = await activeWallet(selector);
+      const selectorModule = await loadSelector();
+      const selector = selectorRef.current ?? (await selectorModule.getWalletSelector());
+      const account = await waitForAccount(selector, selectorModule);
+      const wallet = await selectorModule.activeWallet(selector);
       return use(wallet, account);
     },
     [],
@@ -161,7 +168,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const signOutWallet = useCallback(async (): Promise<void> => {
     const selector = selectorRef.current;
     if (!selector) return;
-    const wallet = await activeWallet(selector);
+    const selectorModule = await loadSelector();
+    const wallet = await selectorModule.activeWallet(selector);
     await wallet.signOut();
     setAccountId(null);
     setPhase("signed-out");
