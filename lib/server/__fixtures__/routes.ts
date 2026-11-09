@@ -160,6 +160,11 @@ function optionals(options: SignOptions): { recipient?: string; nonce?: string }
 /**
  * Sign a message the way a wallet does: Borsh payload, `sha256` over those exact bytes, base64
  * signature. The output is what `verifyNep413SignedMessage` rebuilds and checks.
+ *
+ * This does **not** register the nonce with the challenge store, so a body built here has a nonce
+ * `verifySigned` will refuse as never-issued. That is deliberate — it is the primitive the
+ * replay/anti-forgery tests use to prove the guard bites. Anything that should verify goes through
+ * `signedFields` instead.
  */
 export function signClaims(
   signer: Signer,
@@ -182,20 +187,39 @@ export function signClaims(
   };
 }
 
-export function signInBody(signer: Signer, options: SignOptions = {}) {
+/**
+ * A signed body whose nonce the server *also* minted — what a real client produces after
+ * `GET /api/auth/challenge` (#109). The nonce is registered with the harness's challenge store before
+ * it is signed, so `verifySigned` sees a live challenge rather than a client-invented one.
+ */
+export function signedFields(
+  deps: ServerDeps,
+  signer: Signer,
+  options: SignOptions & { message: string },
+): SignedMessageFields {
+  const fields = signClaims(signer, options);
+  deps.nonces.issue(fields.nonce);
+  return fields;
+}
+
+export function signInBody(deps: ServerDeps, signer: Signer, options: SignOptions = {}) {
   return {
-    ...signClaims(signer, { message: options.message ?? "Settle sign-in", ...optionals(options) }),
+    ...signedFields(deps, signer, {
+      message: options.message ?? "Settle sign-in",
+      ...optionals(options),
+    }),
     accountId: signer.accountId,
   };
 }
 
 export function payoutBody(
+  deps: ServerDeps,
   signer: Signer,
   fields: { assetId: string; chain: string; address: string },
   options: SignOptions = {},
 ) {
   return {
-    ...signClaims(signer, {
+    ...signedFields(deps, signer, {
       message: options.message ?? payoutMessage(fields.chain, fields.address),
       ...optionals(options),
     }),
@@ -404,7 +428,7 @@ export async function createRouteHarness(options: RouteHarnessOptions = {}): Pro
     },
 
     async cookieFor(signer) {
-      const signedIn = await signIn(deps, signInBody(signer));
+      const signedIn = await signIn(deps, signInBody(deps, signer));
       // The `Set-Cookie` value up to the first attribute is exactly a `Cookie:` pair.
       return (signedIn.cookie.split(";")[0] ?? "").trim();
     },

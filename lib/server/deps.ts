@@ -20,6 +20,7 @@ import { isDemoMode, parseEnv, type Env } from "./env-schema";
 import { createNonceStore, type NonceStore } from "./nonces";
 import {
   AUTH_LIMIT,
+  CHALLENGE_LIMIT,
   createRateLimiter,
   QUOTE_LIMIT,
   STATUS_LIMIT,
@@ -44,6 +45,8 @@ export interface ServerDeps {
   readonly statusLimits: RateLimiter;
   /** The brake on signed-in writes (S7.7): sign-in, payout change, invoice create/cancel, export. */
   readonly authLimits: RateLimiter;
+  /** The brake on the unauthenticated challenge mint (`GET /api/auth/challenge`, S7.12 / #109). */
+  readonly challengeLimits: RateLimiter;
   /** `url` is `NEAR_RPC_URL`; the reads below fail closed with `not_configured` when it is unset. */
   readonly nearRpc: NearRpcConfig;
   /** Override for the USDC-on-NEAR contract id; otherwise resolved from the token list. */
@@ -115,6 +118,7 @@ export function createServerDeps(config: ServerDepsConfig): ServerDeps {
     quoteLimits: createRateLimiter({ ...QUOTE_LIMIT, now }),
     statusLimits: createRateLimiter({ ...STATUS_LIMIT, now }),
     authLimits: createRateLimiter({ ...AUTH_LIMIT, now }),
+    challengeLimits: createRateLimiter({ ...CHALLENGE_LIMIT, now }),
     nearRpc,
     usdcContractId: env.USDC_CONTRACT_ID ?? null,
     managerPublicKey: managerKeyFor(env),

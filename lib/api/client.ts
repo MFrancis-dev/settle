@@ -7,12 +7,18 @@
  * implementation is injected because the tests (and the offline demo) hand in a scripted one.
  */
 
-import type { CreateInvoiceInput, DemoOutcome, PayQuoteInput } from "@/lib/core/schemas";
+import type {
+  ChallengeIntent,
+  CreateInvoiceInput,
+  DemoOutcome,
+  PayQuoteInput,
+} from "@/lib/core/schemas";
 import type { InvoiceStatus } from "@/lib/core/status";
 import type { SignInBody } from "@/lib/wallet/sign-in";
 import type { PayoutBody } from "@/lib/wallet/payout-signature";
 import type {
   ApiErrorCode,
+  AuthChallenge,
   DemoSessionView,
   DemoSimulationView,
   InvoiceDetail,
@@ -82,6 +88,8 @@ export class ApiError extends Error {
 export interface Api {
   signIn(body: SignInBody): Promise<SignedIn>;
   signOut(): Promise<void>;
+  /** A fresh server-issued nonce to sign, for a wallet sign-in or a payout change (#109). */
+  authChallenge(intent: ChallengeIntent): Promise<AuthChallenge>;
   me(): Promise<MeView>;
   tokens(): Promise<TokenList>;
   invoices(opts?: { status?: InvoiceStatus; limit?: number }): Promise<InvoiceView[]>;
@@ -147,6 +155,8 @@ export function createApi(fetchImpl: FetchLike): Api {
   return {
     signIn: (body) => call<SignedIn>("/api/session", { method: "POST", body }),
     signOut: () => call<void>("/api/session", { method: "DELETE" }),
+    authChallenge: (intent) =>
+      call<AuthChallenge>(`/api/auth/challenge?intent=${encodeURIComponent(intent)}`),
     me: () => call<MeView>("/api/me"),
     tokens: () => call<TokenList>("/api/tokens"),
     invoices: (opts) => {

@@ -53,6 +53,7 @@ No smart contract in the MVP (stretch: receipt registry, §10).
 | Route                                                     | Auth                        | Purpose                                                                                  |
 | --------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
 | `POST /api/session`                                       | NEP-413 message             | Sign in; HTTP-only cookie                                                                |
+| `GET /api/auth/challenge`                                 | none (nonce is not a cred)  | Mint the single-use nonce a sign-in or payout signature has to cover                     |
 | `GET /api/me`                                             | session                     | Profile + payout destination                                                             |
 | `GET /api/payout`                                         | session                     | Current payout destination (what the settings page shows before it asks for a signature) |
 | `PUT /api/payout`                                         | session + **fresh** NEP-413 | Set/change payout destination; logs change                                               |
@@ -227,11 +228,11 @@ Dry-run previews are not stored.
 
 ## 5. Flows
 
-**Onboarding:** wallet sign-in → `POST /api/session` (NEP-413) → default payout = USDC on NEAR to the account → storage check (3.5).
+**Onboarding:** wallet sign-in → `GET /api/auth/challenge` (a nonce this process minted) → `POST /api/session` (NEP-413 signed over it) → default payout = USDC on NEAR to the account → storage check (3.5).
 
 **Payment:** freelancer creates invoice → client opens link → picks token + refund address → optional dry preview → "Get payment address" → real quote → verify → attempt stored → client sends → worker polls → `paid` → receipts.
 
-**Payout change:** fresh NEP-413 signature → validate address twice → new `payout_destinations` row, old one inactive → only new quotes use it → banner on dashboard for 7 days.
+**Payout change:** `GET /api/auth/challenge` → fresh NEP-413 signature over it and over the new address → validate address twice → new `payout_destinations` row, old one inactive → only new quotes use it → banner on dashboard for 7 days.
 
 ---
 
@@ -240,6 +241,7 @@ Dry-run previews are not stored.
 | Threat                                  | Control                                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Hijacked session changes payout address | Fresh NEP-413 signature required; change log; snapshot per attempt; dashboard banner      |
+| A captured signature replayed           | The nonce is minted by `GET /api/auth/challenge` and spent on first use, dead after 5 min |
 | Tampered 1Click response                | `verifyQuoteSignature()` before display                                                   |
 | Fake "paid"                             | Status only from 1Click, never from the client                                            |
 | Invoice enumeration                     | Unguessable `public_id`; minimal public data; a malformed id answers as an unknown one    |

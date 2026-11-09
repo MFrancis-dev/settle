@@ -7,6 +7,7 @@ import { checkSignedMessage, requireSigned, verifySigned } from "./signature";
 import {
   createRouteHarness,
   signClaims,
+  signedFields,
   type RouteHarness,
   type Signer,
 } from "./__fixtures__/routes";
@@ -23,8 +24,10 @@ afterAll(async () => {
   await harness?.close();
 });
 
+/** A body over a nonce the challenge store has been told about — what a client holds after #109. */
 function signed(overrides: Partial<SignedMessageFields> = {}): SignedMessageFields {
-  return { ...signClaims(signer, { message: "Settle sign-in" }), ...overrides };
+  const fields = signedFields(harness.deps, signer, { message: "Settle sign-in" });
+  return { ...fields, ...overrides };
 }
 
 describe("signed message checks", () => {
@@ -58,12 +61,21 @@ describe("signed message checks", () => {
   });
 
   it("refuses to spend the same nonce twice", async () => {
-    const body = signClaims(signer, { message: "Settle sign-in" });
+    const body = signedFields(harness.deps, signer, { message: "Settle sign-in" });
     const first = await checkSignedMessage(harness.deps, body, { accountId: signer.accountId });
     const second = await checkSignedMessage(harness.deps, body, { accountId: signer.accountId });
 
     expect(first.valid).toBe(true);
     expect(second).toEqual({ valid: false, reason: "replayed" });
+  });
+
+  it("refuses a nonce it never issued", async () => {
+    // #109: a valid signature over a nonce the client invented on its own is refused, because only a
+    // challenge this process minted counts as fresh. `signClaims` signs without registering the nonce.
+    const body = signClaims(signer, { message: "Settle sign-in" });
+    const result = await checkSignedMessage(harness.deps, body, { accountId: signer.accountId });
+
+    expect(result).toEqual({ valid: false, reason: "replayed" });
   });
 
   it("requires the signed text to quote what the request asks for", async () => {
@@ -80,7 +92,7 @@ describe("signed message checks", () => {
   it("accepts the message when it matches exactly", async () => {
     const result = await verifySigned(
       harness.deps,
-      signClaims(signer, { message: "Settle payout change to new.near on near" }),
+      signedFields(harness.deps, signer, { message: "Settle payout change to new.near on near" }),
       { accountId: signer.accountId, expectedMessage: "Settle payout change to new.near on near" },
     );
 

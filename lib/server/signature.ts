@@ -1,6 +1,6 @@
 /**
- * The one place a signed message is checked: NEP-413 validity + account binding + single-use nonce.
- * Roadmap: S3.1, S3.2 · Spec: ARCHITECTURE.md §5, §6
+ * The one place a signed message is checked: NEP-413 validity + account binding + server-issued nonce.
+ * Roadmap: S3.1, S3.2, S7.12 (#109) · Spec: ARCHITECTURE.md §5, §6
  *
  * A NEP-413 payload proves *something* was signed; three more facts have to be established before a
  * handler can act on it — the key that signed it belongs to the account we think it does, the message
@@ -30,10 +30,12 @@ export type SignedResult =
 
 /**
  * Parse the signed fields out of a request body (so a malformed body is a 400, not a 401), then verify
- * signature, recipient, account binding and nonce reuse.
+ * signature, recipient, account binding and that the nonce is a live challenge this process issued.
  *
- * Freshness comes from the nonce store rather than a timestamp: a NEP-413 message only carries
- * `meta.timestamp` if the wallet puts it there, and Settle cannot require that of every wallet.
+ * Freshness is the challenge store's job rather than a timestamp: a NEP-413 message only carries
+ * `meta.timestamp` if the wallet puts it there, and Settle cannot require that of every wallet. So a
+ * nonce counts only if `GET /api/auth/challenge` minted it and it has not been spent or aged out —
+ * which is what makes a captured sign-in body useless once its window passes, not merely once used.
  */
 export async function checkSignedMessage(
   deps: ServerDeps,
@@ -56,7 +58,7 @@ export async function verifySigned(
   // Only the signed fields go to the verifier: it rebuilds the Borsh payload from them, and the
   // route's extra fields (account id, new address) must not look like part of that payload.
   // `maxAgeMs` is not passed on purpose — the standard payload carries no timestamp, so the honest
-  // freshness signal is the single-use nonce below, not a check this shape can never satisfy.
+  // freshness signal is the issued-challenge check below, not a check this shape can never satisfy.
   const verified = verifyNep413SignedMessage(signed, {
     expectedRecipient: deps.expectedRecipient,
     accountPublicKeys: keys,
@@ -67,6 +69,8 @@ export async function verifySigned(
     return { valid: false, reason: "message_mismatch" };
   }
 
+  // Not a live challenge this process issued — spent, aged out, or never minted at all. The reason
+  // code stays `replayed` because the caller's remedy is the same either way: get a fresh challenge.
   if (!deps.nonces.use(verified.claims.nonce)) {
     return { valid: false, reason: "replayed" };
   }

@@ -31,7 +31,9 @@ afterAll(async () => {
 
 describe("POST /api/session", () => {
   it("signs a first-time account in and sets the session cookie", async () => {
-    const response = await POST(apiRequest("/api/session", { body: signInBody(signer) }));
+    const response = await POST(
+      apiRequest("/api/session", { body: signInBody(harness.deps, signer) }),
+    );
     const body = await jsonOf(response);
 
     expect(response.status).toBe(201);
@@ -48,8 +50,12 @@ describe("POST /api/session", () => {
 
   it("signs a returning account in again without creating a second user", async () => {
     const account = harness.newSigner();
-    const first = await POST(apiRequest("/api/session", { body: signInBody(account) }));
-    const second = await POST(apiRequest("/api/session", { body: signInBody(account) }));
+    const first = await POST(
+      apiRequest("/api/session", { body: signInBody(harness.deps, account) }),
+    );
+    const second = await POST(
+      apiRequest("/api/session", { body: signInBody(harness.deps, account) }),
+    );
 
     expect(first.status).toBe(201);
     expect(await jsonOf(first)).toMatchObject({ nearAccountId: account.accountId, isNew: true });
@@ -95,7 +101,9 @@ describe("POST /api/session", () => {
 
   it("refuses a signed message from a key the account does not own", async () => {
     const stranger = harness.foreignSigner();
-    const response = await POST(apiRequest("/api/session", { body: signInBody(stranger) }));
+    const response = await POST(
+      apiRequest("/api/session", { body: signInBody(harness.deps, stranger) }),
+    );
 
     expect(response.status).toBe(401);
     expect(await errorOf(response)).toMatchObject({
@@ -123,7 +131,7 @@ describe("POST /api/session", () => {
 
   it("refuses a captured sign-in body replayed a second time", async () => {
     const replayed = harness.newSigner();
-    const body = signInBody(replayed);
+    const body = signInBody(harness.deps, replayed);
 
     expect((await POST(apiRequest("/api/session", { body }))).status).toBe(201);
     const second = await POST(apiRequest("/api/session", { body }));
@@ -132,9 +140,25 @@ describe("POST /api/session", () => {
     expect((await errorOf(second)).details).toEqual({ reason: "replayed" });
   });
 
+  it("refuses a sign-in whose nonce the server never issued (#109)", async () => {
+    // The whole reason for the challenge endpoint: a signature made over a client-invented nonce is
+    // worthless even the first time it is seen, because only a nonce `GET /api/auth/challenge` minted
+    // counts as fresh. `signClaims` signs without registering the nonce with the challenge store.
+    const forged = harness.newSigner();
+    const body = {
+      ...signClaims(forged, { message: "Settle sign-in" }),
+      accountId: forged.accountId,
+    };
+
+    const response = await POST(apiRequest("/api/session", { body }));
+
+    expect(response.status).toBe(401);
+    expect((await errorOf(response)).details).toEqual({ reason: "replayed" });
+  });
+
   it("does not set a cookie when the signature is rejected", async () => {
     const response = await POST(
-      apiRequest("/api/session", { body: signInBody(harness.foreignSigner()) }),
+      apiRequest("/api/session", { body: signInBody(harness.deps, harness.foreignSigner()) }),
     );
 
     expect(response.headers.get("Set-Cookie")).toBeNull();

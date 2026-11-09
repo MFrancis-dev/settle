@@ -12,6 +12,8 @@ import "./buffer-global";
 
 import type { SignedMessage } from "@near-wallet-selector/core";
 
+import { signInMessage } from "@/lib/core/sign-in-message";
+
 /** NEP-413 fixes the nonce at exactly 32 bytes; the payload layout has no length prefix for it. */
 export const NONCE_BYTES = 32;
 
@@ -42,13 +44,7 @@ export interface MessageSigner {
   }): Promise<SignedMessage | void>;
 }
 
-/**
- * What the human sees in the wallet's dialog. It names the app and the host, because the signature is
- * only meaningful for one of them and the wallet cannot tell them apart any other way.
- */
-export function signInMessage(recipient: string): string {
-  return `Settle sign-in for ${recipient}`;
-}
+export { signInMessage };
 
 /** 32 random bytes from the caller's source of randomness (`crypto.getRandomValues` in the browser). */
 export function createNonceBytes(
@@ -58,21 +54,29 @@ export function createNonceBytes(
 }
 
 /**
- * Ask the connected wallet to sign a fresh NEP-413 message and return the request body.
+ * Ask the connected wallet to sign a NEP-413 message and return the request body.
  *
  * The wallet returns `publicKey` and `signature` already in the transport form the verifier wants
  * (`ed25519:` + base58, base64 signature), so they are passed through unchanged — re-encoding here
  * would be a second place the two sides could drift.
+ *
+ * `nonce` is the server-issued challenge from `GET /api/auth/challenge` (#109): the wallet signs a
+ * nonce Settle minted, so a captured body dies with its window instead of verifying forever. When it
+ * is omitted the caller mints one locally — the pure-verification unit tests take that path, and it
+ * is what a caller with no challenge endpoint would do.
  */
 export async function signInBodyFromWallet(deps: {
   signer: MessageSigner;
   recipient: string;
+  nonce?: string;
   random?: (bytes: Uint8Array) => Uint8Array;
 }): Promise<SignInBody> {
   const { signer, recipient } = deps;
   const message = signInMessage(recipient);
-  const nonceBytes = createNonceBytes(deps.random);
-  const nonceBuffer = Buffer.from(nonceBytes);
+  const nonceBuffer =
+    deps.nonce === undefined
+      ? Buffer.from(createNonceBytes(deps.random))
+      : Buffer.from(deps.nonce, "base64");
 
   const signed = await signer.signMessage({ message, recipient, nonce: nonceBuffer });
   if (!signed || !signed.accountId || !signed.signature || !signed.publicKey) {
