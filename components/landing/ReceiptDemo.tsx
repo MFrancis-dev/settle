@@ -8,10 +8,7 @@ import { Mark } from "@/components/ui/mark";
 
 export function ReceiptDemo() {
   return (
-    <div
-      data-ui
-      className="rounded-card bg-surface p-6 sm:p-7"
-    >
+    <div data-ui className="rounded-card bg-surface p-6 sm:p-7">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Mark />

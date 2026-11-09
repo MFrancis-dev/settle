@@ -205,9 +205,7 @@ function Attempt({ attempt }: { attempt: AttemptView }) {
         ) : null}
         {attempt.refunded ? (
           <div>
-            <dt className="text-xs text-ink-faint">
-              Sent back to the client
-            </dt>
+            <dt className="text-xs text-ink-faint">Sent back to the client</dt>
             <dd className="mt-0.5">
               <Money money={attempt.refunded} />
               {attempt.refundReason ? (

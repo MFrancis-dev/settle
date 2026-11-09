@@ -187,7 +187,9 @@ function NavLink({
       href={href}
       aria-current={active ? "page" : undefined}
       className={`flex items-center gap-2.5 rounded-control px-3 py-1.5 text-sm ${
-        active ? "bg-control font-medium text-ink" : "text-ink-muted hover:bg-control hover:text-ink"
+        active
+          ? "bg-control font-medium text-ink"
+          : "text-ink-muted hover:bg-control hover:text-ink"
       }`}
     >
       <Icon className={active ? "text-ink" : "text-ink-faint"} />
@@ -233,9 +235,7 @@ function MobileSheet({
             onClick={onClose}
             aria-current={pathname.startsWith(item.href) ? "page" : undefined}
             className={`flex items-center gap-3 rounded-control px-3 py-2.5 text-base ${
-              pathname.startsWith(item.href)
-                ? "bg-control font-medium text-ink"
-                : "text-ink-muted"
+              pathname.startsWith(item.href) ? "bg-control font-medium text-ink" : "text-ink-muted"
             }`}
           >
             <item.icon className="text-ink-faint" />
@@ -247,7 +247,9 @@ function MobileSheet({
         <p className="truncate text-sm text-ink-muted" title={nearAccountId}>
           {displayName}
         </p>
-        {isDemo ? <p className="text-xs text-ink-faint">Demo mode — nothing here moves money.</p> : null}
+        {isDemo ? (
+          <p className="text-xs text-ink-faint">Demo mode — nothing here moves money.</p>
+        ) : null}
         <SignOut onDone={onClose} />
       </div>
     </div>
@@ -319,7 +321,12 @@ function InvoiceIcon({ className = "" }: { className?: string }) {
 function SlidersIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden className={className}>
-      <path d="M2 5h8M12.5 5H14M2 11h2M6.5 11H14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M2 5h8M12.5 5H14M2 11h2M6.5 11H14"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
       <circle cx="11" cy="5" r="1.6" stroke="currentColor" strokeWidth="1.4" />
       <circle cx="5" cy="11" r="1.6" stroke="currentColor" strokeWidth="1.4" />
     </svg>
@@ -329,7 +336,12 @@ function SlidersIcon({ className = "" }: { className?: string }) {
 function MenuIcon() {
   return (
     <svg viewBox="0 0 20 20" width="20" height="20" fill="none" aria-hidden>
-      <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M3 6h14M3 10h14M3 14h14"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -337,7 +349,12 @@ function MenuIcon() {
 function CloseIcon() {
   return (
     <svg viewBox="0 0 20 20" width="20" height="20" fill="none" aria-hidden>
-      <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M5 5l10 10M15 5L5 15"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

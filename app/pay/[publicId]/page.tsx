@@ -244,8 +244,8 @@ export default function Page() {
                       </Button>
                     ) : null}
                     <p className="text-xs text-ink-faint">
-                      Showing the price starts no payment and creates no address. Settle holds it for
-                      a few minutes, then re-quotes — it never charges an old price.
+                      Showing the price starts no payment and creates no address. Settle holds it
+                      for a few minutes, then re-quotes — it never charges an old price.
                     </p>
                   </div>
                 </div>
