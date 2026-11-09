@@ -41,18 +41,18 @@ pnpm demo     # seeds a story, then starts the app on http://localhost:3000
 
 Open **http://localhost:3000/demo**. No `.env`, no keys, no wallet, no external database, no network: with `DATABASE_URL` unset the app runs on PGlite in `./.pglite`, and with `DEMO_MODE` set the 1Click calls are answered from a recording instead of a partner service. Every screen says "Demo mode — nothing on this page moves money".
 
-| If you want to see…                           | Do this                                                                                                              |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| the whole story at once                       | `/demo` — one freelancer, ten invoices, one per status the app can reach                                             |
-| **a payment complete, with nobody watching**  | `/demo` → any _Awaiting payment_ invoice → "The client sent it" three times → open the receipt                       |
-| a short payment, with the numbers             | the same invoice → "It arrived short" → the pay page states what arrived and what is still owed                      |
-| a refund, and the reason recorded             | "Send it back" — the invoice goes back to _Awaiting payment_                                                         |
-| what a client sees, with no account           | the invoice's own pay link, printed on `/demo`                                                                       |
-| why some networks are missing from the picker | the footnote under the token list — every excluded network is named, with its reason                                 |
-| the exact figures recorded at settlement      | the receipt link, or `/receipt/<token>?attempt=<id>`                                                                 |
-| how a payout change is authorised             | `/settings` — typed twice, plus a fresh wallet signature (real mode)                                                 |
-| what a payout change does _not_ do            | `/settings` → save a new address while a quote is open → the banner counts the payments still pointed at the old one |
-| the rules a change has to satisfy             | `ARCHITECTURE_ESSENTIALS.md`, then `ARCHITECTURE.md`                                                                 |
+| If you want to see…                           | Do this                                                                                                                      |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| the whole story at once                       | `/demo` — one freelancer, ten invoices, one per status the app can reach                                                     |
+| **a payment complete, with nobody watching**  | `/demo` → any _Awaiting payment_ invoice → "The client sent it" three times → open the receipt                               |
+| a short payment, with the numbers             | the same invoice → "It arrived short" → the pay page states what arrived and what is still owed                              |
+| a refund, and the reason recorded             | "Send it back" — the invoice goes back to _Awaiting payment_                                                                 |
+| what a client sees, with no account           | the invoice's own pay link, printed on `/demo`                                                                               |
+| why some networks are missing from the picker | the footnote under the token list — every excluded network is named, with its reason                                         |
+| the exact figures recorded at settlement      | the receipt link, `/receipt/<token>?attempt=<id>` — or a bare `/receipt/<token>`, which the unique token resolves on its own |
+| how a payout change is authorised             | `/settings` — typed twice, plus a fresh wallet signature (real mode)                                                         |
+| what a payout change does _not_ do            | `/settings` → save a new address while a quote is open → the banner counts the payments still pointed at the old one         |
+| the rules a change has to satisfy             | `ARCHITECTURE_ESSENTIALS.md`, then `ARCHITECTURE.md`                                                                         |
 
 Restart the story with the button on `/demo`, or from a shell with `pnpm demo:seed --fresh`. Without `--fresh` a story that is already there is left alone, so restarting mid-talk keeps the payments you have already walked.
 
@@ -96,7 +96,7 @@ The cases where a payment goes wrong are written down, not left to a generic err
 ### The tests
 
 ```bash
-pnpm test     # 635 unit + route + component tests (plus 1 skipped), offline, against PGlite in memory
+pnpm test     # 641 unit + route + component tests (plus 1 skipped), offline, against PGlite in memory
 pnpm e2e      # 4 Playwright tests that build the app (`pnpm demo:prod`) and drive it in a real browser
 ```
 
@@ -127,7 +127,7 @@ app/ (routes, pages)   worker/ (two interval loops)
 
 ## Limitations, honestly
 
-- **Web app deployed; the worker is not.** The Next.js app is live on Vercel (https://settle-wine-alpha.vercel.app) in **real mode** against a hosted Postgres — landing, NEAR-wallet sign-in, invoice create / list / dashboard / receipt — and `GET /api/health` returns `{"status":"ok","demo":false,"database":"ok"}` from the running deployment, not only from a local boot. Two things that URL does not do yet, stated plainly: **no live payment quote**, because the vendor `ONECLICK_JWT` (S0.8) is not in hand, so the pay page fails closed before it prices anything; and **no background worker**, because a serverless host cannot keep the long-lived 5 s poll / 60 s expire process. That second limit is exactly why `DEPLOY.md` §6 concluded that a two-process host is a paid decision — Render's free-plan page says free plans do not support background workers, and usage-based hosts bill a worker that never idles. A full live payment therefore still needs a host that runs both processes plus the JWT. The offline evidence is unchanged: `pnpm demo`, the E2E browser journey — which drives a **production build** (`pnpm build` + `pnpm start`, the same two commands a host runs) rather than `next dev` — and 635 offline tests. `DEPLOY.md` also records two constraints that were measured, not assumed: PGlite is single-process — two processes on one directory lost half their writes and killed one outright — so a hosted Settle needs Postgres; and demo mode deliberately refuses an `https://` URL, so the hosted app runs **real mode** (decision `SD-8`) and the demo story lives in `pnpm demo` and the video.
+- **Web app deployed; the worker is not.** The Next.js app is live on Vercel (https://settle-wine-alpha.vercel.app) in **real mode** against a hosted Postgres — landing, NEAR-wallet sign-in, invoice create / list / dashboard / receipt — and `GET /api/health` returns `{"status":"ok","demo":false,"database":"ok"}` from the running deployment, not only from a local boot. Two things that URL does not do yet, stated plainly: **no live payment quote**, because the vendor `ONECLICK_JWT` (S0.8) is not in hand, so the pay page fails closed before it prices anything; and **no background worker**, because a serverless host cannot keep the long-lived 5 s poll / 60 s expire process. That second limit is exactly why `DEPLOY.md` §6 concluded that a two-process host is a paid decision — Render's free-plan page says free plans do not support background workers, and usage-based hosts bill a worker that never idles. A full live payment therefore still needs a host that runs both processes plus the JWT. The offline evidence is unchanged: `pnpm demo`, the E2E browser journey — which drives a **production build** (`pnpm build` + `pnpm start`, the same two commands a host runs) rather than `next dev` — and 641 offline tests. `DEPLOY.md` also records two constraints that were measured, not assumed: PGlite is single-process — two processes on one directory lost half their writes and killed one outright — so a hosted Settle needs Postgres; and demo mode deliberately refuses an `https://` URL, so the hosted app runs **real mode** (decision `SD-8`) and the demo story lives in `pnpm demo` and the video.
 - **No test drives 1Click's real minimum.** The 400-with-`try at least N` shape is coded and tested against fixtures; provoking it live needs the partner JWT (S0.8, #11).
 - **The memo-chain list is ours.** 1Click does not publish which origins carry a memo requirement, so `MEMO_CHAIN_CODES` is flagged 🔍 unverified in `lib/core/address.ts`. Refusing those chains errs safe: an address Settle cannot check is not one it will send money back to.
 - **A region block is passed through, not recognised.** The vendor's own wording reaches the client; Settle does not match it against strings it guessed.
