@@ -23,10 +23,30 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
+  // OG/Twitter image URLs resolve against this; the hosted build sets PUBLIC_APP_URL, local demo
+  // falls back to the live deployment so a shared link still previews.
+  metadataBase: new URL(process.env.PUBLIC_APP_URL ?? "https://settle-wine-alpha.vercel.app"),
   title: { default: "Settle — invoice in dollars, paid in any token", template: "%s · Settle" },
   description:
     "Send an invoice in dollars. Your client pays from any token on any chain, and you get paid at the address you choose.",
   applicationName: "Settle",
+  openGraph: {
+    title: "Settle — invoice in dollars, paid in any token",
+    description:
+      "Your client pays from any token on any chain. Settle converts it and sends the exact amount to your address. Non-custodial.",
+    siteName: "Settle",
+    type: "website",
+    images: [
+      { url: "/pfp.png", width: 1024, height: 1024, alt: "Settle — an arrow settling onto a rule" },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Settle — invoice in dollars, paid in any token",
+    description:
+      "Your client pays from any token on any chain. You get paid the exact amount, at your own address.",
+    images: ["/pfp.png"],
+  },
 };
 
 /** Pinch-zoom stays enabled; the pay page is used on a phone in front of a client. */
