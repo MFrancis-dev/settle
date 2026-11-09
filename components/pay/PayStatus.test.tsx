@@ -89,6 +89,30 @@ describe("PayStatus", () => {
     expect(container.textContent).toContain("Send the difference");
   });
 
+  // 1Click measures a deposit as the running total on one address: a top-up completes the payment,
+  // and a total still short at the deadline is refunded whole. The client is told both, or the
+  // first sentence sends them to a wallet with the wrong expectation (S0.12, docs + live 2026-11-09).
+  it("tells a short payer that deposits add up, and what the deadline does", () => {
+    const { container } = render(
+      <PayStatus
+        status={view({
+          invoiceStatus: "underpaid",
+          attempt: attempt({
+            status: "underpaid",
+            deposited: near("1350000000000000000000000", "1.35"),
+            shortfall: near("1350000000000000000000000", "1.35"),
+          }),
+        })}
+      />,
+    );
+
+    const message = container.textContent ?? "";
+    expect(message).toContain("deposits add up");
+    expect(message).toContain("before the quote expires");
+    expect(message).toContain("everything you sent comes back");
+    expect(message).not.toContain("the shortfall comes back");
+  });
+
   it("shows no shortfall row once the full amount has landed", () => {
     render(
       <PayStatus

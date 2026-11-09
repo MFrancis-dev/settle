@@ -120,13 +120,19 @@ export function canCancel(status: InvoiceStatus): boolean {
 /**
  * One sentence for the client, in the language of money rather than of chains. `underpaid` says what
  * to do about it, because that is the state where the client still has a choice.
+ *
+ * The two halves of that choice are the vendor's, not ours: 1Click measures a deposit as the running
+ * total on one address ("as long as the total received stays under `minAmountIn`", docs Swap Types,
+ * re-read 2026-11-09), so topping up completes the payment, and a total that is still short at the
+ * deadline is refunded whole — which is why the sentence says *everything* comes back, not the
+ * shortfall. Freshness is bounded by the same deadline, hence "before the quote expires".
  */
 export function clientMessage(input: {
   status: InvoiceStatus;
   pollReason: "no_attempt" | "upstream_not_found" | "upstream_unreachable" | null;
 }): string {
   if (input.status === "underpaid") {
-    return "Less arrived than the invoice asked for. Send the difference — the exact amount is below — to this same address, or wait and the shortfall comes back to your refund address.";
+    return "Less arrived than the invoice asked for. Send the difference — the exact amount is below — to this same address before the quote expires; deposits add up. If not enough has arrived by the deadline, everything you sent comes back to your refund address.";
   }
   if (input.status === "overpaid") {
     return "More than one payment reached this invoice, so the extra is on its way back to the refund address you gave.";

@@ -104,7 +104,7 @@ export default function Page() {
 
   /** One place turns a refusal into words, so both buttons answer the same way. */
   function refused(error: unknown) {
-    const failure = describeQuoteFailure(error, chosen);
+    const failure = describeQuoteFailure(error, invoice.data?.total ?? null);
     if (failure.reopen) void invoice.refetch();
     setFailure(failure.message);
   }

@@ -14,7 +14,6 @@
  */
 
 import { ApiError } from "@/lib/api/client";
-import type { TokenOption } from "@/lib/api/types";
 import { formatAmount, isBaseUnitsString, parseBaseUnits } from "@/lib/core/money";
 
 export interface QuoteFailure {
@@ -28,7 +27,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export function describeQuoteFailure(error: unknown, token: TokenOption | null): QuoteFailure {
+export function describeQuoteFailure(
+  error: unknown,
+  payout: { symbol: string | null; decimals: number | null } | null,
+): QuoteFailure {
   const shown: QuoteFailure = { message: "", reopen: false };
 
   if (!(error instanceof ApiError)) {
@@ -60,16 +62,21 @@ export function describeQuoteFailure(error: unknown, token: TokenOption | null):
       return shown;
     }
 
-    // S7.6: the exchange's own minimum, in the token the client would have sent.
+    // S7.6 + S0.13: the floor bounds the amount the vendor was asked to *deliver*, so
+    // `try at least N` is in the payout asset's base units, not the token being sent. Measured live
+    // on 2026-11-09: a BTC→USDC route refused 5 USDC with `try at least 6232326` and accepted
+    // 6232327, while quoting that same invoice at 0.00008799 BTC. Formatted with the origin token's
+    // decimals it would name an amount ~700× too large, in an asset the client never receives.
     case "amount_too_low": {
       const minimum = details?.minimumBaseUnits;
+      const decimals = payout?.decimals ?? null;
       const smallest =
-        typeof minimum === "string" && isBaseUnitsString(minimum) && token
-          ? `${formatAmount(parseBaseUnits(minimum), token.decimals)} ${token.symbol}`
+        typeof minimum === "string" && isBaseUnitsString(minimum) && decimals !== null
+          ? `${formatAmount(parseBaseUnits(minimum), decimals)} ${payout?.symbol ?? "that asset"}`
           : null;
       shown.message = smallest
-        ? `The exchange will not convert less than ${smallest} on this route, and this invoice works out to less than that. Nothing was created. Ask the seller for a larger invoice, or pick a token whose minimum this total clears.`
-        : "The exchange will not convert an amount this small on this route. Nothing was created. Ask the seller for a larger invoice, or pick another token.";
+        ? `The exchange will not deliver less than ${smallest} on this route, and this invoice asks for less than that. Nothing was created. Ask the seller for a larger invoice, or pick a token whose route accepts this amount.`
+        : "The exchange will not deliver an amount this small on this route. Nothing was created. Ask the seller for a larger invoice, or pick another token.";
       return shown;
     }
 
