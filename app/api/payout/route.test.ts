@@ -43,7 +43,7 @@ async function openQuote(publicId: string): Promise<void> {
 
 /** A destination-change body, signed by `signer` over the message the route expects. */
 function change(signer: Signer, address: string, chain = "near", assetId = USDC_ON_NEAR) {
-  return payoutBody(signer, { assetId, chain, address });
+  return payoutBody(harness.deps, signer, { assetId, chain, address });
 }
 
 describe("PUT /api/payout", () => {

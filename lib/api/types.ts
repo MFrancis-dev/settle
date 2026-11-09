@@ -12,7 +12,7 @@
  */
 
 import type { BaseUnits } from "@/lib/core/types";
-import type { DemoOutcome } from "@/lib/core/schemas";
+import type { ChallengeIntent, DemoOutcome } from "@/lib/core/schemas";
 import type { AttemptStatus, InvoiceStatus } from "@/lib/core/status";
 
 export interface MoneyView {
@@ -252,6 +252,20 @@ export interface SignedIn {
   nearAccountId: string;
   displayName: string;
   isNew: boolean;
+}
+
+/**
+ * A server-issued NEP-413 challenge (`GET /api/auth/challenge`, S7.12 / #109). The wallet signs the
+ * `nonce` set — not one it invented — so the signature carries a freshness promise the server made.
+ * `message` is the sign-in dialog wording for a `session` challenge and `null` for a `payout` one
+ * (whose message quotes the destination the client already holds).
+ */
+export interface AuthChallenge {
+  nonce: string;
+  recipient: string;
+  message: string | null;
+  expiresAt: string;
+  intent: ChallengeIntent;
 }
 
 export type ApiErrorCode =

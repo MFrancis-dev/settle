@@ -31,11 +31,16 @@ export async function payoutBodyFromWallet(deps: {
   signer: MessageSigner;
   recipient: string;
   destination: { assetId: string; chain: string; address: string };
+  /** The server-issued challenge nonce from `GET /api/auth/challenge` (#109); minted locally if absent. */
+  nonce?: string;
   random?: (bytes: Uint8Array) => Uint8Array;
 }): Promise<PayoutBody> {
   const { assetId, chain, address } = deps.destination;
   const message = payoutMessage(chain, address);
-  const nonceBuffer = Buffer.from(createNonceBytes(deps.random));
+  const nonceBuffer =
+    deps.nonce === undefined
+      ? Buffer.from(createNonceBytes(deps.random))
+      : Buffer.from(deps.nonce, "base64");
 
   const signed = await deps.signer.signMessage({
     message,

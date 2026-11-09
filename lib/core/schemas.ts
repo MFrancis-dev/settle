@@ -150,6 +150,17 @@ export const receiptQueryInput = z.object({
   token: z.string().min(16).max(128),
 });
 
+/**
+ * Which signature `GET /api/auth/challenge` is minting a nonce for (S7.12, #109). Only these two
+ * fixed intents exist, so the endpoint can never be asked to hand back arbitrary text to sign — it
+ * returns a nonce and, for a session, its own fixed dialog wording.
+ */
+export const challengeIntentInput = z.enum(["session", "payout"]);
+
+export const challengeQueryInput = z.object({
+  intent: challengeIntentInput,
+});
+
 /** `GET /api/invoices?status=paid&limit=10`. */
 export const invoiceListQueryInput = z.object({
   status: z.enum(INVOICE_STATUSES).optional(),
@@ -167,3 +178,4 @@ export type DemoOutcome = z.infer<typeof demoOutcomeInput>;
 export type DemoSimulateInput = z.infer<typeof demoSimulateInput>;
 export type ReceiptQueryInput = z.infer<typeof receiptQueryInput>;
 export type InvoiceListQueryInput = z.infer<typeof invoiceListQueryInput>;
+export type ChallengeIntent = z.infer<typeof challengeIntentInput>;

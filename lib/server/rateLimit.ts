@@ -92,6 +92,14 @@ export const STATUS_LIMIT = { capacity: 60, windowMs: 60_000 };
  */
 export const AUTH_LIMIT = { capacity: 10, windowMs: 60_000 };
 
+/**
+ * The unauthenticated challenge mint (`GET /api/auth/challenge`, S7.12 / #109). One is needed per
+ * sign-in attempt and per payout change, so a person on flaky mobile never hits it, while a script
+ * trying to pre-mint a stock of nonces — or to probe the endpoint — is capped well below what would
+ * fill the challenge store.
+ */
+export const CHALLENGE_LIMIT = { capacity: 30, windowMs: 60_000 };
+
 /** Consume one token from `limiter`, or throw the 429 the caller must answer with. */
 export function limit(limiter: RateLimiter, key: string): void {
   const decision = limiter.check(key);

@@ -27,9 +27,10 @@ import {
 } from "react";
 import type { WalletSelector } from "@near-wallet-selector/core";
 
-import { signInBodyFromWallet, type MessageSigner, type SignInBody } from "@/lib/wallet/sign-in";
+import { api } from "@/lib/api/client";
 import { payoutBodyFromWallet, type PayoutBody } from "@/lib/wallet/payout-signature";
-import { recipientFromLocation, WALLET_SUPPORTED } from "@/lib/ui/config";
+import { signInBodyFromWallet, type MessageSigner, type SignInBody } from "@/lib/wallet/sign-in";
+import { WALLET_SUPPORTED } from "@/lib/ui/config";
 
 /**
  * The single runtime edge into `@near-wallet-selector/*`. It is a dynamic import, not a static one,
@@ -47,8 +48,11 @@ interface WalletContextValue {
   /** The account the wallet reports, or null before sign-in. Not proof of a Settle session. */
   accountId: string | null;
   /**
-   * Open the chooser if needed, then ask the wallet to sign a fresh NEP-413 message for this host.
-   * Rejects when the user closes the chooser without picking a wallet.
+   * Ask Settle for a challenge, then ask the wallet to sign it.
+   *
+   * The challenge is fetched after the wallet is connected rather than on page load, so the five
+   * minutes it is good for are spent opening the chooser and signing, not sitting in a tab. Rejects
+   * when the user closes the chooser without picking a wallet.
    */
   signInBody(): Promise<SignInBody>;
   /**
@@ -138,7 +142,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  /** Connect if needed, then hand the active wallet to `use` for one signature. */
+  /**
+   * Connect if needed, then hand the active wallet to `use` for one signature.
+   * `use` fetches its own server challenge inside here on purpose: the chooser has been dealt with by
+   * the time the nonce is minted, so it is spent within its window (#109).
+   */
   const withSigner = useCallback(
     async <T,>(use: (signer: MessageSigner, account: string) => Promise<T>): Promise<T> => {
       if (!WALLET_SUPPORTED) throw new Error("This browser cannot sign in with a wallet.");
@@ -153,15 +161,28 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const signInBody = useCallback(
     () =>
-      withSigner((signer) => signInBodyFromWallet({ signer, recipient: recipientFromLocation() })),
+      withSigner(async (signer) => {
+        const challenge = await api.authChallenge("session");
+        return signInBodyFromWallet({
+          signer,
+          recipient: challenge.recipient,
+          nonce: challenge.nonce,
+        });
+      }),
     [withSigner],
   );
 
   const signPayoutChange = useCallback(
     (destination: { assetId: string; chain: string; address: string }) =>
-      withSigner((signer) =>
-        payoutBodyFromWallet({ signer, recipient: recipientFromLocation(), destination }),
-      ),
+      withSigner(async (signer) => {
+        const challenge = await api.authChallenge("payout");
+        return payoutBodyFromWallet({
+          signer,
+          recipient: challenge.recipient,
+          destination,
+          nonce: challenge.nonce,
+        });
+      }),
     [withSigner],
   );
 

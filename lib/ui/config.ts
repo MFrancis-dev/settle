@@ -18,15 +18,6 @@ export const NEAR_NETWORK: "mainnet" | "testnet" = networkSchema.parse(
   process.env.NEXT_PUBLIC_NEAR_NETWORK || undefined,
 );
 
-/**
- * The NEP-413 `recipient` field: the host the user is signing in to. The server compares it against
- * the host of `PUBLIC_APP_URL`, so reading it from the live origin keeps the two in step without
- * shipping a URL into the bundle.
- */
-export function recipientFromLocation(): string {
-  return window.location.hostname;
-}
-
 /** Wallet sessions and payouts are useless without a wallet, so the button degrades to disabled. */
 export const WALLET_SUPPORTED =
   typeof window !== "undefined" && Boolean(window.crypto?.getRandomValues);
