@@ -91,7 +91,7 @@ The cases where a payment goes wrong are written down, not left to a generic err
 - **the token the invoice already pays out in** — refused with `same_asset` _before_ a quote is asked for. The refusal deliberately does not print the seller's payout address: a pay link is public, and handing the destination to anyone holding one is the loss the app exists to prevent.
 - **a chain whose refund needs a memo** — refused with the reason stated (a refund sent without it is not recoverable), and the token picker lists every excluded network under it with the reason.
 - **below the exchange minimum** — the minimum is rendered in the token the client picked, not a bare "too low".
-- **rate limits** — quotes 6/min, status polls 60/min and the signed-in writes 10/min, all in-process token buckets, all answering `429` with `Retry-After`.
+- **rate limits** — quotes 6/min, status polls 60/min, the signed-in writes 10/min and the auth-challenge mint 30/min, all in-process token buckets, all answering `429` with `Retry-After`.
 
 ### The tests
 
