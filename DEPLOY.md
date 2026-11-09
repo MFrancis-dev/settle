@@ -228,3 +228,32 @@ database was created with the authenticated `neon` CLI and its **pooled** (`-poo
 `DATABASE_URL`; the two pre-existing Neon stores were left alone rather than shared, to keep schemas
 apart. Deployment protection was switched off with `vercel project protection disable --sso settle` —
 it defaults to a login wall, which would fail the "reachable by a judge" bar.
+
+### Re-deployed 2026-11-09, and how to tell a stale deployment from a current one
+
+The project is **not** connected to Git, so a merge does not deploy: `vercel deploy --prod --yes
+--scope accensa` from a clean checkout of `main` is the step, and it was last run on 2026-11-08 until
+the human asked for it again on 2026-11-09. By then five merged PRs were live in the repo and not on
+the URL.
+
+`/api/health` cannot detect that — it answers 200 for any build that can reach the database. Use a
+route that only exists in the newer artifact:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  'https://settle-wine-alpha.vercel.app/api/auth/challenge?intent=session'
+# 404 → the build predates PR #133 (S7.12). 200 → it carries the server-issued challenge.
+```
+
+Measured on 2026-11-09: **404 before**, **200 after** deploying `ab9d241`, the 200 carrying a 44-character
+nonce, the server's own `recipient` and a five-minute `expiresAt`. With it: `/api/health` →
+`200 {"status":"ok","demo":false,"database":"ok"}`, `/` → 200, `/demo` → 200, `/settings` → 307 to the
+sign-in redirect (the auth wall, not a deploy fault), no HTTP ≥ 400 on any asset the landing page
+loads, and no horizontal overflow at 390 px.
+
+**What only a browser found.** The landing page logged React error **#418** — the server's markup
+discarded and re-rendered on the client — because `WalletProvider` seeded its phase from a constant
+that reads `window`. `curl` cannot see it and the e2e suite did not open `/`. Fixed as S7.13 (#140)
+with a fifth Playwright test that asserts both the served HTML and a `pageerror`-free hydration. The
+lesson for this host: **a green health probe is not a verified deployment.** Check a route that only
+the new artifact has, then load the first screen a judge meets in a real browser and read its console.

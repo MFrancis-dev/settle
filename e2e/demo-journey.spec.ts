@@ -221,3 +221,31 @@ test("the outcomes off the happy path explain themselves", async ({ page, contex
   await expect(page).toHaveURL(/\/receipt\/.+attempt=/);
   await expect(page.getByText("Refunded to you").first()).toBeVisible();
 });
+
+/**
+ * The landing page is the first screen a judge meets and the one screen the journey above never
+ * opens. Its wallet button used to seed its state from `typeof window`, so the server sent
+ * "Wallet sign-in unavailable" (disabled) while the browser's first render sent "Sign in with your
+ * wallet": React error #418, the server's markup discarded, and a dead control in the HTML a screener
+ * reads. Found on the hosted deployment, not here. Roadmap: S7.13 · #140
+ */
+test("the landing page offers sign-in in its HTML and hydrates without a mismatch", async ({
+  page,
+  context,
+}) => {
+  // What curl — and an AI screener — is handed, before any JavaScript runs. Booleans rather than
+  // `toContain`, so a failure prints the finding instead of 40 kB of markup.
+  const served = await context.request.get("/");
+  expect(served.ok()).toBeTruthy();
+  const html = await served.text();
+  expect(html.includes("Sign in with your wallet"), "the HTML offers sign-in").toBe(true);
+  expect(html.includes("Wallet sign-in unavailable"), "the HTML does not deny it").toBe(false);
+
+  const thrown: string[] = [];
+  page.on("pageerror", (error) => thrown.push(error.message));
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Sign in with your wallet" }).first(),
+  ).toBeEnabled();
+  expect(thrown, "hydration must not throw the server's markup away").toEqual([]);
+});
