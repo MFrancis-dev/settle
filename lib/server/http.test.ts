@@ -168,7 +168,7 @@ describe("error envelope", () => {
     },
     {
       name: "OneClick amount too low",
-      thrown: new OneClickError("amount_too_low", 400, "min", "300001"),
+      thrown: new OneClickError("amount_too_low", 400, "min", { baseUnits: "300001" }),
       status: 400,
       code: "amount_too_low",
     },
@@ -209,6 +209,26 @@ describe("error envelope", () => {
       expect(typeof error.message).toBe("string");
     });
   }
+
+  // `lib/ui/quote-failure.ts` reads both keys, so this pair is the contract the pay screen is built
+  // on: 1Click states its floor in payout base units or in dollars, and only one half is ever filled.
+  it("carries whichever half of the minimum 1Click actually stated", async () => {
+    const inBaseUnits = await bodyOf(
+      errorResponse(new OneClickError("amount_too_low", 400, "min", { baseUnits: "6232326" })),
+    );
+    const inDollars = await bodyOf(
+      errorResponse(new OneClickError("amount_too_low", 400, "min", { usd: "100" })),
+    );
+
+    expect((inBaseUnits.error as { details: unknown }).details).toMatchObject({
+      minimumBaseUnits: "6232326",
+      minimumUsd: null,
+    });
+    expect((inDollars.error as { details: unknown }).details).toMatchObject({
+      minimumBaseUnits: null,
+      minimumUsd: "100",
+    });
+  });
 
   it("never leaks an unexpected error's message", async () => {
     const body = await bodyOf(errorResponse(new Error("connection string leaked")));

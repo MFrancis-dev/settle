@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { describe, expect, it } from "vitest";
 
-import { createOneClickClient, OneClickError, parseTooLowMinimum, type FetchLike } from "./client";
+import {
+  createOneClickClient,
+  OneClickError,
+  parseQuoteMinimum,
+  parseTooLowMinimum,
+  type FetchLike,
+} from "./client";
 
 const okSchema = z.object({ ok: z.boolean() }).passthrough();
 
@@ -85,6 +91,32 @@ describe("oneclick/client", () => {
     expect(parseTooLowMinimum("Amount is too low")).toBeUndefined();
   });
 
+  // Both texts here are verbatim from live 400s on 2026-11-09 (#135).
+  it("reads the floor from both refusal shapes 1Click uses", () => {
+    expect(parseQuoteMinimum("Amount is too low for bridge, try at least 6232326")).toStrictEqual({
+      baseUnits: "6232326",
+      usd: undefined,
+    });
+    expect(parseQuoteMinimum("Temporary swap limits: minimum swap amount is $100")).toStrictEqual({
+      baseUnits: undefined,
+      usd: "100",
+    });
+    expect(parseQuoteMinimum("Temporary swap limits: minimum swap amount is $99.50")?.usd).toBe(
+      "99.50",
+    );
+  });
+
+  it("refuses to guess a floor it cannot read, rather than printing a wrong number", () => {
+    // A thousands separator is the one case a naive `\$([0-9]+)` would turn into $1.
+    expect(parseQuoteMinimum("minimum swap amount is $1,000")?.usd).toBeUndefined();
+    expect(parseQuoteMinimum("minimum swap amount is $100000000")).toStrictEqual({
+      baseUnits: undefined,
+      usd: "100000000",
+    });
+    expect(parseQuoteMinimum("Unknown asset")).toBeUndefined();
+    expect(parseQuoteMinimum("try at least ")?.baseUnits).toBeUndefined();
+  });
+
   it.each([
     [401, "unauthorized", { message: "Invalid JWT" }],
     [404, "not_found", { message: "Deposit address not found" }],
@@ -109,7 +141,21 @@ describe("oneclick/client", () => {
       .catch((cause: unknown) => cause);
     expect(error).toBeInstanceOf(OneClickError);
     expect((error as OneClickError).kind).toBe("amount_too_low");
-    expect((error as OneClickError).minimumBaseUnits).toBe("300001");
+    expect((error as OneClickError).minimum?.baseUnits).toBe("300001");
+  });
+
+  it("treats a dollar-denominated swap limit as the same failure, with a dollar floor", async () => {
+    const error = await clientReturning(400, {
+      message: "Temporary swap limits: minimum swap amount is $100",
+    })
+      .requestJson(okSchema, { method: "POST", path: "/v0/quote", body: {} })
+      .catch((cause: unknown) => cause);
+    expect((error as OneClickError).kind).toBe("amount_too_low");
+    // No base units exist in that message, and none are invented from the dollars (#135).
+    expect((error as OneClickError).minimum).toStrictEqual({
+      baseUnits: undefined,
+      usd: "100",
+    });
   });
 
   it("keeps any other 400 as invalid_request", async () => {
@@ -117,7 +163,7 @@ describe("oneclick/client", () => {
       .requestJson(okSchema, { method: "POST", path: "/v0/quote", body: {} })
       .catch((cause: unknown) => cause);
     expect((error as OneClickError).kind).toBe("invalid_request");
-    expect((error as OneClickError).minimumBaseUnits).toBeUndefined();
+    expect((error as OneClickError).minimum).toBeUndefined();
   });
 
   it("rejects a 200 body that does not match the schema instead of trusting it", async () => {

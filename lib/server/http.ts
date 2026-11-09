@@ -134,7 +134,8 @@ function mapOneClick(error: OneClickError): HttpError {
   switch (error.kind) {
     case "amount_too_low":
       return new HttpError(400, "amount_too_low", "1Click rejected this amount as too small.", {
-        minimumBaseUnits: error.minimumBaseUnits ?? null,
+        minimumBaseUnits: error.minimum?.baseUnits ?? null,
+        minimumUsd: error.minimum?.usd ?? null,
       });
     case "invalid_request":
       // `detail` is the upstream's own wording about the request we sent. It is safe to *answer*

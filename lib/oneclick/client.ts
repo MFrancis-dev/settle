@@ -47,9 +47,10 @@ export type OneClickErrorKind =
 
 /**
  * One error type for every failure, so callers never branch on HTTP codes.
- * `minimumBaseUnits` is only set for `amount_too_low`: 1Click does not publish a minimums
- * table, it rejects at quote time with the smallest accepted amount in the message
- * (ARCHITECTURE.md §11), so we parse it rather than hardcode it.
+ * `minimum` is only set for `amount_too_low`: 1Click does not publish a minimums table, it rejects
+ * at quote time with the smallest accepted amount in the message (ARCHITECTURE.md §11), so we parse
+ * it rather than hardcode it. It is an object rather than two optional trailing arguments because
+ * both halves are strings and a caller passing them the wrong way round would still typecheck.
  *
  * **`message` is deliberately log-safe and `detail` is not** (S7.10). Every log site in this repo
  * prints `error.message` — the worker's `describeFailure`, `lib/server/auth.ts`, the scripts — so
@@ -68,7 +69,7 @@ export class OneClickError extends Error {
     kind: OneClickErrorKind,
     status: number | null,
     detail: string,
-    readonly minimumBaseUnits?: string,
+    readonly minimum?: QuoteMinimum,
   ) {
     super(`1Click ${kind} (${status ?? "no response"})`);
     this.name = "OneClickError";
@@ -78,10 +79,31 @@ export class OneClickError extends Error {
   }
 }
 
+/**
+ * The floor behind an `amount_too_low`. `baseUnits` counts the **payout** asset — measured
+ * 2026-11-09, a BTC → USDC route refused 5 USDC with `try at least 6232326` and accepted 6232327,
+ * while costing 0.00008799 BTC. `usd` is the other shape the vendor uses: a dollar figure with no
+ * base units in it, so no asset amount can be derived without a price Settle does not have.
+ */
+export interface QuoteMinimum {
+  readonly baseUnits?: string;
+  readonly usd?: string;
+}
+
 /** `Amount is too low for bridge, try at least 300001` → "300001". */
 export function parseTooLowMinimum(message: string): string | undefined {
-  const match = /try at least (\d+)/.exec(message);
-  return match?.[1];
+  return /try at least (\d+)/.exec(message)?.[1];
+}
+
+/**
+ * Both refusal shapes, in one parse. `Temporary swap limits: minimum swap amount is $100` →
+ * `{ usd: "100" }`. A grouped figure like `$1,000` deliberately does not match: the trailing guard
+ * makes the parser refuse to guess, and the screen falls back to a sentence with no number.
+ */
+export function parseQuoteMinimum(message: string): QuoteMinimum | undefined {
+  const baseUnits = parseTooLowMinimum(message);
+  const usd = /\$([0-9]+(?:\.[0-9]{1,2})?)(?![0-9.,])/.exec(message)?.[1];
+  return baseUnits === undefined && usd === undefined ? undefined : { baseUnits, usd };
 }
 
 const errorBodySchema = z
@@ -100,7 +122,7 @@ function kindFor(status: number, body: unknown): OneClickErrorKind {
   if (status === 404) return "not_found";
   if (status === 429) return "rate_limited";
   if (status === 400) {
-    return parseTooLowMinimum(errorText(body)) ? "amount_too_low" : "invalid_request";
+    return parseQuoteMinimum(errorText(body)) ? "amount_too_low" : "invalid_request";
   }
   return status >= 500 ? "server_error" : "invalid_request";
 }
@@ -192,7 +214,7 @@ export function createOneClickClient(config: OneClickClientConfig = {}): OneClic
         kindFor(status, parsedJson),
         status,
         detail.slice(0, 300),
-        status === 400 ? parseTooLowMinimum(detail) : undefined,
+        status === 400 ? parseQuoteMinimum(detail) : undefined,
       );
     }
 

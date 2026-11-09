@@ -271,6 +271,25 @@ describe("POST /api/pay/:publicId/quote", () => {
     });
   });
 
+  // The other refusal shape, seen live from a TRON-origin quote on 2026-11-09 (#135). What the
+  // screen needs is the fact that it is an amount problem with a dollar floor — not a route problem.
+  it("passes a dollar-denominated swap limit back as dollars, with no invented token amount", async () => {
+    const { publicId } = await harness.seededInvoice();
+    harness.oneClick.failOnce("/v0/quote", 400, {
+      message: "Temporary swap limits: minimum swap amount is $100",
+    });
+
+    const response = await quote(publicId, quoteBody({ dry: false }));
+    const error = await errorOf(response);
+
+    expect(response.status).toBe(400);
+    expect(error).toMatchObject({
+      code: "amount_too_low",
+      details: { minimumBaseUnits: null, minimumUsd: "100" },
+    });
+    expect(JSON.stringify(error)).not.toMatch(/"minimumBaseUnits":\s*"[0-9]/);
+  });
+
   it("rate limits quote spam per pay page and caller, not globally", async () => {
     const { publicId } = await harness.seededInvoice();
 
