@@ -67,6 +67,12 @@ export function describeQuoteFailure(
     // on 2026-11-09: a BTC→USDC route refused 5 USDC with `try at least 6232326` and accepted
     // 6232327, while quoting that same invoice at 0.00008799 BTC. Formatted with the origin token's
     // decimals it would name an amount ~700× too large, in an asset the client never receives.
+    //
+    // The second refusal shape (#135) states the floor in dollars and carries no base-unit number at
+    // all — `Temporary swap limits: minimum swap amount is $100`, seen live from a TRON-origin quote
+    // the same day. Turning $100 into an amount of the payout asset needs a price, and the only price
+    // source in this app is a quote from the exchange that just refused, so the dollar figure is
+    // passed through as a dollar figure and the sentence says why it is one.
     case "amount_too_low": {
       const minimum = details?.minimumBaseUnits;
       const decimals = payout?.decimals ?? null;
@@ -74,9 +80,12 @@ export function describeQuoteFailure(
         typeof minimum === "string" && isBaseUnitsString(minimum) && decimals !== null
           ? `${formatAmount(parseBaseUnits(minimum), decimals)} ${payout?.symbol ?? "that asset"}`
           : null;
+      const usd = /^([0-9]+(?:\.[0-9]{1,2})?)$/.exec(String(details?.minimumUsd ?? ""))?.[1];
       shown.message = smallest
         ? `The exchange will not deliver less than ${smallest} on this route, and this invoice asks for less than that. Nothing was created. Ask the seller for a larger invoice, or pick a token whose route accepts this amount.`
-        : "The exchange will not deliver an amount this small on this route. Nothing was created. Ask the seller for a larger invoice, or pick another token.";
+        : usd
+          ? `The exchange will not deliver less than $${usd} worth of output on this route, and this invoice asks for less than that. It states the floor in dollars, so there is no honest way to give it to you in ${payout?.symbol ?? "the payout asset"} without a price. Nothing was created. Ask the seller for a larger invoice, or pick another token — the exchange calls this limit temporary.`
+          : "The exchange will not deliver an amount this small on this route. Nothing was created. Ask the seller for a larger invoice, or pick another token.";
       return shown;
     }
 

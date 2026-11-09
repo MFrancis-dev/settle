@@ -46,6 +46,43 @@ describe("describeQuoteFailure", () => {
     expect(message).toContain("larger invoice");
   });
 
+  // Captured live on 2026-11-09 from a TRON-origin quote of 30 USDC (#135). The floor is a dollar
+  // figure with no base units anywhere in it, and Settle has no price to convert it by, so the only
+  // honest sentence is one that says $100 and says why it is not an amount of USDC.
+  it("states a dollar-denominated swap limit as dollars, and says why it cannot be a token amount (#135)", () => {
+    const { message } = describeQuoteFailure(
+      new ApiError(400, "amount_too_low", "1Click rejected this amount as too small.", {
+        minimumBaseUnits: null,
+        minimumUsd: "100",
+      }),
+      PAYOUT,
+    );
+
+    expect(message).toContain("not deliver less than $100 worth of output");
+    expect(message).toContain("It states the floor in dollars");
+    expect(message).toContain("give it to you in USDC");
+    expect(message).toContain("larger invoice");
+    expect(message).toContain("the exchange calls this limit temporary");
+    // A dollar figure never becomes a token amount by guesswork, and never prints an empty unit.
+    expect(message).not.toContain("6.232326");
+    expect(message).not.toContain("undefined");
+  });
+
+  it("falls back to no number at all when neither floor is readable", () => {
+    const grouped = describeQuoteFailure(
+      new ApiError(400, "amount_too_low", "too small", { minimumUsd: "1,000" }),
+      PAYOUT,
+    ).message;
+    const empty = describeQuoteFailure(
+      new ApiError(400, "amount_too_low", "too small", {}),
+      PAYOUT,
+    ).message;
+
+    expect(grouped).toContain("an amount this small");
+    expect(grouped).not.toContain("$");
+    expect(empty).toContain("an amount this small");
+  });
+
   it("still answers when the minimum cannot be made human-readable", () => {
     const withoutPayout = describeQuoteFailure(
       new ApiError(400, "amount_too_low", "too small", { minimumBaseUnits: "1" }),

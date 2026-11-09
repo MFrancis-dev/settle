@@ -28,7 +28,7 @@ Answered from the docs while building Phase 2 (2026-11-05), still **unconfirmed 
 
 1. **No evidence** 1Click storage-registers NEAR recipients — its `ft_withdraw` warns a withdrawal to an unregistered account is not refunded → the app keeps paying storage (S2.8 reads, S2.10 spends)
 2. Status enum: exactly the seven values we map, pinned against the installed SDK by a test. Overpayment: the excess above `amountIn` refunds to `refundTo`. A deposit below `minAmountIn` refunds at the deadline. **Answered 2026-11-09:** a client can top up after `INCOMPLETE_DEPOSIT` — the vendor measures the running total on one address, so deposits add up until the deadline.
-3. Minimums: no table — a 400 saying `try at least <baseUnits>`, surfaced as `OneClickError.minimumBaseUnits` and rendered **in the invoice's payout asset** (that is what the number counts, measured live) by `lib/ui/quote-failure.ts` (S7.6, S0.13)
+3. Minimums: no table — 1Click refuses at quote time in **two** shapes, `try at least <baseUnits>` (payout-asset units — that is what the number counts, measured live) and `minimum swap amount is $100` (dollars, no base units to convert). Both are `amount_too_low`, lifted onto `OneClickError.minimum` by `parseQuoteMinimum()`, and `lib/ui/quote-failure.ts` renders the first in **the invoice's payout asset** and the second as dollars, saying why a dollar floor is not a token amount (S7.6, S0.13, #135)
 
 Still open: one live end-to-end wallet login (the shape below is the library's code, the wallet's own confirmation dialog is not testable offline).
 

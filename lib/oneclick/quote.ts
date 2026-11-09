@@ -163,7 +163,7 @@ export interface RequestQuoteOptions {
  *
  * Dry quotes are previews and are never persisted; a real quote without a deposit address, or
  * with a signature that does not verify, throws instead of returning a partial summary.
- * A `minimumBaseUnits` on the thrown `OneClickError` means 1Click rejected the amount as too
+ * A `minimum` on the thrown `OneClickError` means 1Click rejected the amount as too
  * small for that route — there is no published minimums table, so that number is the answer.
  */
 export async function requestInvoiceQuote(
