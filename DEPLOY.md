@@ -257,3 +257,16 @@ that reads `window`. `curl` cannot see it and the e2e suite did not open `/`. Fi
 with a fifth Playwright test that asserts both the served HTML and a `pageerror`-free hydration. The
 lesson for this host: **a green health probe is not a verified deployment.** Check a route that only
 the new artifact has, then load the first screen a judge meets in a real browser and read its console.
+
+**The deploy that carries the fix, verified 2026-11-09.** `vercel deploy --prod --yes --scope accensa`
+from the merged tip `5fb11cc` (PR #141) produced `settle-e25w2k2lm-accensa.vercel.app`, aliased to the
+same URL. Measured from outside afterwards: the served HTML contains "Sign in with your wallet" and
+no longer contains "Wallet sign-in unavailable"; `/api/health` 200 `{"status":"ok","demo":false,
+"database":"ok"}`; the challenge probe 200; and Chromium at 1440 px and 390 px reports the sign-in
+button enabled, **zero `pageerror`, zero console errors, zero HTTP ≥ 400**, and no horizontal overflow.
+
+One screenshot trap, so the next person does not read a broken page that is not broken: the landing
+sections reveal on scroll (`components/landing/Reveal.tsx`, an IntersectionObserver toggling
+`opacity-0` → `opacity-100`). A `fullPage` screenshot taken without scrolling shows those sections as
+empty panels. Scroll the page first — after doing so, no element remains `opacity-0` and every section
+renders. The content is in the served HTML either way, which is what a screener reads.
