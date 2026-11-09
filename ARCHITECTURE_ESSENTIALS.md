@@ -97,6 +97,7 @@ Rules as implemented in `lib/core/status.ts`:
 - Every status the API can return has a sentence in `lib/ui/status.ts` (exhaustive `switch`); `role="alert"` is only on warn/danger so a poll never interrupts.
 - `middleware.ts` puts the requested path in `?next=`; `lib/ui/return-path.ts` decides what may be pushed back (gated prefixes only — `//host` is an open redirect).
 - `next.config.ts` → `serverExternalPackages: ["@electric-sql/pglite", "postgres"]`. Without it every API route 500s in the server bundle and the tests still pass.
+- **No first render may read `window`.** `WalletProvider` seeds `"loading"` and its effect resolves the phase after mount; seeding from `WALLET_SUPPORTED` made the server HTML say "Wallet sign-in unavailable" while the browser offered sign-in, and React discarded the markup (#418, S7.13/#140). The e2e suite opens `/` and asserts the served HTML plus a `pageerror`-free hydration — jsdom and `curl` each see only one of the two renders.
 
 ## Data model (amounts numeric(78,0) base units)
 

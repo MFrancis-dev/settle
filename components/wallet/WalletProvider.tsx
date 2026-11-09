@@ -112,12 +112,19 @@ function waitForAccount(selector: WalletSelector, selectorModule: SelectorModule
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [phase, setPhase] = useState<WalletPhase>(WALLET_SUPPORTED ? "loading" : "unsupported");
+  // Seeded without `WALLET_SUPPORTED`: that constant reads `window`, so on the server the first
+  // render was `unsupported` ("Wallet sign-in unavailable", disabled) and in the browser `loading`
+  // ("Sign in with your wallet") — React discarded the server's markup (#418). The effect below
+  // resolves the real answer after mount, which is the only place `window` may be read. #140
+  const [phase, setPhase] = useState<WalletPhase>("loading");
   const [accountId, setAccountId] = useState<string | null>(null);
   const selectorRef = useRef<WalletSelector | null>(null);
 
   useEffect(() => {
-    if (!WALLET_SUPPORTED) return;
+    if (!WALLET_SUPPORTED) {
+      setPhase("unsupported");
+      return;
+    }
     let cancelled = false;
 
     loadSelector().then(async (selectorModule) => {
