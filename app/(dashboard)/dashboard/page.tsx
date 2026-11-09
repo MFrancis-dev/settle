@@ -183,7 +183,15 @@ function Summary({ invoices }: { invoices: InvoiceView[] }) {
  * The headline sums sit at KPI size; money that arrived (`hue`) takes the product's one data colour,
  * money still owed stays in ink.
  */
-function Amounts({ list, empty, hue = false }: { list: InvoiceView[]; empty: string; hue?: boolean }) {
+function Amounts({
+  list,
+  empty,
+  hue = false,
+}: {
+  list: InvoiceView[];
+  empty: string;
+  hue?: boolean;
+}) {
   const totals = sumByAsset(list);
   const unresolved = list.filter((invoice) => invoice.total === null).length;
 

@@ -88,9 +88,7 @@ export function PayStatus({ status, actions }: { status: StatusView; actions?: R
             ) : null}
             {attempt.depositTxHash ? (
               <div className="sm:col-span-2">
-                <dt className="text-xs text-ink-faint">
-                  Your transaction reference
-                </dt>
+                <dt className="text-xs text-ink-faint">Your transaction reference</dt>
                 <dd className="mt-0.5 break-all font-mono text-xs">{attempt.depositTxHash}</dd>
               </div>
             ) : null}
