@@ -16,6 +16,7 @@
     "demo": "tsx scripts/demo.ts",
     "demo:prod": "tsx scripts/demo-prod.ts",
     "demo:seed": "tsx scripts/seed-demo.ts",
+    "brand": "tsx scripts/render-brand.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

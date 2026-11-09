@@ -98,6 +98,7 @@ Rules as implemented in `lib/core/status.ts`:
 - `middleware.ts` puts the requested path in `?next=`; `lib/ui/return-path.ts` decides what may be pushed back (gated prefixes only — `//host` is an open redirect).
 - `next.config.ts` → `serverExternalPackages: ["@electric-sql/pglite", "postgres"]`. Without it every API route 500s in the server bundle and the tests still pass.
 - **No first render may read `window`.** `WalletProvider` seeds `"loading"` and its effect resolves the phase after mount; seeding from `WALLET_SUPPORTED` made the server HTML say "Wallet sign-in unavailable" while the browser offered sign-in, and React discarded the markup (#418, S7.13/#140). The e2e suite opens `/` and asserts the served HTML plus a `pageerror`-free hydration — jsdom and `curl` each see only one of the two renders.
+- One identity, two grounds: app screens are the achromatic ledger on stone; the landing opens and closes on the **brand field** (green as a full hero, the receipt as the picture), with `invert`/`outline-invert` button variants and the `Mark`/`SignInButton` `onField` props carrying the chrome onto it (S4.12). Brand assets are generated, not hand-exported — `pnpm brand` rasterises the mark to `public/pfp.png` (1024², also the OG/Twitter image) and `app/icon.png` (256², favicon) (S4.13).
 
 ## Data model (amounts numeric(78,0) base units)
 

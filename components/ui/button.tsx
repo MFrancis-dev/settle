@@ -8,7 +8,8 @@
 
 import type { ButtonHTMLAttributes } from "react";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant =
+  "primary" | "secondary" | "ghost" | "danger" | "invert" | "outline-invert";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
@@ -18,6 +19,11 @@ const VARIANTS: Record<ButtonVariant, string> = {
   secondary: "bg-control text-ink border-transparent hover:bg-control-strong",
   ghost: "bg-transparent text-ink-muted border-transparent hover:bg-control hover:text-ink",
   danger: "bg-danger text-ink-invert border-transparent hover:brightness-95",
+  // On the brand field (the landing's settled-state hero) the chrome inverts: paper is the solid
+  // action, a paper outline the secondary. Same roles, read against green instead of stone.
+  invert: "bg-surface text-ink border-transparent hover:bg-canvas",
+  "outline-invert":
+    "bg-transparent text-ink-invert border-ink-invert/40 hover:bg-ink-invert/10 hover:border-ink-invert/70",
 };
 
 const SIZES: Record<ButtonSize, string> = {

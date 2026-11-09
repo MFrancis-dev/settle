@@ -21,11 +21,14 @@ export function SignInButton({
   redirectTo,
   size = "md",
   full = false,
+  onField = false,
 }: {
   /** Path to open once the session exists. Omit to let the page react to the cookie itself. */
   redirectTo?: string;
   size?: "sm" | "md" | "lg";
   full?: boolean;
+  /** Set on the landing's brand field, where the chrome inverts to paper. */
+  onField?: boolean;
 }) {
   const { phase, accountId, signInBody, signOutWallet } = useWallet();
   const signIn = useSignIn();
@@ -48,7 +51,9 @@ export function SignInButton({
     return (
       <button
         type="button"
-        className="text-sm text-ink-muted underline underline-offset-4 hover:text-ink"
+        className={`text-sm underline underline-offset-4 ${
+          onField ? "text-ink-invert/80 hover:text-ink-invert" : "text-ink-muted hover:text-ink"
+        }`}
         onClick={signOutWallet}
       >
         {accountId} · disconnect
@@ -59,7 +64,15 @@ export function SignInButton({
   return (
     <div className="flex flex-col items-start gap-1">
       <Button
-        variant={phase === "signed-out" ? "primary" : "secondary"}
+        variant={
+          phase === "signed-out"
+            ? onField
+              ? "invert"
+              : "primary"
+            : onField
+              ? "outline-invert"
+              : "secondary"
+        }
         size={size}
         full={full}
         pending={phase === "loading" || signIn.isPending}
@@ -72,7 +85,9 @@ export function SignInButton({
             ? "Sign in with your wallet"
             : "Sign in with your wallet"}
       </Button>
-      {feedback ? <p className="text-xs text-danger">{feedback}</p> : null}
+      {feedback ? (
+        <p className={`text-xs ${onField ? "text-ink-invert" : "text-danger"}`}>{feedback}</p>
+      ) : null}
     </div>
   );
 }
