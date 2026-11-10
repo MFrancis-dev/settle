@@ -148,10 +148,25 @@ Point the host's health check at it, and use it to confirm S8.3 from the outside
 | `SESSION_SECRET` | yes            | yes                       | ≥ 32 chars; without it nobody can sign in          |
 | `PUBLIC_APP_URL` | yes            | yes                       | the `https://` URL; also decides cookie `Secure`   |
 | `NEAR_RPC_URL`   | no             | yes                       | signed actions fail closed with `not_configured`   |
-| `ONECLICK_JWT`   | no             | no                        | optional; 0.2% fee without it (Q-006)              |
+| `ONECLICK_JWT`   | no             | **yes**                   | a non-dry quote needs it; previews work without it |
 | `DEMO_MODE`      | no             | never                     | must be **unset** on a host, per §3                |
 
 `pnpm check-env` prints what is set and what is missing without echoing a secret.
+
+### Obtaining the 1Click credential (S8.4, 👤)
+
+`ONECLICK_JWT` is the only secret that cannot be generated here: it is issued by a partner account.
+Without it, previews price but no deposit address is issued.
+
+1. Sign in at https://partners.near-intents.org (WorkOS email/SSO) and copy the API key (JWT) from
+   the Partner Dashboard. An API key is per integration; never paste it into chat or a commit.
+2. Local: add `ONECLICK_JWT=…` to `.env.local`, then
+   `set -a; . ./.env.local; set +a; pnpm oneclick:check`.
+   `pnpm oneclick:check --real <your-near-account>` additionally proves that a deposit address is
+   issued; it quotes 10.5 USDC on NEAR into itself, sends nothing, and the quote expires.
+3. Hosted: `vercel env add ONECLICK_JWT production`, then redeploy — the Vercel project is not
+   Git-connected, so a merge alone does not ship it. Verify with the same command locally against
+   the stored value; the hosted pay page then issues real addresses.
 
 ## 6. Host options, read on 2026-11-08
 
@@ -214,8 +229,10 @@ Two limits of this host, stated so nobody is surprised by them:
   live quote, and even with the JWT a deposit would not be driven to `paid` without a worker. Live
   payments need a §1 two-process host (Render/Railway/Fly or one machine under a supervisor). This
   is why the full walkthrough stays `pnpm demo` — offline, no JWT, no worker, all statuses reachable.
-- **No `ONECLICK_JWT`** (S0.8, the partner credential), so quotes are refused by design. The rest of
-  the app is exercisable; payment pricing is not.
+- **No `ONECLICK_JWT`** (S0.8, the partner credential), so a deposit address is refused by design.
+  A dry preview still prices (measured 2026-11-10), but a real quote answers `400 Internal server
+error` without the credential. The app now checks the deployment first and answers
+  `server_misconfigured` instead of blaming the caller (S8.7).
 
 What was found by deploying and not by testing: the app returned `503 database:unreachable` on a cold
 serverless boot with `Error: Can't find meta/_journal.json`. Drizzle's migrator reads `./drizzle` from

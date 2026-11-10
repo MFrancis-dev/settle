@@ -88,7 +88,7 @@ Conventions every route follows:
 
 ### 3.2 1Click integration (`lib/oneclick`)
 
-Base `https://1click.chaindefuser.com`; `ONECLICK_JWT` is the partner credential. Measured 2026-11-10: unauthenticated `POST /v0/quote` answers `400 Internal server error` on every route tried, dry or not, where the same body returned 200 on 2026-11-09; a bogus bearer answers `401 Invalid token`, and `GET /v0/tokens` still answers 200. Treat the JWT as required for any quote (§8), not merely as a fee discount.
+Base `https://1click.chaindefuser.com`; `ONECLICK_JWT` is the partner credential. Measured 2026-11-10 (S8.7): a **dry** quote answers 200 without a token, while a **non-dry** quote — the one that carries `depositAddress` — answers `400 Internal server error` without one and `401 Invalid token` with a bogus one; `GET /v0/tokens` answers 200 either way. The vendor's docs agree: unauthenticated quotes are allowed at +25 bps, but an address is issued only to a partner credential. So the JWT is required for a real quote, not for a preview (§8, S8.4/S8.7).
 
 Invoice quote:
 

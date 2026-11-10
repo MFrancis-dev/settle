@@ -323,6 +323,17 @@ export async function quote(deps: ServerDeps, call: QuoteCall): Promise<QuoteVie
         originAsset: live.originAsset,
       });
     }
+    // 1Click issues a `depositAddress` only to a partner credential: without one it answers the
+    // quote with a 400 whose message is "Internal server error", which would be reported as the
+    // client's mistake. Check the deployment instead. Dry previews stay open without it, and demo
+    // mode is exempt — its transport mints the address itself and never forwards a real quote.
+    if (!isDemoMode(deps.env) && !deps.oneClick.hasJwt) {
+      throw new HttpError(
+        500,
+        "server_misconfigured",
+        "This deployment has no 1Click partner credential, so a payment address cannot be issued.",
+      );
+    }
   }
 
   // A rejected `QuoteSignatureError` or `amount_too_low` is mapped by `lib/server/http.ts`.

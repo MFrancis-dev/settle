@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 // Roadmap: S3.5, S3.8 · quote: the only public write, where the double-payment and funds-loss rules live.
 import { POST } from "./route";
+import { installServerDeps } from "@/lib/server/deps";
 import { invoices, paymentAttempts, payoutDestinations } from "@/lib/db/schema";
 import {
   TEST_NOW_MS,
@@ -126,6 +127,45 @@ describe("POST /api/pay/:publicId/quote", () => {
       refundTo: "payer.testnet",
     });
     expect(String(attemptOf(body).receiptUrl)).toContain("/receipt/");
+  });
+
+  it("refuses a real quote when the deployment has no partner credential", async () => {
+    // The vendor answers this case with a 400 whose message is "Internal server error". That would
+    // be reported as the caller's bad request, so the deployment is checked first — and a dry
+    // preview must still work without the credential.
+    installServerDeps({ ...harness.deps, oneClick: { ...harness.deps.oneClick, hasJwt: false } });
+    try {
+      const { publicId } = await harness.seededInvoice();
+      const real = await quote(publicId, quoteBody({ dry: false }));
+      const error = await errorOf(real);
+
+      expect(real.status).toBe(500);
+      expect(error.code).toBe("server_misconfigured");
+      expect(harness.oneClick.quoteRequests()).toHaveLength(0);
+
+      const preview = await quote(publicId, quoteBody());
+      expect(preview.status).toBe(200);
+    } finally {
+      installServerDeps(harness.deps);
+    }
+  });
+
+  it("issues a real quote in demo mode without a partner credential", async () => {
+    // Demo mode mints its own address and never forwards a real quote, so the credential check must
+    // not run there — otherwise `pnpm demo`, which has no JWT by design, could not get an address.
+    installServerDeps({
+      ...harness.deps,
+      env: { ...harness.deps.env, DEMO_MODE: "1" },
+      oneClick: { ...harness.deps.oneClick, hasJwt: false },
+    });
+    try {
+      const { publicId } = await harness.seededInvoice();
+      const real = await quote(publicId, quoteBody({ dry: false }));
+      expect(real.status).toBe(200);
+      expect(attemptOf(await jsonOf(real))).toHaveProperty("depositAddress");
+    } finally {
+      installServerDeps(harness.deps);
+    }
   });
 
   it("hands back the same address instead of opening a second one", async () => {

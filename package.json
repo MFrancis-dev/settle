@@ -26,6 +26,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "check-env": "tsx scripts/check-env.ts",
+    "oneclick:check": "tsx scripts/check-oneclick.ts",
     "payer": "tsx scripts/setup-storage-payer.ts",
     "payer:generate": "tsx scripts/setup-storage-payer.ts generate",
     "payer:check": "tsx scripts/setup-storage-payer.ts check"

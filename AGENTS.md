@@ -61,15 +61,16 @@ See `project_structure.md`. Summary: one Next.js app (`app/`, `components/`, `li
 
 Installed and verified 2026-11-04 with **pnpm 11** (`packageManager` is pinned; esbuild's build script is approved in `pnpm-workspace.yaml`). Exact versions are pinned in `package.json`; add new ones pinned too. Keep this table accurate.
 
-| Task                               | Command                                                                                               |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Install                            | `pnpm install`                                                                                        |
-| Dev app / worker                   | `pnpm dev` / `pnpm worker`                                                                            |
-| **Demo mode (zero config)**        | `pnpm demo`                                                                                           |
-| Typecheck / lint / format          | `pnpm typecheck` / `pnpm lint` / `pnpm format` (check without writing: `pnpm format:check`)           |
-| Tests / E2E                        | `pnpm test` / `pnpm e2e`                                                                              |
-| DB                                 | `pnpm db:generate && pnpm db:migrate`                                                                 |
-| Storage payer (S0.10, 👤 funds it) | `pnpm payer` status · `pnpm payer:generate` local key → `.env` · `pnpm payer:check` read-only balance |
+| Task                               | Command                                                                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Install                            | `pnpm install`                                                                                                               |
+| Dev app / worker                   | `pnpm dev` / `pnpm worker`                                                                                                   |
+| **Demo mode (zero config)**        | `pnpm demo`                                                                                                                  |
+| Typecheck / lint / format          | `pnpm typecheck` / `pnpm lint` / `pnpm format` (check without writing: `pnpm format:check`)                                  |
+| Tests / E2E                        | `pnpm test` / `pnpm e2e`                                                                                                     |
+| DB                                 | `pnpm db:generate && pnpm db:migrate`                                                                                        |
+| Storage payer (S0.10, 👤 funds it) | `pnpm payer` status · `pnpm payer:generate` local key → `.env` · `pnpm payer:check` read-only balance                        |
+| 1Click credential (S8.7)           | `pnpm oneclick:check` (dry preview) · `pnpm oneclick:check --real <near-account>` (proves a deposit address; moves no funds) |
 
 Before saying done: `pnpm format && pnpm typecheck && pnpm lint && pnpm test`. CI does not run the formatter, so an edit that skips `pnpm format` leaves drift in the tree — it came back within three days of the last sweep (#97). `pnpm demo` must work on a fresh clone with **no `.env`, no keys, no external DB**.
 
