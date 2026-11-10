@@ -8,16 +8,19 @@
 export function Mark({
   className = "",
   onField = false,
+  tone = "brand",
 }: {
   className?: string;
   onField?: boolean;
+  /** `current` draws the arrow in the surrounding text colour — the night landing's chrome. */
+  tone?: "brand" | "current";
 }) {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden className={className}>
       <path d="M4 17h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       <path
         d="M12 4v8.5M12 12.5 8.6 9.1M12 12.5l3.4-3.4"
-        stroke={onField ? "currentColor" : "var(--color-brand)"}
+        stroke={onField || tone === "current" ? "currentColor" : "var(--color-brand)"}
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"

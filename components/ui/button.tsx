@@ -9,7 +9,7 @@
 import type { ButtonHTMLAttributes } from "react";
 
 export type ButtonVariant =
-  "primary" | "secondary" | "ghost" | "danger" | "invert" | "outline-invert";
+  "primary" | "secondary" | "ghost" | "danger" | "invert" | "outline-invert" | "accent" | "outline";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
@@ -19,6 +19,11 @@ const VARIANTS: Record<ButtonVariant, string> = {
   secondary: "bg-control text-ink border-transparent hover:bg-control-strong",
   ghost: "bg-transparent text-ink-muted border-transparent hover:bg-control hover:text-ink",
   danger: "bg-danger text-ink-invert border-transparent hover:brightness-95",
+  // The landing's accent: the one place the chrome takes a hue, because the ground is black.
+  accent:
+    "bg-accent text-white border-transparent hover:bg-accent-strong shadow-[0_10px_40px_-12px_var(--color-accent)]",
+  // A hairline pill for the night ground's second action.
+  outline: "bg-transparent text-ink border-line hover:bg-control hover:border-line-strong",
   // On the brand field (the landing's settled-state hero) the chrome inverts: paper is the solid
   // action, a paper outline the secondary. Same roles, read against green instead of stone.
   invert: "bg-surface text-ink border-transparent hover:bg-canvas",
@@ -33,13 +38,14 @@ const SIZES: Record<ButtonSize, string> = {
 };
 
 export function buttonClass(
-  opts: { variant?: ButtonVariant; size?: ButtonSize; full?: boolean } = {},
+  opts: { variant?: ButtonVariant; size?: ButtonSize; full?: boolean; pill?: boolean } = {},
 ): string {
-  const { variant = "primary", size = "md", full = false } = opts;
+  const { variant = "primary", size = "md", full = false, pill = false } = opts;
   return [
-    "inline-flex items-center justify-center rounded-control border font-medium",
+    "inline-flex items-center justify-center border font-medium",
     "transition-colors duration-150 select-none",
     "disabled:opacity-50 disabled:cursor-not-allowed",
+    pill ? "rounded-full" : "rounded-control",
     VARIANTS[variant],
     SIZES[size],
     full ? "w-full" : "",
@@ -50,6 +56,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   full?: boolean;
+  /** A pill, for the landing's marketing chrome. Product screens keep the crisp control radius. */
+  pill?: boolean;
   /** Keeps the label in place and announces the wait, so a double-click cannot double-submit. */
   pending?: boolean;
 }
@@ -58,6 +66,7 @@ export function Button({
   variant,
   size,
   full,
+  pill,
   pending = false,
   disabled,
   className = "",
@@ -68,7 +77,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`${buttonClass({ variant, size, full })} ${className}`}
+      className={`${buttonClass({ variant, size, full, pill })} ${className}`}
       disabled={disabled || pending}
       aria-busy={pending || undefined}
       {...rest}
