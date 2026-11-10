@@ -54,6 +54,8 @@ _one complete moment_ — a real user action to a visible result — and to skip
 
 Recording notes:
 
+- A **silent capture already exists** (2026-11-09): 88 seconds, 1080p, landing → dashboard → invoices → pay → receipt → short payment → phone, with on-screen captions and a click indicator. It was recorded with Playwright against the production demo build, so it is honest demo-mode footage with the banner in frame. Add narration (or captions from the table above), substitute the real-payment shot from S8.4 if it lands, and upload — those steps are the human's.
+
 - Shoot shot 4 twice: once in **demo mode** (reliable, no funds) and once from the **real payment** in S8.4 if it lands before recording. The real one is stronger; the demo one is the fallback and is honest as long as the banner is visible.
 - Keep the "Demo mode — nothing on this page moves money" banner in frame whenever demo data is on screen. That is the difference between a demo and a claim.
 - No music under speech. Captions on, because judges skim.

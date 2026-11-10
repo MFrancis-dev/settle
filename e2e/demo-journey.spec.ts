@@ -155,6 +155,19 @@ test("a client prices a payment, gets one address, and watches it reach Paid", a
   // the first render, preview or not, so asserting it proves nothing about the quote.
   await expect(page.getByText("This is what the payment would be")).toBeVisible();
   await expect(page.getByRole("button", { name: "Get a payment address" })).toBeVisible();
+
+  // A 24-decimal deposit amount is one unbreakable token; without a wrap rule it overflows its
+  // column and prints on top of "Seller receives". Scroll width is the measure a screenshot caught.
+  for (const term of ["You send", "Seller receives"]) {
+    const cell = page.getByText(term, { exact: true }).locator("..").locator("dd").first();
+    const [scrollWidth, clientWidth] = await cell.evaluate((el) => [
+      el.scrollWidth,
+      el.clientWidth,
+    ]);
+    expect(scrollWidth, `"${term}" must stay inside its column`).toBeLessThanOrEqual(
+      clientWidth + 1,
+    );
+  }
   // A dry-run price creates nothing: there is no deposit address on the page yet.
   await expect(page.getByText(/settle-demo-/)).toHaveCount(0);
 

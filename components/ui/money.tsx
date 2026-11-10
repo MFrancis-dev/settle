@@ -24,8 +24,10 @@ export function Money({
   const value = places === undefined ? moneyText(money) : moneyTextRounded(money, places);
 
   return (
-    <span className={`money inline-flex items-baseline gap-1 ${className}`}>
-      <span className={unresolved ? "font-mono text-xs" : ""}>{value}</span>
+    <span className={`money inline-flex min-w-0 items-baseline gap-1 ${className}`}>
+      <span className={`min-w-0 [overflow-wrap:anywhere] ${unresolved ? "font-mono text-xs" : ""}`}>
+        {value}
+      </span>
       {money.symbol ? <span className="text-ink-muted">{money.symbol}</span> : null}
       {unresolved ? <span className="text-xs text-ink-faint">{UNRESOLVED_ASSET}</span> : null}
     </span>
