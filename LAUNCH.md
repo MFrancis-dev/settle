@@ -215,5 +215,6 @@ Before judging (2026-11-16): re-check that the live build is current and re-depl
 are manual (`vercel --prod`, her account), so a merged PR does not appear on the live URL by itself.
 The staleness probe and the deploy command are in `DEPLOY.md` §8.
 
-Also outstanding and not the agent's to do: revoke the leaked `TemiMustapha` PAT, and register for
-the 1Click partner JWT (Q-006) if we want the 0.2% fee gone and a non-dry quote (S8.4) unblocked.
+Also outstanding and not the agent's to do: register for the 1Click partner JWT (Q-006). The leaked
+`TemiMustapha` PAT is dead as of 2026-11-10 — GitHub refused it on every authenticated call, and the
+dead entry was removed from this machine — so no revocation step remains.
