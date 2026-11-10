@@ -123,6 +123,8 @@ export interface TokenOption {
   refundSupported: boolean;
   /** The chain name `lib/core/address.ts` validates against, or null when it cannot. */
   settleChain: string | null;
+  /** The origin chain a refund returns to; wider than `settleChain` (S1.7: Bitcoin). */
+  refundChain: string | null;
 }
 
 export interface TokenList {

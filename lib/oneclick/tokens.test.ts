@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createOneClickClient, OneClickError, type FetchLike } from "./client";
-import { chainFromCode, codeForChain, createTokenRegistry, TOKEN_CACHE_TTL_MS } from "./tokens";
+import {
+  chainFromCode,
+  codeForChain,
+  createTokenRegistry,
+  refundChainFromCode,
+  TOKEN_CACHE_TTL_MS,
+} from "./tokens";
 import tokensFixture from "./__fixtures__/tokens.json";
 
 function registry(fetchImpl: FetchLike, cache?: { now?: () => number; ttlMs?: number }) {
@@ -94,6 +100,11 @@ describe("oneclick/tokens", () => {
     expect(chainFromCode("base")).toBe("base");
     expect(chainFromCode("near")).toBe("near");
     expect(chainFromCode("btc")).toBeNull();
+    // ...but a Bitcoin refund address is validated (S1.7), so the refund map knows it.
+    expect(refundChainFromCode("btc")).toBe("btc");
+    expect(refundChainFromCode("BTC")).toBe("btc");
+    expect(refundChainFromCode("eth")).toBe("ethereum");
+    expect(refundChainFromCode("tron")).toBeNull();
     expect(chainFromCode("")).toBeNull();
     expect(codeForChain("ethereum")).toBe("eth");
     expect(codeForChain("arbitrum")).toBe("arb");

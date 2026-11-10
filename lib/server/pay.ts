@@ -10,7 +10,7 @@
  * `lib/core/status.ts`.
  */
 
-import { unsupportedRefundReason, validateAddress } from "../core/address";
+import { unsupportedRefundReason, validateRefundAddress } from "../core/address";
 import type { AttemptStatus, InvoiceStatus } from "../core/status";
 import type { PayQuoteInput, SubmitTxInput } from "../core/schemas";
 import type { QuoteSummary } from "../core/types";
@@ -27,7 +27,7 @@ import { findUserById } from "../db/queries/users";
 import { OneClickError } from "../oneclick/client";
 import { requestInvoiceQuote, type InvoiceQuoteParams } from "../oneclick/quote";
 import { submitDepositTx } from "../oneclick/status";
-import { chainFromCode } from "../oneclick/tokens";
+import { chainFromCode, refundChainFromCode } from "../oneclick/tokens";
 import { badRequest, conflict, HttpError, notFound, rateLimited } from "./http";
 import { isDemoMode } from "./env-schema";
 import { syncAttempt, refreshInvoiceStatus } from "./sync";
@@ -74,8 +74,10 @@ export interface TokenOption {
   decimals: number;
   /** False when Settle cannot validate a refund address on that chain — so it is not offered. */
   refundSupported: boolean;
-  /** The chain name in the form `lib/core/address.ts` understands. */
+  /** The chain name in the form `lib/core/address.ts` understands — a *payout* chain. */
   settleChain: string | null;
+  /** The origin chain a refund goes back to; wider than `settleChain` (S1.7: Bitcoin). */
+  refundChain: string | null;
 }
 
 export interface TokenList {
@@ -94,7 +96,8 @@ export async function tokenList(deps: ServerDeps): Promise<TokenList> {
     decimals: number;
   }): TokenOption => {
     const chain = chainFromCode(asset.blockchain);
-    return { ...asset, refundSupported: chain !== null, settleChain: chain };
+    const refundChain = refundChainFromCode(asset.blockchain);
+    return { ...asset, refundSupported: refundChain !== null, settleChain: chain, refundChain };
   };
 
   const all = await deps.tokens.assets();
@@ -270,7 +273,7 @@ export async function quote(deps: ServerDeps, call: QuoteCall): Promise<QuoteVie
       originAsset: call.input.originAsset,
     });
 
-  const originChain = chainFromCode(origin.blockchain);
+  const originChain = refundChainFromCode(origin.blockchain);
   if (originChain === null) {
     // #100: without a validator for that chain we cannot check where the client's refund goes,
     // and an uncheckable `refundTo` is how a short deposit becomes an unrecoverable one. S7.5 words
@@ -296,7 +299,7 @@ export async function quote(deps: ServerDeps, call: QuoteCall): Promise<QuoteVie
     });
   }
 
-  const refund = validateAddress(originChain, call.input.refundTo);
+  const refund = validateRefundAddress(originChain, call.input.refundTo);
   if (!refund.valid) throw badRequest(refund.reason, { chain: originChain });
 
   const params: InvoiceQuoteParams = {

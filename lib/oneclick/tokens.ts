@@ -14,7 +14,12 @@
 import { z } from "zod";
 
 import type { Asset, AssetId } from "../core/types";
-import { isSupportedChain, type SupportedChain } from "../core/address";
+import {
+  isRefundChain,
+  isSupportedChain,
+  type RefundChain,
+  type SupportedChain,
+} from "../core/address";
 import type { OneClickClient } from "./client";
 
 export const TOKEN_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -51,6 +56,21 @@ const CHAIN_CODE_TO_NAME: Readonly<Record<string, string>> = {
 export function chainFromCode(code: string): SupportedChain | null {
   const name = CHAIN_CODE_TO_NAME[code.toLowerCase()];
   return name !== undefined && isSupportedChain(name) ? name : null;
+}
+
+/**
+ * The refund side is wider than the payout side (S1.7): a client can pay from Bitcoin, and the
+ * address the shortfall returns to is a Bitcoin one. Kept out of `chainFromCode` on purpose — that
+ * function decides which assets Settle pays out in.
+ */
+const REFUND_CHAIN_CODE_TO_NAME: Readonly<Record<string, string>> = {
+  ...CHAIN_CODE_TO_NAME,
+  btc: "btc",
+};
+
+export function refundChainFromCode(code: string): RefundChain | null {
+  const name = REFUND_CHAIN_CODE_TO_NAME[code.toLowerCase()];
+  return name !== undefined && isRefundChain(name) ? name : null;
 }
 
 export function codeForChain(chain: SupportedChain): string {

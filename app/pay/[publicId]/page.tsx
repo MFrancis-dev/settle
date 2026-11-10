@@ -209,7 +209,7 @@ export default function Page() {
                     onChange={setOriginAsset}
                   />
                   <RefundAddressInput
-                    chain={chosen?.settleChain ?? null}
+                    chain={chosen?.refundChain ?? null}
                     value={refundTo}
                     onChange={setRefundTo}
                     onSubmitAttempt={askPreview}

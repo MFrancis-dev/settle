@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 
 // Roadmap: S1.4
 import {
+  REFUND_CHAINS,
   SUPPORTED_CHAINS,
   isMemoChain,
+  isRefundChain,
   isSupportedChain,
   unsupportedRefundReason,
   validateAddress,
+  validateBitcoinAddress,
   validateEvmAddress,
   validateNearAccount,
+  validateRefundAddress,
   validateSolanaAddress,
 } from "./address";
 
@@ -127,6 +131,59 @@ describe("address: Solana", () => {
   });
 });
 
+describe("address: Bitcoin refunds (S1.7)", () => {
+  /** BIP-173 / BIP-350 vectors plus the two legacy forms a wallet still prints. */
+  const GOOD = [
+    "1BoatSLRHtKNngkdXEeobR76b53LETtpyT", // P2PKH
+    "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy", // P2SH
+    "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4", // P2WPKH, bech32
+    "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3", // P2WSH, bech32
+    "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4", // uppercase is legal bech32
+  ];
+
+  it("accepts mainnet legacy and segwit addresses", () => {
+    for (const address of GOOD) {
+      expect(validateBitcoinAddress(address), address).toEqual({ valid: true });
+      expect(validateRefundAddress("btc", address), address).toEqual({ valid: true });
+      expect(validateRefundAddress("BTC", address), address).toEqual({ valid: true });
+    }
+  });
+
+  it("rejects a bad checksum — the typo that would send funds elsewhere", () => {
+    for (const bad of [
+      "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5",
+      "1BoatSLRHtKNngkdXEeobR76b53LETtpyU",
+    ]) {
+      const result = validateBitcoinAddress(bad);
+      expect(result.valid, bad).toBe(false);
+      if (!result.valid) expect(result.reason, bad).toContain("checksum");
+    }
+  });
+
+  it("rejects testnet and malformed addresses with the reason that matters", () => {
+    const testnet = validateBitcoinAddress("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx");
+    expect(testnet.valid).toBe(false);
+    if (!testnet.valid) expect(testnet.reason).toContain("mainnet");
+
+    const mixedCase = validateBitcoinAddress("bc1Qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4");
+    expect(mixedCase.valid).toBe(false);
+    if (!mixedCase.valid) expect(mixedCase.reason).toContain("mix upper and lower case");
+
+    for (const bad of ["", "bitcoin", "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed", "1"]) {
+      expect(validateBitcoinAddress(bad).valid, bad).toBe(false);
+    }
+  });
+
+  it("keeps Bitcoin out of the payout chains", () => {
+    expect(isSupportedChain("btc")).toBe(false);
+    expect(validateAddress("btc", "1BoatSLRHtKNngkdXEeobR76b53LETtpyT").valid).toBe(false);
+    expect(isRefundChain("btc")).toBe(true);
+    expect(REFUND_CHAINS).toContain("btc");
+    expect(REFUND_CHAINS).toContain("near");
+    expect(unsupportedRefundReason("btc")).toBeNull();
+  });
+});
+
 describe("address: validateAddress by chain", () => {
   const GOOD: Record<string, string> = {
     near: "alice.testnet",
@@ -194,8 +251,9 @@ describe("address: the reason a chain cannot hold a refund (S7.5)", () => {
   });
 
   it("reads 1Click's chain codes case-insensitively", () => {
-    expect(isMemoChain("BTC")).toBe(true);
+    expect(isMemoChain("XRP")).toBe(true);
     expect(isMemoChain("stellar")).toBe(true);
+    expect(isMemoChain("BTC")).toBe(false); // BTC refunds carry no memo (S1.7)
     expect(isMemoChain("near")).toBe(false);
     expect(isMemoChain("sol")).toBe(false);
   });

@@ -48,6 +48,7 @@ describe("GET /api/tokens", () => {
       decimals: 6,
       refundSupported: true,
       settleChain: "near",
+      refundChain: "near",
     });
     // 1Click's short codes are translated once, here, so no client has to learn them
     expect(assets.find((asset) => asset.blockchain === "eth")).toMatchObject({
@@ -64,10 +65,23 @@ describe("GET /api/tokens", () => {
       .filter((asset) => asset.refundSupported === false)
       .map((asset) => asset.blockchain);
 
-    expect(uncheckable.sort()).toEqual(["btc", "stellar", "ton"]);
+    expect(uncheckable.sort()).toEqual(["stellar", "ton"]);
     for (const asset of assets.filter((entry) => entry.refundSupported === false)) {
       expect(asset.settleChain).toBeNull();
+      expect(asset.refundChain).toBeNull();
     }
+  });
+
+  it("offers a Bitcoin refund (S1.7) without ever offering it as a payout", async () => {
+    const body = await tokens();
+    const btc = options(body, "assets").find((asset) => asset.blockchain === "btc");
+
+    expect(btc).toMatchObject({
+      refundSupported: true,
+      refundChain: "btc",
+      settleChain: null, // a refund-only chain: it must never become a payout
+    });
+    expect(options(body, "payoutAssets").some((asset) => asset.blockchain === "btc")).toBe(false);
   });
 
   it("offers only chains it can validate as a payout", async () => {
