@@ -20,7 +20,7 @@ Separate repo from **Stack** (track 01). Never import Stack code; README names S
 - **SD-4** Payout assets: USDC on NEAR (default), Base, Arbitrum, Solana, Ethereum; USDT on Ethereum, Solana (ids: ARCHITECTURE §3.2)
 - **SD-5** Name: Settle
 - **SD-6** Invoice numbering: `INV-0001`, sequential **per user** (`invoices_user_number_uq`), at least 4 digits, grows past 9999 without truncating
-- **SD-7** Address checks use `@noble/hashes` (keccak256 → EIP-55) and `bs58` (Solana). A chain with no validator is **rejected**, never accepted unchecked
+- **SD-7** Address checks use `@noble/hashes` (keccak256 → EIP-55, sha256 → base58-check) and `bs58` (Solana, Bitcoin). A chain with no validator is **rejected**, never accepted unchecked. **BTC is validated as a refund-only chain (2026-11-09, S1.7)**: bech32/bech32m and legacy mainnet addresses, never a payout chain
 
 ## 🔍 Verify before coding against
 
@@ -75,8 +75,8 @@ Rules as implemented in `lib/core/status.ts`:
 - Default USDC on NEAR to the signed-in account; storage-registered by the app if needed (cost read from `storage_balance_bounds`, never hardcoded; an account that does not exist yet counts as unregistered)
 - Change = fresh NEP-413 signature + typed twice + chain named + change log
 - Each attempt stores the destination snapshot it used
-- Validators (`lib/core/address.ts`): NEAR account-id rules · EVM `0x`+40 hex with EIP-55 when mixed case (all-lower/all-upper pass unchecked) · Solana base58 decoding to exactly 32 bytes
-- Origin-chain refunds (BTC, TON, …) have no validator yet → S1.7 / #100
+- Validators (`lib/core/address.ts`): NEAR account-id rules · EVM `0x`+40 hex with EIP-55 when mixed case (all-lower/all-upper pass unchecked) · Solana base58 decoding to exactly 32 bytes · **BTC refunds** (`validateBitcoinAddress`): base58-check P2PKH/P2SH with a double-SHA256 checksum, and segwit bech32/bech32m with the BIP-173/350 rules, mainnet only
+- Origin-chain refunds: **BTC validated (S1.7)**; TON and Tron refuse with a reason. `validateRefundAddress` is the wider gate, `validateAddress` stays the payout gate
 
 ## Routes (built in Phase 3; `/api/health` added in Phase 8)
 

@@ -175,11 +175,12 @@ describe("POST /api/pay/:publicId/quote", () => {
 
   it("names the memo a refund on that chain would need, instead of a bare 'unsupported' (S7.5)", async () => {
     const { publicId } = await harness.seededInvoice();
-    const error = await errorOf(await quote(publicId, quoteBody({ originAsset: "openocean:BTC" })));
+    const TON = "ton:EQCuwMdDa6jrRms57rrkznWzkJnNRwbTpLPZoK3YA6XbB_EB";
+    const error = await errorOf(await quote(publicId, quoteBody({ originAsset: TON })));
 
     expect(error.code).toBe("bad_request");
     expect(error.message).toContain("memo or destination tag");
-    expect(error.details).toMatchObject({ blockchain: "btc" });
+    expect(error.details).toMatchObject({ blockchain: "ton" });
     expect(harness.oneClick.calls.filter((call) => call.path === "/v0/quote")).toHaveLength(0);
   });
 
@@ -219,12 +220,47 @@ describe("POST /api/pay/:publicId/quote", () => {
 
   it("refuses a chain whose refund address Settle cannot validate", async () => {
     const { publicId } = await harness.seededInvoice();
-    const response = await quote(publicId, quoteBody({ originAsset: "openocean:BTC" }));
+    const TON = "ton:EQCuwMdDa6jrRms57rrkznWzkJnNRwbTpLPZoK3YA6XbB_EB";
+    const response = await quote(publicId, quoteBody({ originAsset: TON }));
     const error = await errorOf(response);
 
     expect(response.status).toBe(400);
-    expect(error.details).toEqual({ blockchain: "btc" });
+    expect(error.details).toEqual({ blockchain: "ton" });
     expect(error.message).toContain("near");
+  });
+
+  it("previews a Bitcoin payment when the refund address is a valid mainnet address (S1.7)", async () => {
+    const { publicId } = await harness.seededInvoice({
+      destinationAddress: "seller-payout.testnet",
+    });
+    const response = await quote(
+      publicId,
+      quoteBody({
+        originAsset: "openocean:BTC",
+        refundTo: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+      }),
+    );
+    const body = await jsonOf(response);
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({ dry: true, reused: false });
+    expect((body.deposit as Record<string, unknown>).assetId).toBe("openocean:BTC");
+  });
+
+  it("refuses a Bitcoin refund address that fails its checksum (S1.7)", async () => {
+    const { publicId } = await harness.seededInvoice();
+    const response = await quote(
+      publicId,
+      quoteBody({
+        originAsset: "openocean:BTC",
+        refundTo: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5",
+      }),
+    );
+    const error = await errorOf(response);
+
+    expect(response.status).toBe(400);
+    expect(error.details).toEqual({ chain: "btc" });
+    expect(error.message).toContain("checksum");
   });
 
   it("refuses a refund address that is not valid on the origin chain", async () => {

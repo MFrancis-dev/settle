@@ -11,7 +11,7 @@
  */
 
 import { TextField } from "@/components/ui/field";
-import { validateAddress, type AddressValidation } from "@/lib/core/address";
+import { validateRefundAddress, type AddressValidation } from "@/lib/core/address";
 import { addressHint, chainLabel } from "@/lib/ui/chain";
 
 function reason(checked: AddressValidation): string | null {
@@ -33,7 +33,7 @@ export function RefundAddressInput({
   const trimmed = value.trim();
   // A three-character string is somebody mid-typing, not an address worth calling wrong.
   const problem =
-    chain !== null && trimmed.length > 3 ? reason(validateAddress(chain, trimmed)) : null;
+    chain !== null && trimmed.length > 3 ? reason(validateRefundAddress(chain, trimmed)) : null;
 
   return (
     <TextField

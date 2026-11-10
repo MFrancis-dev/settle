@@ -6,31 +6,33 @@
  * map means a payout form can never name a chain the server would not validate against.
  */
 
-import type { SupportedChain } from "@/lib/core/address";
+import type { RefundChain } from "@/lib/core/address";
 
-const LABELS: Record<SupportedChain, string> = {
+const LABELS: Record<RefundChain, string> = {
   near: "NEAR",
   ethereum: "Ethereum",
   base: "Base",
   arbitrum: "Arbitrum",
   solana: "Solana",
+  btc: "Bitcoin",
 };
 
-const HINTS: Record<SupportedChain, string> = {
+const HINTS: Record<RefundChain, string> = {
   near: "A NEAR account id, like name.near or a 64-character address",
   ethereum: "0x followed by 40 characters",
   base: "0x followed by 40 characters",
   arbitrum: "0x followed by 40 characters",
   solana: "32 to 44 characters, no 0, O, I or l",
+  btc: "A Bitcoin address starting bc1, 1 or 3",
 };
 
 /** The human name for a chain id; unknown ids come back as given, so nothing is silently renamed. */
 export function chainLabel(chain: string): string {
   const key = chain.toLowerCase();
-  return key in LABELS ? LABELS[key as SupportedChain] : chain;
+  return key in LABELS ? LABELS[key as RefundChain] : chain;
 }
 
 export function addressHint(chain: string): string {
   const key = chain.toLowerCase();
-  return key in HINTS ? HINTS[key as SupportedChain] : "The address on that network";
+  return key in HINTS ? HINTS[key as RefundChain] : "The address on that network";
 }
