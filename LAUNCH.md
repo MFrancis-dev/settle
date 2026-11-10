@@ -33,6 +33,10 @@ Read from https://nearhackathon.com/HACKATHON.md on 2026-11-06. What it changes 
 No rule changed in a way that invalidates work already merged. The two live consequences are:
 **the demo video is effectively required**, and **the payload must not gain a `website` field**.
 
+**Re-read live on 2026-11-10 (S7.14):** Q-007 is unchanged, and the vendor's own docs agree —
+"There is no testnet deployment and no plans for one." No part of Settle uses testnet; the wallet is
+pinned to mainnet and the no-funds paths are demo mode and `dry: true` quotes. See `ARCHITECTURE.md` §11.
+
 ---
 
 ## 2. Demo video script (S10.1, #81)

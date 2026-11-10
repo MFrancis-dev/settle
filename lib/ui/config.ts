@@ -6,17 +6,13 @@
  * component can reach a secret by importing the wrong module.
  */
 
-import { z } from "zod";
-
 /**
- * The chain network the wallet modules connect to. wallet-selector requires one of its two literal
- * ids; absent means the public one. Nothing in the UI prints this value.
+ * The chain network the wallet modules connect to. Pinned to mainnet: NEAR Intents has no testnet
+ * deployment and none is planned (vendor docs and hackathon Q-007, re-read 2026-11-10), so a wallet
+ * on any other network could sign in but never pay or be paid. Demo mode and dry-run quotes are the
+ * no-funds paths. Nothing in the UI prints this value.
  */
-const networkSchema = z.enum(["mainnet", "testnet"]).default("mainnet");
-
-export const NEAR_NETWORK: "mainnet" | "testnet" = networkSchema.parse(
-  process.env.NEXT_PUBLIC_NEAR_NETWORK || undefined,
-);
+export const NEAR_NETWORK = "mainnet" as const;
 
 /** Wallet sessions and payouts are useless without a wallet, so the button degrades to disabled. */
 export const WALLET_SUPPORTED =
