@@ -88,7 +88,7 @@ Conventions every route follows:
 
 ### 3.2 1Click integration (`lib/oneclick`)
 
-Base `https://1click.chaindefuser.com`; `ONECLICK_JWT` avoids the extra unauthenticated fee.
+Base `https://1click.chaindefuser.com`; `ONECLICK_JWT` is the partner credential. Measured 2026-11-10: unauthenticated `POST /v0/quote` answers `400 Internal server error` on every route tried, dry or not, where the same body returned 200 on 2026-11-09; a bogus bearer answers `401 Invalid token`, and `GET /v0/tokens` still answers 200. Treat the JWT as required for any quote (§8), not merely as a fee discount.
 
 Invoice quote:
 
