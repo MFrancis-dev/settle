@@ -13,7 +13,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonVariant } from "@/components/ui/button";
 import { WalletCancelled, useWallet } from "./WalletProvider";
 import { useSignIn } from "@/lib/api/queries";
 
@@ -22,6 +22,8 @@ export function SignInButton({
   size = "md",
   full = false,
   onField = false,
+  variant,
+  pill = false,
 }: {
   /** Path to open once the session exists. Omit to let the page react to the cookie itself. */
   redirectTo?: string;
@@ -29,6 +31,9 @@ export function SignInButton({
   full?: boolean;
   /** Set on the landing's brand field, where the chrome inverts to paper. */
   onField?: boolean;
+  /** Overrides the variant the phase would pick — the night landing's accent CTA. */
+  variant?: ButtonVariant;
+  pill?: boolean;
 }) {
   const { phase, accountId, signInBody, signOutWallet } = useWallet();
   const signIn = useSignIn();
@@ -65,16 +70,18 @@ export function SignInButton({
     <div className="flex flex-col items-start gap-1">
       <Button
         variant={
-          phase === "signed-out"
+          variant ??
+          (phase === "signed-out"
             ? onField
               ? "invert"
               : "primary"
             : onField
               ? "outline-invert"
-              : "secondary"
+              : "secondary")
         }
         size={size}
         full={full}
+        pill={pill}
         pending={phase === "loading" || signIn.isPending}
         disabled={phase === "unsupported" || signIn.isPending}
         onClick={connect}

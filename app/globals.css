@@ -55,6 +55,12 @@
   --radius-card: 0.5rem;
   --radius-control: 0.25rem;
 
+  /* The accent is the landing's chrome hue — the one colour that is not a state. It never appears
+     on data: an amount that arrived stays brand green, a refusal stays danger. */
+  --color-accent: #e94ecd;
+  --color-accent-strong: #ff6fd8;
+  --color-accent-soft: #2a0f26;
+
   /* Flat by default; a quiet lift is reserved for real overlays (the mobile nav sheet, modals). */
   --shadow-card: none;
   --shadow-raised: 0 2px 4px rgb(22 24 29 / 0.06), 0 16px 40px -16px rgb(22 24 29 / 0.18);
@@ -83,6 +89,59 @@
   h2,
   h3 {
     letter-spacing: -0.015em;
+  }
+
+  /*
+   * Two token scopes, so a surface can invert without every component learning a theme.
+   *
+   * `.night` is the marketing ground (S4.13): near-black, a magenta accent and roomier cards. It
+   * re-maps the neutral roles only — `brand` still means the money arrived. `.paper` restores the
+   * ledger palette for the receipt, which is Settle's real output and stays a white document.
+   */
+  .night {
+    --color-canvas: #07060b;
+    --color-surface: #0e0c15;
+    --color-surface-sunk: #151220;
+    --color-line: #241f30;
+    --color-line-strong: #3a3349;
+
+    --color-ink: #f5f2f9;
+    --color-ink-muted: #aaa3b8;
+    --color-ink-faint: #827a92;
+    --color-ink-invert: #0b0910;
+
+    --color-control: #1b1726;
+    --color-control-strong: #262033;
+
+    --color-brand: #35d399;
+    --color-brand-strong: #7af0c0;
+    --color-brand-soft: #10352a;
+
+    --radius-card: 1.25rem;
+    --radius-control: 0.75rem;
+  }
+
+  .paper {
+    --color-canvas: #f4f5f7;
+    --color-surface: #ffffff;
+    --color-surface-sunk: #eceef1;
+    --color-line: #e3e5e9;
+    --color-line-strong: #c6cad1;
+
+    --color-ink: #16181d;
+    --color-ink-muted: #4b515c;
+    --color-ink-faint: #646b78;
+    --color-ink-invert: #ffffff;
+
+    --color-control: #e6e7ea;
+    --color-control-strong: #d9dbe0;
+
+    --color-brand: #0b6e4f;
+    --color-brand-strong: #07543b;
+    --color-brand-soft: #e3efe9;
+
+    --radius-card: 0.5rem;
+    --radius-control: 0.25rem;
   }
 
   @media (prefers-reduced-motion: reduce) {
