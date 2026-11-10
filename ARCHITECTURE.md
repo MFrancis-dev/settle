@@ -386,6 +386,36 @@ publicKey}`), and `verifyNep413` for the JSON/RAAT convention that no wallet pro
 - 🔍 still unverified: one real end-to-end login against a live wallet (the byte layout is the library's,
   the _dialog_ — what a wallet shows the human — is not testable offline).
 
+### Answered: does Settle need testnet for anything? (S7.14, 2026-11-10)
+
+**No. No judged path can run on testnet, and one path would break silently if it did.**
+
+Re-read live on 2026-11-10: https://nearhackathon.com/HACKATHON.md still answers Q-007 "Testnet for
+Intents? None exists or is planned", and the vendor's own docs say the same in two places ("There is no
+testnet deployment and no plans for one. We recommend testing on NEAR mainnet using separate dev/test
+NEAR accounts"), so the answer is not a stale snapshot. Feature by feature:
+
+- **1Click quotes, deposits and payouts** — mainnet only; the live `/v0/tokens` lists 216 assets whose
+  `near` entries are all mainnet NEP-141 contracts (the one id containing "test" is a mainnet
+  sub-account, `test-token.highdome3013.near`, not a test network). This is the integration the track
+  judges, so Q-010 covers the entry: "Mainnet only where the integration is mainnet-only".
+- **Wallet sign-in (NEP-413)** — the standard is network-agnostic, but the wallet's network and the
+  server's `NEAR_RPC_URL` must agree. Mainnet wallet + testnet RPC fails the access-key read and refuses
+  the login; testnet wallet + mainnet RPC is the dangerous mix, because the address validator accepts
+  `alice.testnet`, 1Click would attempt a mainnet delivery to an account that does not exist there, and
+  the freelancer would not be paid. `lib/ui/config.ts` therefore no longer reads a network variable:
+  `NEAR_NETWORK` is the literal `"mainnet"`, and the only switch is demo vs real.
+- **Storage check and the storage payer (S2.10)** — the check reads the real USDC contract's bounds and
+  the real account's balance; on testnet it would read a test FT for an account that 1Click will never
+  pay. Free testnet NEAR (Q-008) buys nothing here, because the spend path is blocked on a funded mainnet
+  payer and an explicit human yes anyway.
+- **Demo mode and dry-run quotes** — already the no-funds paths: `pnpm demo` touches no chain, and a
+  `dry: true` quote is a real mainnet quote with no deposit address. Testnet is not a substitute for
+  either, and the e2e suite runs entirely in demo mode.
+- **Hosted deployment** — real mode against mainnet; production has no network variable set.
+- **Prize payout account** — the submission form's only network requirement is a **mainnet** NEAR
+  account. That is human-only and unchanged.
+
 ### Answered: can the web process and the worker share one PGlite directory? (Phase 8 prep, 2026-11-08)
 
 **No, and the failure is silent.** Measured on `@electric-sql/pglite` 0.2.17 with two separate Node

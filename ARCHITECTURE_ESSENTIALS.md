@@ -20,6 +20,7 @@ Separate repo from **Stack** (track 01). Never import Stack code; README names S
 - **SD-4** Payout assets: USDC on NEAR (default), Base, Arbitrum, Solana, Ethereum; USDT on Ethereum, Solana (ids: ARCHITECTURE §3.2)
 - **SD-5** Name: Settle
 - **SD-6** Invoice numbering: `INV-0001`, sequential **per user** (`invoices_user_number_uq`), at least 4 digits, grows past 9999 without truncating
+- **Mainnet only (S7.14)** NEAR Intents has no testnet and none is planned (vendor docs + hackathon Q-007, re-read 2026-11-10), so `NEAR_NETWORK` in `lib/ui/config.ts` is the literal `"mainnet"`; do not reintroduce a network switch. Demo mode and `dry: true` quotes are the no-funds paths; testnet is used for nothing. The submission's prize-payout account is the one mainnet account the human supplies
 - **SD-7** Address checks use `@noble/hashes` (keccak256 → EIP-55, sha256 → base58-check) and `bs58` (Solana, Bitcoin). A chain with no validator is **rejected**, never accepted unchecked. **BTC is validated as a refund-only chain (2026-11-09, S1.7)**: bech32/bech32m and legacy mainnet addresses, never a payout chain
 
 ## 🔍 Verify before coding against
