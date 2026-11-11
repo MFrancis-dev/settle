@@ -168,6 +168,53 @@ Without it, previews price but no deposit address is issued.
    Git-connected, so a merge alone does not ship it. Verify with the same command locally against
    the stored value; the hosted pay page then issues real addresses.
 
+### Real payment runbook (S8.4, 👤)
+
+Prepared 2026-11-11. Everything below except the credential and the two sends was checked
+without moving funds.
+
+**What was measured (live `dry: true` quotes, no credential, nothing sent):** a **$2** invoice
+paid out as USDC on NEAR is quoted on every route tried. The client pays 2.020443 USDC from
+Base (~35 s) or Arbitrum (~25 s), 2.022398 USDT from Ethereum (~45 s), ~0.00099 ETH from Base
+(~37 s), or ~0.56 wNEAR (~22 s). That is about 1% on top, and no route refused $2 as too small.
+`/api/health` on the hosted URL answered `{"status":"ok","demo":false,"database":"ok"}`.
+
+**The worker is not needed for a supervised payment.** The pay page polls
+`GET /api/pay/:publicId/status` every 5 s (`STATUS_POLL_MS`), and that route runs the same
+`syncAttempt` write the worker does (`lib/server/sync.ts`). So the Vercel URL can take the
+payment as long as the pay page stays open until "Paid". What the worker adds is unattended
+updates and the 60 s quote expiry, and a 2-minute payment needs neither.
+
+**The storage payer is not needed either, if the payout is picked well.** USDC on NEAR is only
+delivered to an account registered with the USDC contract. A NEAR account that already holds
+USDC is registered, so it needs no payer funding (S0.10/S2.10 stay parked). The settings page
+runs the read-only storage check when the payout is saved and says which case applies. Another
+way to skip the question is a USDC-on-Base or USDC-on-Arbitrum payout address the seller controls.
+
+**Steps (about 15 minutes once the credential exists):**
+
+1. **Credential (S0.8).** Follow "Obtaining the 1Click credential" above. Proof:
+   `pnpm oneclick:check --real <seller-near-account>` prints a verified signature and
+   `depositAddress: yes`. Then `vercel env add ONECLICK_JWT production` and
+   `vercel deploy --prod --yes --scope accensa` from `settle/`.
+2. **Seller.** Open https://settle-wine-alpha.vercel.app, sign in with the seller's NEAR wallet
+   (this is also the first live wallet login, still unproven). Under Settings, set the payout:
+   USDC on NEAR to an account that already holds USDC, or USDC on Base/Arbitrum.
+3. **Invoice.** Create one line, **$2.00** (or $5 for more margin), and copy the pay link.
+4. **Client.** Use a different wallet from the seller's, holding about $2.10 of USDC on Base or
+   Arbitrum plus a little ETH for gas. Open the pay link, pick that token, enter that wallet as
+   the refund address, press the free preview, then "Get payment address".
+5. **Send.** Send the exact amount shown to the address shown, from the refund wallet. Paste the
+   transaction hash into the page if it offers the field, and **leave the tab open** until it
+   says Paid.
+6. **Record.** Copy the deposit tx link (Basescan/Arbiscan), the delivery tx link (NEAR explorer
+   or the receipt), and the receipt URL into S8.4 and issue #72. Screen-record steps 4–6 for
+   the video's real-payment slot (`recordings/real/real-payment.mp4`, S10.2).
+
+**If something goes wrong:** money sent short is refunded in full to the refund address at the
+deadline, unless it is topped up first. Money sent after the address expires, or sent in excess,
+also goes back to the refund address. No path leaves funds with Settle.
+
 ## 6. Host options, read on 2026-11-08
 
 S8.1 has to buy the shape proven in §3: **two long-lived processes and one Postgres, all reachable
