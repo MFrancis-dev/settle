@@ -29,6 +29,7 @@ import { requestInvoiceQuote, type InvoiceQuoteParams } from "../oneclick/quote"
 import { submitDepositTx } from "../oneclick/status";
 import { chainFromCode, refundChainFromCode } from "../oneclick/tokens";
 import { badRequest, conflict, HttpError, notFound, rateLimited } from "./http";
+import { assertPayoutCanReceive } from "./payout";
 import { isDemoMode } from "./env-schema";
 import { syncAttempt, refreshInvoiceStatus } from "./sync";
 import {
@@ -334,6 +335,9 @@ export async function quote(deps: ServerDeps, call: QuoteCall): Promise<QuoteVie
         "This deployment has no 1Click partner credential, so a payment address cannot be issued.",
       );
     }
+    // S7.15: an address must not be issued for a payout account the money cannot land in. Demo mode
+    // is exempt for the same reason as above — nothing real is delivered, and it has no RPC.
+    if (!isDemoMode(deps.env)) await assertPayoutCanReceive(deps, destination);
   }
 
   // A rejected `QuoteSignatureError` or `amount_too_low` is mapped by `lib/server/http.ts`.

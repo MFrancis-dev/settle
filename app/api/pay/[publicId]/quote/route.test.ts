@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 // Roadmap: S3.5, S3.8 · quote: the only public write, where the double-payment and funds-loss rules live.
 import { POST } from "./route";
 import { installServerDeps } from "@/lib/server/deps";
+import type { NearRpcConfig } from "@/lib/near/rpc";
 import { invoices, paymentAttempts, payoutDestinations } from "@/lib/db/schema";
 import {
   TEST_NOW_MS,
@@ -166,6 +167,78 @@ describe("POST /api/pay/:publicId/quote", () => {
     } finally {
       installServerDeps(harness.deps);
     }
+  });
+
+  describe("payout account storage (S7.15)", () => {
+    const MIN = "1258682000000000000000";
+    const b64 = (value: unknown) => Buffer.from(JSON.stringify(value), "utf8").toString("base64");
+
+    /** Real mode with a scripted NEAR RPC: `balance` is what `storage_balance_of` answers. */
+    function withRpc(balance: { total: string; available: string } | null | "down") {
+      const nearRpc: NearRpcConfig = {
+        url: "https://rpc.example.test",
+        fetchImpl: (_url, init) => {
+          if (balance === "down")
+            return Promise.resolve(new Response("bad gateway", { status: 502 }));
+          const { params } = JSON.parse(String(init?.body)) as { params: { method_name?: string } };
+          const answer =
+            params.method_name === "storage_balance_bounds" ? { min: MIN, max: MIN } : balance;
+          return Promise.resolve(new Response(JSON.stringify({ result: { result: b64(answer) } })));
+        },
+      };
+      installServerDeps({ ...harness.deps, nearRpc });
+    }
+
+    it("issues no address when the seller's account is not registered for the payout token", async () => {
+      // A transfer to an unregistered account does not land and is not refunded (§3.5), and the app
+      // cannot register it yet (S2.10), so the only safe answer is no address — and no vendor call.
+      withRpc(null);
+      try {
+        const { publicId, invoiceId } = await harness.seededInvoice();
+        const real = await quote(publicId, quoteBody({ dry: false }));
+        const error = await errorOf(real);
+
+        expect(real.status).toBe(409);
+        expect(error.code).toBe("payout_not_ready");
+        // A pay link is public: the refusal must not publish where the seller is paid.
+        expect(JSON.stringify(error)).not.toContain("seller-payout.testnet");
+        expect(harness.oneClick.quoteRequests()).toHaveLength(0);
+        expect(await storedAttempts(invoiceId)).toHaveLength(0);
+
+        // The free preview still prices: it creates nothing, so there is nothing to protect.
+        expect((await quote(publicId, quoteBody())).status).toBe(200);
+      } finally {
+        installServerDeps(harness.deps);
+      }
+    });
+
+    it("issues the address when the account is registered", async () => {
+      withRpc({ total: MIN, available: "0" });
+      try {
+        const { publicId } = await harness.seededInvoice();
+        const real = await quote(publicId, quoteBody({ dry: false }));
+        expect(real.status).toBe(200);
+        expect(attemptOf(await jsonOf(real))).toHaveProperty("depositAddress");
+      } finally {
+        installServerDeps(harness.deps);
+      }
+    });
+
+    it("issues no address when the registration cannot be read", async () => {
+      // "We do not know" is not "it is fine": a wrong yes here is the freelancer's payment.
+      withRpc("down");
+      try {
+        const { publicId, invoiceId } = await harness.seededInvoice();
+        const real = await quote(publicId, quoteBody({ dry: false }));
+
+        expect(real.status).toBe(503);
+        expect((await errorOf(real)).code).toBe("upstream_unreachable");
+        expect(harness.oneClick.quoteRequests()).toHaveLength(0);
+        expect(await storedAttempts(invoiceId)).toHaveLength(0);
+      } finally {
+        installServerDeps(harness.deps);
+      }
+    });
   });
 
   it("hands back the same address instead of opening a second one", async () => {

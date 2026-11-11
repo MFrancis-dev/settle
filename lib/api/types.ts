@@ -277,6 +277,7 @@ export type ApiErrorCode =
   | "not_found"
   | "conflict"
   | "same_asset"
+  | "payout_not_ready"
   | "rate_limited"
   | "amount_too_low"
   | "upstream_rejected"

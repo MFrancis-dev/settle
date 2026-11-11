@@ -25,7 +25,7 @@ import type { PayoutDestinationRow } from "../db/schema";
 import { payoutInput, type PayoutInput } from "../core/schemas";
 import { payoutMessage } from "../core/payout-message";
 import type { BaseUnits } from "../core/types";
-import { parseJsonBody, unauthorized } from "./http";
+import { HttpError, parseJsonBody, unauthorized } from "./http";
 import { checkSignedMessage } from "./signature";
 import { toPayoutView, type PayoutView, type Principal } from "./auth";
 import type { ServerDeps } from "./deps";
@@ -73,7 +73,14 @@ function nep141Contract(assetId: string): string | null {
   return assetId.startsWith("nep141:") ? assetId.slice("nep141:".length) : null;
 }
 
-async function usdcContractFor(deps: ServerDeps, input: PayoutInput): Promise<string | null> {
+/** The three fields that name where money lands; a stored destination row and a request both have them. */
+interface PayoutTarget {
+  assetId: string;
+  chain: string;
+  address: string;
+}
+
+async function usdcContractFor(deps: ServerDeps, input: PayoutTarget): Promise<string | null> {
   if (input.chain !== "near") return null;
   const contract = nep141Contract(input.assetId);
   if (contract === null) return null;
@@ -84,7 +91,7 @@ async function usdcContractFor(deps: ServerDeps, input: PayoutInput): Promise<st
 }
 
 /** §3.5, read-only: would this account refuse an incoming USDC transfer? */
-async function storageFor(deps: ServerDeps, input: PayoutInput): Promise<StorageView | null> {
+async function storageFor(deps: ServerDeps, input: PayoutTarget): Promise<StorageView | null> {
   const contract = await usdcContractFor(deps, input);
   if (contract === null) return null;
 
@@ -106,6 +113,42 @@ async function storageFor(deps: ServerDeps, input: PayoutInput): Promise<Storage
     minimumBaseUnits: requirement.minimum,
     topUpBaseUnits: requirement.topUp,
   };
+}
+
+/**
+ * S7.15 — refuse to open a payment address for a payout account that would not receive the money.
+ *
+ * A USDC transfer to a NEAR account that is not registered with the token contract does not land,
+ * and the vendor's own `ft_withdraw` note says such a withdrawal is not refunded (§3.5, S0.9).
+ * Registering it from here is S2.10 and spends payer funds, so until that exists the only safe
+ * answer is not to issue the address at all.
+ *
+ * - registered, or a payout this check does not apply to → returns.
+ * - no RPC configured → returns: there is nothing to ask, and a real deployment sets `NEAR_RPC_URL`.
+ * - the contract says "not registered" → 409 `payout_not_ready`.
+ * - the RPC could not be read → 503: "we do not know" must not be treated as "it is fine".
+ *
+ * The answers carry no address: a pay link is public (§6).
+ */
+export async function assertPayoutCanReceive(
+  deps: ServerDeps,
+  destination: PayoutTarget,
+): Promise<void> {
+  const storage = await storageFor(deps, destination);
+  if (storage === null || storage.registered === true) return;
+  if (storage.checked) {
+    throw new HttpError(
+      409,
+      "payout_not_ready",
+      "The seller's account is not set up to receive this payment yet, so no payment address was created. Nothing has been sent. Ask the person who sent the invoice to finish setting up where they get paid, then try again.",
+    );
+  }
+  if (storage.reason === "unconfigured") return;
+  throw new HttpError(
+    503,
+    "upstream_unreachable",
+    "Settle could not confirm that the seller's account can receive this payment, so no payment address was created. Nothing has been sent. Try again in a minute.",
+  );
 }
 
 export async function setPayout(

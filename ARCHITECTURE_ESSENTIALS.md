@@ -74,6 +74,7 @@ Rules as implemented in `lib/core/status.ts`:
 ## Payout destination rules
 
 - Default USDC on NEAR to the signed-in account; storage-registered by the app if needed (cost read from `storage_balance_bounds`, never hardcoded; an account that does not exist yet counts as unregistered)
+- **No address for a payout that cannot receive (S7.15):** a real quote re-reads the registration first — unregistered → `409 payout_not_ready`, unreadable → `503`, neither naming the seller's address. The app-paid registration is still S2.10
 - Change = fresh NEP-413 signature + typed twice + chain named + change log
 - Each attempt stores the destination snapshot it used
 - Validators (`lib/core/address.ts`): NEAR account-id rules · EVM `0x`+40 hex with EIP-55 when mixed case (all-lower/all-upper pass unchecked) · Solana base58 decoding to exactly 32 bytes · **BTC refunds** (`validateBitcoinAddress`): base58-check P2PKH/P2SH with a double-SHA256 checksum, and segwit bech32/bech32m with the BIP-173/350 rules, mainnet only
