@@ -192,6 +192,8 @@ As implemented (S5.1–S5.3):
 
 On setting a USDC-on-NEAR payout: RPC `storage_balance_of(account)` on the USDC contract; if missing, the app's `STORAGE_PAYER` account calls `storage_deposit(account)`.
 
+**Quote-time guard (S7.15, 2026-11-11).** The check above runs when the payout is saved, which does not stop a client paying an invoice whose payout account is still unregistered. So `assertPayoutCanReceive()` (`lib/server/payout.ts`) runs again in the non-dry branch of `POST /api/pay/:publicId/quote`, outside demo mode, before 1Click is asked: not registered → `409 payout_not_ready`; registration unreadable → `503 upstream_unreachable`; no RPC configured, or a payout the check does not apply to → proceed. Neither refusal carries the seller's address, and the dry preview is untouched. Until S2.10 ships, this is what keeps an unregistered payout from being paid into.
+
 **S0.9 answered from the docs (2026-11-05, still unconfirmed by the vendor):** there is no evidence that 1Click registers NEAR recipients — and its low-level `ft_withdraw` intent documents the opposite hazard: a withdrawal to an account with no storage balance is _not_ refunded. So app-paid registration stays in scope (S-B1), and `lib/near/storage.ts` reads the contract's own `storage_balance_bounds.min` plus the account's balance instead of assuming a constant; an account that does not exist yet counts as unregistered, because a payout address is valid before it is funded. `checkStorageRequirement` is read-only — the transaction that spends payer funds is **S2.10**, which needs the funded `STORAGE_PAYER` (S0.10), the NEAR signing dependency (S0.14) and an explicit human "yes" (AGENTS.md §7).
 
 ---
